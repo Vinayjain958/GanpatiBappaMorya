@@ -1,0 +1,191 @@
+# LocaLens — Product Contract
+
+> **HackCelestial 3.0 · PS-6 — Local & Experiences — Intelligent Local Discovery & Experience Platform**
+
+---
+
+## 1. Product Purpose
+
+LocaLens is an AI-powered local experience discovery and matching platform.
+
+It helps travelers discover, evaluate, and plan local experiences using natural language and voice — accounting for who they are, where they are, what they want, how much time they have, their budget, their group, and real-world constraints.
+
+It simultaneously gives local experience providers a profile, visibility, traveler matching, and demand intelligence.
+
+---
+
+## 2. Target Users
+
+### Traveler
+
+Any person exploring a location who wants personalized, feasible, context-aware experience recommendations — not a generic search result list.
+
+Sub-profiles:
+
+- Solo traveler
+- Friends group
+- Couple
+- Family with children
+- Business traveler with free time
+- Local explorer (resident discovering own city)
+
+### Local Provider
+
+Any person or small business that offers a local experience:
+
+- Street food vendor / restaurant / café
+- Cultural venue (gallery, heritage site, museum)
+- Tour guide / walking tour operator
+- Workshop / craft studio
+- Outdoor activity operator
+- Local events organizer
+
+---
+
+## 3. Traveler Experience
+
+### What the traveler can do:
+
+1. Describe what they want in plain language or by voice
+2. Share their location (current or planned)
+3. Specify time, budget, group size, preferences, accessibility needs
+4. Receive a personalized, feasible experience recommendation or mini-itinerary
+5. Ask follow-up questions conversationally
+6. Trigger dynamic replanning when conditions change
+7. Save, rate, and review experiences
+8. Receive increasingly personalized recommendations over time
+
+### What the traveler should feel:
+
+> *"This understands what I actually want."*
+> *"It checked whether this is actually possible for me."*
+> *"It adapted when my plans changed."*
+
+---
+
+## 4. Provider Experience
+
+### What the provider can do:
+
+1. Create a provider profile
+2. List experiences with full details (description, category, pricing, availability, capacity, location, accessibility, media)
+3. See how many travelers viewed, saved, or booked their experience
+4. See demand trends (e.g., which traveler types are most interested)
+5. Receive qualified traveler matches
+6. Gain operational insights to improve their offering
+
+### What the provider should feel:
+
+> *"Travelers who find me here are actually a good fit."*
+> *"I understand what demand looks like."*
+> *"I can improve my offering based on real intelligence."*
+
+---
+
+## 5. Primary Problem Being Solved
+
+**Generic search is not discovery.**
+
+Existing tools present undifferentiated lists of POIs or restaurants. They do not:
+
+- Understand the traveler's full context
+- Check whether an experience is actually feasible given constraints
+- Personalize ranking to this specific traveler's profile
+- Compose multiple compatible experiences into a coherent plan
+- Adapt when real-world conditions change
+- Connect travelers meaningfully with providers
+
+---
+
+## 6. Core Differentiator
+
+> **LocaLens moves from search to understanding.**
+
+| Dimension | Generic Platforms | LocaLens |
+|---|---|---|
+| Input | Keywords / categories | Natural language / voice |
+| Understanding | None | Full traveler context extraction |
+| Feasibility | None | Deterministic constraint engine |
+| Personalization | Generic rating sort | ML-ranked by traveler affinity |
+| Composition | User does it manually | AI composes compatible plans |
+| Adaptation | User redoes search | Dynamic replanning engine |
+| Provider side | Listing directory | Two-sided marketplace with intelligence |
+| Voice | Not core | Core interaction modality |
+
+---
+
+## 7. Major Capabilities
+
+Status labels: `IMPLEMENTED` | `PARTIAL` | `PLANNED` | `NOT IMPLEMENTED`
+
+| Capability | Status |
+|---|---|
+| Natural language traveler input | `PLANNED` (Phase 5) |
+| Voice interaction via Gemini Live | `PLANNED` (Phase 5) |
+| Conversational context maintenance | `PLANNED` (Phase 5) |
+| Structured intent/context extraction | `PLANNED` (Phase 5) |
+| Experience catalog & discovery | `PLANNED` (Phase 4) |
+| OSM/Nominatim/Overpass location layer | `PLANNED` (Phase 4) |
+| Deterministic feasibility engine | `PLANNED` (Phase 6) |
+| Semantic retrieval (pgvector) | `PLANNED` (Phase 6) |
+| Personalized ML ranking | `PLANNED` (Phase 7) |
+| Traveler affinity model | `PLANNED` (Phase 7) |
+| Feedback & learning | `PLANNED` (Phase 7) |
+| AI experience composer | `PLANNED` (Phase 8) |
+| Itinerary planning | `PLANNED` (Phase 8) |
+| Booking request flow | `PLANNED` (Phase 8) |
+| Real-time context (weather, traffic, events) | `PLANNED` (Phase 9) |
+| Dynamic replanning | `PLANNED` (Phase 9) |
+| Provider profiles & listings | `PLANNED` (Phase 3) |
+| Provider intelligence & analytics | `PLANNED` (Phase 10) |
+| Two-sided marketplace matching | `PLANNED` (Phase 10) |
+| Safety & emergency module | `PLANNED` (Phase 11) |
+| Authentication & roles | `PLANNED` (Phase 3) |
+
+---
+
+## 8. Non-Goals
+
+The following are explicitly **out of scope** for LocaLens:
+
+- Full online payment processing
+- Accommodation booking (hotels, Airbnb)
+- Long-haul flight or transport booking
+- General social media or user content feed
+- Nationwide or international travel planning (focus: local/hyperlocal)
+- Competing with OTAs (Booking.com, MakeMyTrip, etc.)
+- Real-time GPS turn-by-turn navigation
+
+---
+
+## 9. Demo Strategy
+
+The hackathon demonstration must make the intelligence immediately obvious.
+
+### Planned Demo Arc
+
+**Setup:**
+Traveler: *"I've got 3 hours near Fort. I'm with two friends. We want local food and something cultural, and we don't want to spend more than ₹1500."*
+
+**System demonstrates:**
+- Understanding the traveler's full context
+- Retrieving candidate experiences from the local catalog
+- Eliminating infeasible options (budget exceeded, closed, too far)
+- Ranking suitable experiences by personalized score
+- Composing a realistic mini-itinerary with time allocation
+
+**Dynamic scenario 1 — time constraint:**
+Traveler: *"Actually, we only have 90 minutes now."*
+
+System re-evaluates, removes incompatible items, recomputes timing, produces a new plan.
+
+**Dynamic scenario 2 — experience unavailable:**
+System receives: *"Outdoor activity unavailable"*
+
+System removes it, searches alternatives matching preferences, recomposes the plan.
+
+**Important:**
+This demo arc must emerge from the general architecture.
+It must NOT be implemented as hardcoded special logic.
+Seed data for Fort/Kala Ghoda area is acceptable as realistic demonstration data,
+but the intelligence must be generalized — it must work for any location and context.

@@ -38,6 +38,23 @@ PriceType = Enum(
     "fixed", "range", "free", "unknown", name="experience_price_type", native_enum=False
 )
 
+# ─── Phase 9: environmental/weather metadata ────────────────────────────
+# Minimal, backward-compatible additions for WeatherImpactService
+# (src/services/weather_impact.py). Defaulting to UNKNOWN rather than a
+# guessed value — an experience imported before Phase 9 is UNKNOWN on
+# every one of these fields until explicitly curated, never silently
+# treated as e.g. OUTDOOR.
+EnvironmentalType = Enum(
+    "INDOOR", "OUTDOOR", "MIXED", "UNKNOWN", name="experience_environmental_type", native_enum=False
+)
+WeatherSensitivity = Enum(
+    "LOW", "MEDIUM", "HIGH", "UNKNOWN", name="experience_weather_sensitivity", native_enum=False
+)
+WeatherPolicy = Enum(
+    "NONE", "LIGHT_RAIN_OK", "WEATHER_SENSITIVE", "SEVERE_WEATHER_EXCLUDE",
+    name="experience_weather_policy", native_enum=False,
+)
+
 
 class Experience(UUIDPrimaryKeyMixin, TimestampMixin, ProvenanceMixin, Base):
     """A discoverable local experience.
@@ -106,6 +123,11 @@ class Experience(UUIDPrimaryKeyMixin, TimestampMixin, ProvenanceMixin, Base):
     opening_hours_status: Mapped[str] = mapped_column(
         String(20), default="unavailable", nullable=False
     )
+
+    # ─── Phase 9: environmental/weather metadata ────────────────────────
+    environmental_type: Mapped[str] = mapped_column(EnvironmentalType, default="UNKNOWN", nullable=False)
+    weather_sensitivity: Mapped[str] = mapped_column(WeatherSensitivity, default="UNKNOWN", nullable=False)
+    weather_policy: Mapped[str] = mapped_column(WeatherPolicy, default="NONE", nullable=False)
 
     provider: Mapped[Provider] = relationship(back_populates="experiences")
     category: Mapped[ExperienceCategory] = relationship(back_populates="experiences")

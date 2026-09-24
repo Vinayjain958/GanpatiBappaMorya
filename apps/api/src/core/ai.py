@@ -15,6 +15,7 @@ from src.core.config import get_settings
 from src.services.ai_tools import (
     CHECK_FEASIBILITY_DECLARATION,
     COMPOSE_EXPERIENCE_DECLARATION,
+    REPLAN_EXPERIENCE_DECLARATION,
     SEARCH_EXPERIENCES_DECLARATION,
 )
 
@@ -26,5 +27,10 @@ def get_ai_adapter() -> AIAdapter:
         return MockAIAdapter()
     return GeminiAIAdapter(
         settings,
-        [SEARCH_EXPERIENCES_DECLARATION, CHECK_FEASIBILITY_DECLARATION, COMPOSE_EXPERIENCE_DECLARATION],
+        [
+            SEARCH_EXPERIENCES_DECLARATION,
+            CHECK_FEASIBILITY_DECLARATION,
+            COMPOSE_EXPERIENCE_DECLARATION,
+            REPLAN_EXPERIENCE_DECLARATION,
+        ],
     )

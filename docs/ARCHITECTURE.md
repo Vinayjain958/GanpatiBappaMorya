@@ -225,22 +225,55 @@ decorative Gemini narrative layer on top of that
 feasibility, ranking, ordering, timing, or booking confirmation at any
 stage of this pipeline.
 
-### Dynamic Replanning Flow
+### STATIC PLAN vs DYNAMIC PLAN (Phase 9 — IMPLEMENTED)
+
+The Phase 8 pipeline above (RETRIEVAL → FEASIBILITY → RANKING →
+COMPOSITION → VALIDATION → NARRATIVE) produces a STATIC PLAN — a single
+itinerary revision, correct at the moment it was composed. Phase 9 wraps
+that same pipeline with a DYNAMIC PLAN layer that re-runs it, unchanged,
+for only the remaining/affected segment whenever real-world context or
+the traveler materially changes something:
 
 ```
-REAL-TIME CHANGE EVENT
-(time / budget / availability / weather / location)
+STATIC PLAN (Phase 8, unchanged)
+─────────────────────────────────
+  RETRIEVAL → FEASIBILITY → RANKING → COMPOSITION → VALIDATION → NARRATIVE
+                                                                     ↓
+                                                          Itinerary (version=1)
+
+
+DYNAMIC PLAN (Phase 9 — wraps the static pipeline, never replaces it)
+───────────────────────────────────────────────────────────────────────
+  CURRENT ITINERARY (version=N)
               ↓
-     Dynamic Replanning Engine
+  FRESH CONTEXT  ← WeatherAdapter (OpenWeather) / EventAdapter (Ticketmaster)
+              ↓            or a traveler-initiated change (time/budget/party size)
+  CONTEXT IMPACT ASSESSMENT  ← ContextImpactService (deterministic; NONE..CRITICAL)
               ↓
-     Re-check Feasibility (Deterministic)
-              ↓
-     Re-rank (if needed)
-              ↓
-     Re-compose (AI Composer)
-              ↓
-     Updated Plan → Client
+  IS CURRENT PLAN STILL VALID?
+       │
+       ├─ NO MATERIAL IMPACT → NO_CHANGE (version stays N)
+       │
+       └─ MATERIAL IMPACT → ReplanningService.replan_itinerary():
+              │
+              ├─ Preserve completed / in-progress / locked-future items
+              ├─ Remove only invalid future-flexible items
+              ├─ REMAINING SEGMENT → RETRIEVAL → FEASIBILITY → RANKING   ← same Phase 6/7 services,
+              │                    → COMPOSITION → VALIDATION            ← same Phase 8 services,
+              │                                                            never duplicated
+              ├─ Merge preserved + newly composed items
+              ├─ On invalid → REPLAN_FAILED (version stays N, previous revision intact)
+              └─ On valid → new ItineraryRevision (version=N+1) → Gemini narrative
+                           → SSE `replan_completed` event → Traveler UI
 ```
+
+A locked item that becomes hard-invalid is never silently replaced — it
+surfaces `REQUIRES_USER_ACTION` instead (`src/services/replanning.py`).
+Gemini is never in this loop as a decision-maker at any point — only as
+the same purely-decorative narrative layer Phase 8 already established,
+now also reachable via the `replan_experience` tool
+(`src/services/ai_tools.py`), which itself only calls
+`ReplanningService.replan_itinerary()` — never a second replanning path.
 
 ### Provider Flow
 
@@ -274,8 +307,8 @@ This enables:
 | `GeocodingAdapter` | `search()`, `reverse()` | `NominatimGeocodingAdapter`, `MockGeocodingAdapter` | IMPLEMENTED (Phase 4) |
 | `RoutingAdapter` | `get_route()`, `get_travel_time_matrix()` | `OSRMRoutingAdapter`, `MockRoutingAdapter` | IMPLEMENTED (Phase 4) |
 | `POIAdapter` | `search_nearby()` | `OverpassPOIAdapter`, `MockPOIAdapter` | IMPLEMENTED (Phase 4) |
-| `WeatherAdapter` | `get_current()`, `get_forecast()` | OpenWeatherAdapter, MockWeatherAdapter | PLANNED (Phase 9) |
-| `EventAdapter` | `search_events()` | TicketmasterAdapter, SeedEventAdapter | PLANNED (Phase 9) |
+| `WeatherAdapter` | `get_current()`, `get_forecast()` | `OpenWeatherAdapter`, `MockWeatherAdapter` | IMPLEMENTED (Phase 9) — **NOT VERIFIED live**, no API key in this worktree |
+| `EventAdapter` | `search_events()` | `TicketmasterEventAdapter`, `SeedEventAdapter` | IMPLEMENTED (Phase 9) — **NOT VERIFIED live**, no API key in this worktree |
 | `MapTilesAdapter` | n/a — superseded | Style URL config (`NEXT_PUBLIC_MAP_STYLE_URL`, OpenFreeMap default) | IMPLEMENTED (Phase 4, simplified — see below |
 
 Each adapter implements a stable interface (Python Protocol / ABC).
@@ -284,6 +317,10 @@ Live Phase 4 adapters are rate-limited (`IntervalRateLimiter`) and
 TTL-cached (`TTLCache[T]`) per-service (`apps/api/src/core/{rate_limit,cache}.py`);
 `LOCATION_SERVICES_ENABLED=false` swaps all three to their Mock implementation
 via `apps/api/src/core/location.py` (see `docs/DECISIONS.md` ADR-030/ADR-031).
+The Phase 9 weather/event adapters follow the identical pattern
+(`CONTEXT_SERVICES_ENABLED=false` or a missing key swaps to
+`MockWeatherAdapter`/`SeedEventAdapter` via `apps/api/src/core/context.py`
+— see `docs/DECISIONS.md` ADR-049).
 Map *tile rendering* turned out not to need a swappable backend adapter the
 way geocoding/routing/POI do — MapLibre GL JS fetches style/tiles directly
 from a configured URL (OpenFreeMap by default), so `MapTilesAdapter` is

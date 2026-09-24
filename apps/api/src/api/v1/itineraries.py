@@ -12,10 +12,14 @@ enforced on every read/write via ItineraryRepository.get_owned_by_id
 
 from __future__ import annotations
 
+import asyncio
+import json
+import uuid
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, AsyncIterator
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.adapters.ai import AIAdapter
@@ -42,7 +46,10 @@ from src.schemas.itinerary import (
     ItineraryListResponse,
     ItineraryResponse,
 )
+from src.schemas.replanning import ReplanChangeSetResponse, ReplanRequest, ReplanResponse
 from src.services.compose_itinerary import ComposeOutcome, compose_and_persist_itinerary
+from src.services.replanning import ReplanningService
+from src.services.sse import build_sse_event, sse_updates_stream
 
 router = APIRouter(tags=["itineraries"])
 
@@ -70,6 +77,9 @@ async def _to_itinerary_response(
 
     base = ItineraryResponse.model_validate(itinerary)
     base.items = item_responses
+    base.version = itinerary.version
+    base.replanning_status = itinerary.replanning_status
+    base.context_last_updated_at = itinerary.context_last_updated_at
     return base
 
 
@@ -189,3 +199,112 @@ async def cancel_itinerary(
     itinerary = await _get_owned_or_404(session, itinerary_id, user.traveler.id)
     itinerary.status = "CANCELLED"
     await session.commit()
+
+
+# ─── Phase 9: manual replan + SSE live updates ──────────────────────────
+
+
+def _outcome_to_response(outcome, itinerary_id: str) -> ReplanResponse:
+    return ReplanResponse(
+        status=outcome.status,
+        itinerary_id=itinerary_id,
+        previous_version=outcome.previous_version,
+        new_version=outcome.new_version,
+        trigger=outcome.trigger,
+        changes=ReplanChangeSetResponse(
+            added_items=outcome.changes.added_items,
+            removed_items=outcome.changes.removed_items,
+            moved_items=outcome.changes.moved_items,
+            unchanged_items=outcome.changes.unchanged_items,
+            affected_items=outcome.changes.affected_items,
+        ),
+        context_summary=outcome.context_summary,
+        validation_issues=outcome.validation_issues,
+        reason_code=outcome.reason_code,
+        message=outcome.message,
+        generated_at=outcome.generated_at,
+    )
+
+
+@router.post("/itineraries/{itinerary_id}/replan", response_model=ReplanResponse)
+async def replan_itinerary(
+    itinerary_id: str,
+    payload: ReplanRequest,
+    user: Annotated[User, Depends(require_traveler)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
+    routing_adapter: Annotated[RoutingAdapter, Depends(get_routing_adapter)],
+    embedding_adapter: Annotated[EmbeddingAdapter, Depends(get_embedding_adapter)],
+    ai_adapter: Annotated[AIAdapter, Depends(get_ai_adapter)],
+) -> ReplanResponse:
+    """Manual (traveler-initiated) replan. Calls the exact same
+    ReplanningService as automatic/context-driven replanning — no
+    separate logic path. For a purely USER_REQUESTED trigger with no
+    context impact supplied, this builds a synthetic "affected" impact
+    covering every remaining flexible item so the traveler's explicit
+    request is honored even without an external context change."""
+    await _get_owned_or_404(session, itinerary_id, user.traveler.id)
+
+    from src.services.context_impact import ContextImpactResult, ImpactSeverity
+
+    itinerary = await _get_owned_or_404(session, itinerary_id, user.traveler.id)
+    now = datetime.now(itinerary.items[0].planned_start.tzinfo) if itinerary.items else datetime.now()
+    flexible_ids = [
+        i.id for i in itinerary.items
+        if i.planned_end > now and not i.is_locked
+    ]
+    impact = ContextImpactResult(
+        affected=bool(flexible_ids),
+        severity=ImpactSeverity.MEDIUM if flexible_ids else ImpactSeverity.NONE,
+        context_type="USER",
+        affected_itinerary_item_ids=flexible_ids,
+        reason_codes=["USER_REQUESTED"],
+        explanation=payload.reason or "Traveler requested a manual replan.",
+    )
+
+    service = ReplanningService(
+        session=session,
+        settings=settings,
+        routing_adapter=routing_adapter,
+        embedding_adapter=embedding_adapter,
+        ai_adapter=ai_adapter,
+    )
+    outcome = await service.replan_itinerary(
+        itinerary_id=itinerary_id,
+        traveler_id=user.traveler.id,
+        trigger=payload.trigger,
+        impact=impact,
+        expected_version=payload.expected_version,
+        idempotency_key=payload.idempotency_key,
+        reason=payload.reason,
+    )
+    if outcome.status == "CONFLICT":
+        raise ApiError(
+            outcome.message or "Itinerary version conflict.",
+            status_code=409 if outcome.reason_code == "ITINERARY_VERSION_CONFLICT" else 404,
+        )
+    return _outcome_to_response(outcome, itinerary_id)
+
+
+@router.get("/itineraries/{itinerary_id}/updates")
+async def itinerary_updates_stream(
+    itinerary_id: str,
+    user: Annotated[User, Depends(require_traveler)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> StreamingResponse:
+    """SSE live-update stream. require_traveler-gated, ownership-checked:
+    a wrong-owner request gets 404 (never-disclose-existence, matching
+    the Phase 8 pattern) rather than 403. Only normalized application
+    events are ever streamed — never raw external API responses or API
+    keys (docs/AI_CONTEXT.md hard invariant)."""
+    await _get_owned_or_404(session, itinerary_id, user.traveler.id)
+
+    return StreamingResponse(
+        sse_updates_stream(itinerary_id),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )

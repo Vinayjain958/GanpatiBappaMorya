@@ -136,6 +136,27 @@ class ComposeExperienceArgs(BaseModel):
     exclude_ids: list[str] = Field(default_factory=list)
 
 
+class ReplanExperienceArgs(BaseModel):
+    """Tool-call argument schema for replan_experience (Phase 9). Gemini
+    may supply a requested change, an affected experience id (hint only,
+    always revalidated server-side), traveler intent text, and
+    time/budget constraints — NEVER traveler_id, provider authorization,
+    the final itinerary state, or a booking confirmation. The tool
+    implementation only ever forwards these as an intent/reason string
+    and constraint hints into ReplanningService — it never lets Gemini
+    directly edit the itinerary (src/services/ai_tools.py)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    itinerary_id: str
+    affected_experience_id: str | None = None
+    requested_change: str = Field(min_length=1, max_length=500)
+    new_start_time: time | None = None
+    new_end_time: time | None = None
+    new_max_budget: float | None = Field(default=None, ge=0)
+    new_party_size: int | None = Field(default=None, ge=1, le=50)
+
+
 class ToolCallRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

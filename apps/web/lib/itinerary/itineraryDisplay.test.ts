@@ -34,6 +34,8 @@ function makeItem(overrides: Partial<ApiItineraryItem> = {}): ApiItineraryItem {
     location_place_name: "Test Place",
     location_latitude: 18.9,
     location_longitude: 72.8,
+    is_locked: false,
+    item_state: "ACTIVE",
     ...overrides,
   };
 }
@@ -61,6 +63,9 @@ function makeItinerary(items: ApiItineraryItem[], overrides: Partial<ApiItinerar
     created_at: "2026-10-12T00:00:00Z",
     updated_at: "2026-10-12T00:00:00Z",
     items,
+    version: 1,
+    replanning_status: "STABLE",
+    context_last_updated_at: null,
     ...overrides,
   };
 }

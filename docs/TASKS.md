@@ -292,23 +292,36 @@
 
 ---
 
-## P9 — Real-Time Context + Events + Dynamic Replanning
+## P9 — Real-Time Context + Events + Dynamic Replanning — Complete
 
 > **Target**: Changing traveler context triggers a new valid plan within seconds.
 
-- [ ] `WeatherAdapter` interface + OpenWeather implementation + mock
-- [ ] `EventAdapter` interface + Ticketmaster implementation + seed fallback
-- [ ] `WeatherSnapshot` model
-- [ ] `Event` model
-- [ ] `ReplanningEvent` model (trigger + reason)
-- [ ] Dynamic Replanning Engine
-- [ ] Re-feasibility → re-rank → re-compose pipeline
-- [ ] WebSocket or SSE endpoint for live plan updates
-- [ ] Tool: `replan_experience`
-- [ ] Tool: `get_weather`
-- [ ] Tool: `get_events`
-- [ ] Demo scenario: time reduction → replan
-- [ ] Demo scenario: experience unavailable → replan
+- [x] `WeatherAdapter` interface + OpenWeather implementation + mock (`src/adapters/weather.py`) —
+      real implementation NOT VERIFIED live (no API key in the implementing worktree)
+- [x] `EventAdapter` interface + Ticketmaster implementation + seed fallback (`src/adapters/events.py`)
+      — real implementation NOT VERIFIED live (no API key in the implementing worktree)
+- [x] `ContextSnapshot` model (normalized weather/event audit record — `src/models/context_snapshot.py`)
+- [x] `ExternalEvent` (adapter-level normalized dataclass, not persisted as its own table — kept
+      distinct from `Experience` per the phase brief; events are candidate context, never
+      auto-inserted into a catalog)
+- [x] `ItineraryRevision` model (trigger + reason + normalized change set — `src/models/itinerary_revision.py`)
+- [x] `WeatherImpactService` (`src/services/weather_impact.py`) + `ContextImpactService`
+      (`src/services/context_impact.py`) — deterministic, no LLM involvement
+- [x] Dynamic Replanning Engine (`src/services/replanning.py`, `ReplanningService`) — reuses Phase
+      6/7/8 services directly, no second ranking/discovery/composer engine
+- [x] Re-feasibility → re-rank → re-compose pipeline for the remaining segment only — completed/
+      locked items never rewritten
+- [x] SSE endpoint for live plan updates (`GET /api/v1/itineraries/{id}/updates`,
+      `src/services/sse.py`) — WebSocket deliberately not used (no existing WS infra; see ADR-052)
+- [x] Tool: `replan_experience` (`src/services/ai_tools.py`, fourth and final Phase 9 tool)
+- [ ] Tool: `get_weather` / `get_events` — deliberately NOT implemented as standalone Gemini tools;
+      weather/event context reaches the plan only through the deterministic impact pipeline, never
+      as a fact Gemini fetches and narrates directly (see docs/AI_CONTEXT.md)
+- [x] Demo scenario: weather-aware replacement (outdoor item + heavy rain → detected, preserved
+      unaffected items, remaining slot recomposed) — covered by
+      `tests/test_phase9_end_to_end.py`, not a live-key demo run
+- [x] Demo scenario: event time-change → conflict detected → replan — covered by
+      `tests/test_phase9_end_to_end.py`/`tests/test_context_impact.py`, not a live-key demo run
 
 ---
 

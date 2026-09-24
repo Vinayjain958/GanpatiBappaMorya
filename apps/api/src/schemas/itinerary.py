@@ -64,6 +64,8 @@ class ItineraryItemResponse(BaseModel):
     source_rank_position: int | None = None
     source_ranking_score: float | None = None
     narrative_text: str | None = None
+    is_locked: bool = False
+    item_state: str = "ACTIVE"
 
     # Denormalized display facts (never authoritative pricing/hours source
     # — populated from the canonical Experience at response-build time).
@@ -99,6 +101,11 @@ class ItineraryResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     items: list[ItineraryItemResponse] = Field(default_factory=list)
+
+    # ─── Phase 9: versioning/replanning state ───────────────────────────
+    version: int = 1
+    replanning_status: str = "STABLE"
+    context_last_updated_at: datetime | None = None
 
 
 class ItineraryListResponse(BaseModel):

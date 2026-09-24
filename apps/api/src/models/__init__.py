@@ -20,6 +20,8 @@ from src.models.affinity import TravelerAffinity
 from src.models.itinerary import Itinerary
 from src.models.itinerary_item import ItineraryItem
 from src.models.booking_request import BookingRequest
+from src.models.itinerary_revision import ItineraryRevision
+from src.models.context_snapshot import ContextSnapshot
 
 __all__ = [
     "Base",
@@ -41,4 +43,6 @@ __all__ = [
     "Itinerary",
     "ItineraryItem",
     "BookingRequest",
+    "ItineraryRevision",
+    "ContextSnapshot",
 ]

@@ -7,6 +7,7 @@ from src.api.v1 import (
     availability,
     bookings,
     categories,
+    context,
     conversation,
     experiences,
     feasibility,
@@ -32,3 +33,4 @@ api_v1_router.include_router(recommendations.router)
 api_v1_router.include_router(feedback.router)
 api_v1_router.include_router(itineraries.router)
 api_v1_router.include_router(bookings.router)
+api_v1_router.include_router(context.router)

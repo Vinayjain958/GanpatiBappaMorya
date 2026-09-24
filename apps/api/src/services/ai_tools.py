@@ -37,6 +37,7 @@ from src.repositories.experience_repository import ExperienceRepository
 from src.schemas.conversation import (
     CheckFeasibilityArgs,
     ComposeExperienceArgs,
+    ReplanExperienceArgs,
     SearchExperiencesArgs,
     SearchExperiencesResult,
     TravelerContext,
@@ -335,12 +336,134 @@ async def execute_compose_experience(
     return await _to_itinerary_response(outcome.itinerary, session)
 
 
+REPLAN_EXPERIENCE_DECLARATION: dict[str, object] = {
+    "name": "replan_experience",
+    "description": (
+        "Request the backend to re-plan part of an existing, already-"
+        "composed itinerary — e.g. because the traveler wants to change "
+        "the time, budget, or party size, or wants a specific experience "
+        "swapped out. This tool NEVER directly edits the itinerary: it "
+        "only asks the backend's deterministic ReplanningService to "
+        "re-run retrieval, feasibility, ranking, composition, and "
+        "validation for the affected part of the plan. You (the model) "
+        "never decide feasibility, weather suitability, event "
+        "cancellation, schedule conflicts, or itinerary validity — only "
+        "narrate the structured result this tool returns. If the result "
+        "status is REPLAN_FAILED or REQUIRES_USER_ACTION, tell the "
+        "traveler honestly what happened; never claim the plan changed "
+        "when it didn't, and never claim a booking is confirmed."
+    ),
+    "parameters": {
+        "type": "OBJECT",
+        "properties": {
+            "itinerary_id": {"type": "STRING", "description": "The itinerary to replan."},
+            "affected_experience_id": {
+                "type": "STRING",
+                "description": "Hint only — the experience the traveler wants changed, if any. Always revalidated server-side.",
+            },
+            "requested_change": {
+                "type": "STRING",
+                "description": "A short description of what the traveler wants changed.",
+            },
+            "new_start_time": {"type": "STRING", "description": "HH:MM, 24-hour, if the traveler wants a new start time."},
+            "new_end_time": {"type": "STRING", "description": "HH:MM, 24-hour, if the traveler wants a new end time."},
+            "new_max_budget": {"type": "NUMBER"},
+            "new_party_size": {"type": "INTEGER"},
+        },
+        "required": ["itinerary_id", "requested_change"],
+    },
+}
+
+
+async def execute_replan_experience(
+    session: AsyncSession,
+    settings: Settings,
+    routing_adapter: RoutingAdapter,
+    embedding_adapter: Any,
+    ai_adapter: Any,
+    args: ReplanExperienceArgs,
+    traveler_id: str,
+) -> dict[str, object]:
+    """The ONLY implementation of the replan_experience tool. traveler_id
+    is always server-derived by the caller — never a tool argument. This
+    function never mutates the itinerary itself: it builds a
+    USER_REQUESTED-trigger context impact covering every remaining
+    flexible item (optionally hinting at affected_experience_id, which is
+    only ever used to prioritize — never trusted blindly) and delegates
+    entirely to ReplanningService, the same service the manual REST
+    replan endpoint and ContextMonitor use — no second replanning path.
+    """
+    from src.repositories.itinerary_repository import ItineraryRepository
+    from src.services.context_impact import ContextImpactResult, ImpactSeverity
+    from src.services.replanning import ReplanningService
+
+    itinerary_repo_result = await ItineraryRepository(session).get_owned_by_id(args.itinerary_id, traveler_id)
+    if itinerary_repo_result is None:
+        # Never disclose existence of another traveler's itinerary, even
+        # to Gemini — same non-disclosure pattern as every REST route.
+        return {
+            "status": "CONFLICT",
+            "reason_code": "ITINERARY_NOT_FOUND",
+            "message": "Itinerary not found.",
+        }
+
+    from datetime import datetime as _datetime
+
+    now = _datetime.now(itinerary_repo_result.items[0].planned_start.tzinfo) if itinerary_repo_result.items else _datetime.now()
+    flexible_ids = [
+        i.id for i in itinerary_repo_result.items
+        if i.planned_end > now and not i.is_locked
+    ]
+    impact = ContextImpactResult(
+        affected=bool(flexible_ids),
+        severity=ImpactSeverity.MEDIUM if flexible_ids else ImpactSeverity.NONE,
+        context_type="USER",
+        affected_itinerary_item_ids=flexible_ids,
+        reason_codes=["USER_REQUESTED"],
+        explanation=args.requested_change,
+    )
+
+    service = ReplanningService(
+        session=session,
+        settings=settings,
+        routing_adapter=routing_adapter,
+        embedding_adapter=embedding_adapter,
+        ai_adapter=ai_adapter,
+    )
+    outcome = await service.replan_itinerary(
+        itinerary_id=args.itinerary_id,
+        traveler_id=traveler_id,
+        trigger="USER_REQUESTED",
+        impact=impact,
+        reason=args.requested_change,
+    )
+
+    return {
+        "status": outcome.status,
+        "itinerary_id": args.itinerary_id,
+        "previous_version": outcome.previous_version,
+        "new_version": outcome.new_version,
+        "trigger": outcome.trigger,
+        "changes": {
+            "added_items": outcome.changes.added_items,
+            "removed_items": outcome.changes.removed_items,
+            "unchanged_items": outcome.changes.unchanged_items,
+            "affected_items": outcome.changes.affected_items,
+        },
+        "context_summary": outcome.context_summary,
+        "reason_code": outcome.reason_code,
+        "message": outcome.message,
+    }
+
+
 __all__ = [
     "CHECK_FEASIBILITY_DECLARATION",
     "COMPOSE_EXPERIENCE_DECLARATION",
+    "REPLAN_EXPERIENCE_DECLARATION",
     "SEARCH_EXPERIENCES_DECLARATION",
     "execute_check_feasibility",
     "execute_compose_experience",
+    "execute_replan_experience",
     "execute_search_experiences",
     "execute_search_experiences_with_candidates",
 ]

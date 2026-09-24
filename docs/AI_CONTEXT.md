@@ -342,8 +342,10 @@ docs/DECISIONS.md ADR-035.
   `ruff`/`mypy --strict` (backend) and `tsc --noEmit`/`eslint`/`next build` (frontend)
 
 **PARTIAL:**
-- Adapter interfaces for Weather, Events, MapTiles (`apps/api/src/adapters/`) still Protocol +
-  mock only — begins Phase 9
+- Weather/Events adapters (`apps/api/src/adapters/weather.py`, `events.py`) are now REAL
+  implementations (Phase 9, OpenWeather + Ticketmaster Discovery API) — verified only against a
+  fake HTTP client in this worktree, **NOT VERIFIED live** (no API keys available here). MapTiles
+  remains Protocol + mock only (out of Phase 9 scope)
 - `/provider/insights` remains Phase 1 mock data, explicitly labelled — real analytics is Phase 10
 - Gemini Live's real browser↔Google WebSocket path is implemented end-to-end but has not been
   manually verified with a working `GEMINI_API_KEY` as of this writing — see ADR-035's manual
@@ -361,11 +363,13 @@ docs/DECISIONS.md ADR-035.
 
 **NOT IMPLEMENTED:**
 - Provider claiming (a real business claiming its catalog-imported record), password reset,
-  email verification, social login, MFA, full admin dashboard, ML-based personalized ranking,
-  `TravelerAffinity`/`Interaction` models, feedback learning loop, AI composer/itinerary
-  generation, `Itinerary`/`ItineraryItem` persistence models, dynamic replanning,
-  booking/payments, weather/events integration, provider analytics backend, real-time GPS
-  turn-by-turn navigation, any Gemini tool beyond `search_experiences`/`check_feasibility`
+  email verification, social login, MFA, full admin dashboard, booking/payments, provider
+  analytics backend, real-time GPS turn-by-turn navigation
+- (As of Phase 9: ranking, feedback learning, AI composer/itinerary generation,
+  `Itinerary`/`ItineraryItem` persistence, dynamic replanning, and weather/events integration ARE
+  now implemented — see docs/PROJECT_STATE.md Phase 7/8/9 sections. This list entry is kept for
+  historical accuracy of the Phase 6 snapshot it was originally written against; do not read it as
+  current status for those items.)
 
 ---
 
@@ -459,12 +463,12 @@ tools are implemented and registered in the Live session config
   tool call is structurally impossible to inject, not merely discouraged.
 
 Any tool name other than `search_experiences`/`check_feasibility`/
-`compose_experience` is rejected (422) by that endpoint — the model can
-never trigger arbitrary application behavior. The Live system
-instruction (locked into the ephemeral token's `live_connect_constraints`)
-explicitly restricts the model to these three tools and forbids phrasing
-an UNKNOWN feasibility verdict as reassuring or a REQUESTED booking as
-confirmed.
+`compose_experience`/`replan_experience` is rejected (422) by that
+endpoint — the model can never trigger arbitrary application behavior.
+The Live system instruction (locked into the ephemeral token's
+`live_connect_constraints`) explicitly restricts the model to these four
+tools and forbids phrasing an UNKNOWN feasibility verdict as reassuring
+or a REQUESTED booking as confirmed.
 
 `compose_experience` (Phase 8, `src/services/ai_tools.py`) composes a
 chronological, travel-aware itinerary from experiences
@@ -476,14 +480,33 @@ candidate context yet exists (never a redundant second pass otherwise).
 It never confirms a booking; booking state is always the real backend
 `BookingRequest.status`.
 
-Later-phase tools remain explicitly NOT implemented — do not add them
-before their owning phase:
-- `get_weather` (Phase 9), `get_events` (Phase 9), `replan_experience` (Phase 9)
-- `save_experience`, `create_booking_request` as standalone Gemini tools were
-  considered for Phase 8 but not implemented — saving is automatic on a
-  successful `compose_experience`/`POST /itineraries/compose`, and
-  booking-request creation is a direct API call rather than a
-  conversational tool in Phase 8
+`replan_experience` (Phase 9, `src/services/ai_tools.py`) is the fourth
+and final tool. It never accepts `traveler_id`, provider authorization,
+final itinerary state, or a booking confirmation from Gemini — it
+accepts only `itinerary_id`, an optional `affected_experience_id` hint
+(always revalidated), a free-text `requested_change`, and optional
+time/budget/party-size hints, and delegates entirely to
+`ReplanningService.replan_itinerary()` — the exact same call the manual
+`POST /itineraries/{id}/replan` REST endpoint makes. It never directly
+edits the itinerary and never decides weather suitability, event
+cancellation, schedule conflicts, or itinerary validity itself — only
+narrates the structured `ReplanResponse` the backend returns, including
+honestly reporting `REPLAN_FAILED`/`REQUIRES_USER_ACTION` outcomes.
 
-See docs/DECISIONS.md ADR-035/ADR-036/ADR-037/ADR-044/ADR-045/ADR-046/
-ADR-047/ADR-048 for the full architecture and security rationale.
+`get_weather`/`get_events` as standalone Gemini tools were considered for
+Phase 9 and deliberately NOT implemented — weather/event context reaches
+the itinerary only through the deterministic
+`WeatherImpactService`/`ContextImpactService` pipeline inside
+`ReplanningService`, never as a fact Gemini could fetch and narrate
+directly (external event/weather text is untrusted data, never placed
+directly into a system instruction — see the SYSTEM RULES / TRAVELER
+REQUEST / VALIDATED ITINERARY DATA / EXTERNAL CONTEXT DATA prompt
+structure `ItineraryNarratorService` and `replan_experience` follow).
+
+`save_experience`/`create_booking_request` as standalone Gemini tools
+remain explicitly NOT implemented — saving is automatic on a successful
+`compose_experience`/`POST /itineraries/compose`, and booking-request
+creation is a direct API call rather than a conversational tool.
+
+See docs/DECISIONS.md ADR-035/ADR-036/ADR-037/ADR-044 through ADR-053
+for the full architecture and security rationale.

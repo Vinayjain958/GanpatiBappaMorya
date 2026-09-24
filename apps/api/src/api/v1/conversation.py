@@ -42,6 +42,7 @@ from src.schemas.conversation import (
     ConversationMessagePublic,
     ConversationTurnRequest,
     ConversationTurnResponse,
+    ReplanExperienceArgs,
     SearchExperiencesArgs,
     SearchExperiencesResult,
     ToolCallRequest,
@@ -128,7 +129,7 @@ async def get_conversation(
     )
 
 
-_KNOWN_TOOLS = {"search_experiences", "check_feasibility", "compose_experience"}
+_KNOWN_TOOLS = {"search_experiences", "check_feasibility", "compose_experience", "replan_experience"}
 
 
 @router.post(
@@ -149,8 +150,9 @@ async def execute_tool_call(
     here verbatim and forwards this response back to Gemini via
     session.send_tool_response(...). This endpoint — not the browser —
     is the only place search_experiences/check_feasibility/
-    compose_experience actually execute; all three tools are
-    backend-owned per the allowlist above."""
+    compose_experience/replan_experience actually execute; all four
+    tools are backend-owned per the allowlist above. Unknown tool names
+    fail safely with a 422 below rather than being silently dispatched."""
     conversation = await _get_owned_or_404(session, conversation_id, user.id)
 
     if payload.name not in _KNOWN_TOOLS:
@@ -234,6 +236,40 @@ async def execute_tool_call(
         )
         await session.commit()
         return outcome
+
+    if payload.name == "replan_experience":
+        try:
+            replan_args = ReplanExperienceArgs.model_validate(payload.args)
+        except Exception as exc:  # noqa: BLE001 — never trust raw model tool arguments
+            raise ApiError(f"Invalid tool arguments: {exc}", status_code=422) from exc
+
+        if traveler_id is None:
+            raise ApiError("Not authenticated", status_code=401)
+
+        result = await ai_tools.execute_replan_experience(
+            session=session,
+            settings=settings,
+            routing_adapter=routing,
+            embedding_adapter=embedding_adapter,
+            ai_adapter=ai,
+            args=replan_args,
+            traveler_id=traveler_id,
+        )
+
+        session.add(
+            ConversationMessage(
+                session_id=conversation.id,
+                role="assistant",
+                text=f"[voice tool call] replan_experience -> {result.get('status')}",
+                tool_call_metadata={
+                    "tool": "replan_experience",
+                    "args": replan_args.model_dump(mode="json", exclude_none=True),
+                    "status": result.get("status"),
+                },
+            )
+        )
+        await session.commit()
+        return result
 
     # check_feasibility
     try:

@@ -146,6 +146,39 @@ class Settings(BaseSettings):
     composer_narrative_model_version: str = "gemini-narrative-v1"
     composer_template_narrative_version: str = "template-fallback-v1"
 
+    # ─── Real-time context: weather (Phase 9) ───────────────────────────────
+    # Real adapter requires OPENWEATHER_API_KEY; falls back to
+    # MockWeatherAdapter when absent or context_services_enabled=false —
+    # mirrors src/core/location.py's fallback pattern (see src/core/context.py).
+    context_services_enabled: bool = True
+    weather_cache_ttl_seconds: int = 900
+    weather_request_timeout_seconds: float = 8.0
+    weather_min_interval_seconds: float = 1.0
+    weather_monitor_interval_seconds: int = 600
+
+    # ─── Real-time context: events (Phase 9) ────────────────────────────────
+    events_cache_ttl_seconds: int = 1800
+    events_request_timeout_seconds: float = 8.0
+    events_min_interval_seconds: float = 1.0
+    events_monitor_interval_seconds: int = 1800
+    events_search_radius_m: int = 5000
+
+    # ─── Context impact thresholds (Phase 9) ────────────────────────────────
+    weather_precipitation_probability_threshold: float = 60.0
+    weather_precipitation_amount_mm_threshold: float = 2.0
+    weather_wind_speed_threshold_ms: float = 12.0
+    weather_temperature_extreme_low_c: float = 5.0
+    weather_temperature_extreme_high_c: float = 40.0
+    # Hysteresis band (percentage points) to avoid GOOD<->CAUTION
+    # oscillation on small fluctuations around a threshold.
+    weather_impact_hysteresis_pct: float = 10.0
+
+    # ─── Dynamic replanning engine (Phase 9) ────────────────────────────────
+    replanning_enabled: bool = True
+    replan_narrative_model_version: str = "gemini-narrative-v1"
+    replan_context_stale_after_seconds: int = 1800
+    sse_heartbeat_interval_seconds: int = 15
+
     @model_validator(mode="after")
     def _validate_ranking_weights(self) -> "Settings":
         total = sum([

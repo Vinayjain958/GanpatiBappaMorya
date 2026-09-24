@@ -1,8 +1,9 @@
 "use client";
 
-import { Clock, MapPin, Wallet } from "lucide-react";
+import { Clock, Lock, MapPin, Radio, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { BookingRequestButton } from "@/components/trip/BookingRequestButton";
+import { useItineraryUpdates } from "@/hooks/useItineraryUpdates";
 import {
   formatCost,
   formatItemTimeRange,
@@ -19,9 +20,15 @@ import type { ApiItinerary } from "@/types/api";
  * client-side. This is the Phase 8 real-data counterpart to the Phase 1
  * mock-data ItineraryTimeline (components/trip/ItineraryTimeline.tsx),
  * which stays in place for the existing demo route.
+ *
+ * Phase 9 adds a live-plan indicator, last-updated time, and revision
+ * ("what changed") display driven by useItineraryUpdates — this
+ * component never computes replanning/weather impact/reordering itself,
+ * it only renders what the backend already decided and published.
  */
 export function RealItineraryTimeline({ itinerary }: { itinerary: ApiItinerary }) {
   const items = orderedItems(itinerary);
+  const updates = useItineraryUpdates(itinerary.id);
 
   return (
     <div className="space-y-4">
@@ -30,10 +37,55 @@ export function RealItineraryTimeline({ itinerary }: { itinerary: ApiItinerary }
           <h2 className="text-lg font-semibold text-ink">{itinerary.title}</h2>
           <p className="text-sm text-ink-muted">{itinerarySummaryLine(itinerary)}</p>
         </div>
-        <Badge tone={itinerary.status === "CANCELLED" ? "danger" : "accent"}>
-          {itineraryStatusLabel(itinerary.status)}
-        </Badge>
+        <div className="flex flex-wrap items-center gap-2">
+          {updates.status === "connected" || updates.status === "replanning" ? (
+            <Badge tone="accent">
+              <Radio className="mr-1 inline size-3" aria-hidden="true" />
+              Live plan
+            </Badge>
+          ) : null}
+          <Badge tone={itinerary.status === "CANCELLED" ? "danger" : "accent"}>
+            {itineraryStatusLabel(itinerary.status)}
+          </Badge>
+        </div>
       </div>
+
+      {updates.replanInProgress ? (
+        <p className="rounded-lg border border-line bg-surface-sunken px-3 py-2 text-sm text-ink-muted" role="status">
+          Updating your itinerary based on changing conditions…
+        </p>
+      ) : null}
+
+      {updates.requiresAction ? (
+        <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900" role="alert">
+          One of your locked items was affected by a change and needs your review — it was not changed automatically.
+        </p>
+      ) : null}
+
+      {!updates.replanInProgress && updates.lastChangeSummary ? (
+        <div className="rounded-lg border border-line bg-surface-sunken px-3 py-2 text-sm text-ink-muted">
+          <p className="font-medium text-ink">Your itinerary was updated because conditions changed.</p>
+          {(updates.lastChangeSummary.removed_items?.length ?? 0) > 0 ||
+          (updates.lastChangeSummary.added_items?.length ?? 0) > 0 ? (
+            <p className="mt-1 text-xs">
+              {updates.lastChangeSummary.removed_items?.length
+                ? `${updates.lastChangeSummary.removed_items.length} item(s) removed. `
+                : ""}
+              {updates.lastChangeSummary.added_items?.length
+                ? `${updates.lastChangeSummary.added_items.length} item(s) added.`
+                : ""}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {updates.lastUpdatedAt ? (
+        <p className="text-xs text-ink-subtle">Last updated {updates.lastUpdatedAt.toLocaleTimeString()}</p>
+      ) : itinerary.context_last_updated_at ? (
+        <p className="text-xs text-ink-subtle">
+          Context last checked {new Date(itinerary.context_last_updated_at).toLocaleTimeString()}
+        </p>
+      ) : null}
 
       {itinerary.narrative_summary ? (
         <p className="rounded-lg bg-surface-sunken px-3 py-2 text-sm text-ink-muted">
@@ -56,8 +108,16 @@ export function RealItineraryTimeline({ itinerary }: { itinerary: ApiItinerary }
                 <div className="flex-1 space-y-1.5">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
-                      <p className="font-semibold text-ink">{item.title ?? "Experience"}</p>
+                      <p className="flex items-center gap-1.5 font-semibold text-ink">
+                        {item.title ?? "Experience"}
+                        {item.is_locked ? (
+                          <Lock className="size-3.5 text-ink-subtle" aria-label="Locked — will not be auto-replaced" />
+                        ) : null}
+                      </p>
                       <p className="text-xs text-ink-subtle">{item.category_name}</p>
+                      {item.item_state === "AFFECTED" ? (
+                        <p className="text-xs font-medium text-amber-700">Needs your review</p>
+                      ) : null}
                     </div>
                     <BookingRequestButton itineraryId={itinerary.id} itineraryItemId={item.id} />
                   </div>

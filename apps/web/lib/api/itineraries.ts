@@ -5,6 +5,8 @@ import type {
   ComposeItineraryRequest,
   ComposeItineraryResult,
   ItineraryListResponse,
+  ReplanRequest,
+  ReplanResponse,
 } from "@/types/api";
 
 /** POST /api/v1/itineraries/compose — Phase 8. Runs the full backend
@@ -42,4 +44,14 @@ export function addItineraryItem(itineraryId: string, request: AddItineraryItemR
  * the current traveler owns. */
 export function cancelItinerary(itineraryId: string, signal?: AbortSignal) {
   return apiClient.delete<void>(`/api/v1/itineraries/${itineraryId}`, { signal });
+}
+
+/** POST /api/v1/itineraries/{id}/replan — Phase 9 manual replan. Calls
+ * the exact same backend ReplanningService as automatic/context-driven
+ * replanning — the frontend never computes the replan itself, only
+ * requests it and renders the structured result. Always pass the
+ * itinerary's current `version` as `expected_version` for optimistic
+ * concurrency (a stale version returns 409 ITINERARY_VERSION_CONFLICT). */
+export function replanItinerary(itineraryId: string, request: ReplanRequest, signal?: AbortSignal) {
+  return apiClient.post<ReplanResponse>(`/api/v1/itineraries/${itineraryId}/replan`, request, { signal });
 }

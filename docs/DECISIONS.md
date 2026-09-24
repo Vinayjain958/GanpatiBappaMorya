@@ -1734,3 +1734,236 @@ same model, not a new parallel state-storage design.
   migration as the new itinerary/booking tables (`8a004268dcb0`) rather
   than a separate migration, since it is a small additive column on an
   existing table with no data-migration concern
+
+---
+
+## ADR-049: Real-Time Weather/Event Adapters Follow the Exact Phase 4 Adapter Pattern — No New Transport Layer
+
+**Decision**: `src/adapters/weather.py` (`OpenWeatherAdapter`) and
+`src/adapters/events.py` (`TicketmasterEventAdapter`) are built on the
+identical foundation Phase 4's `OSRMRoutingAdapter`/
+`NominatimGeocodingAdapter` already established: the shared
+`src/core/http_client.py` httpx client, `IntervalRateLimiter`,
+`TTLCache`, and the `src/adapters/errors.py` typed error hierarchy
+(`AdapterTimeoutError`/`AdapterRateLimitedError`/`AdapterUnavailableError`/
+`AdapterNoResultError`). A new `src/core/context.py` mirrors
+`src/core/location.py`'s `lru_cache`-singleton, settings-gated
+real-vs-mock selection exactly (`CONTEXT_SERVICES_ENABLED` +
+key-presence, not a new gating mechanism).
+
+**Why**: The phase brief explicitly requires "following the exact same
+adapter pattern already used by routing.py/geocoding.py" — reusing the
+existing transport/caching/rate-limiting/error primitives keeps external
+outbound calls to one consistent surface (one place to add a global
+timeout change, one error taxonomy the route layer already knows how to
+translate) rather than a second bespoke HTTP layer for Phase 9.
+
+**Alternatives Considered**:
+- A dedicated `httpx.AsyncClient` per weather/event adapter: rejected —
+  violates the established "never a new AsyncClient per adapter"
+  invariant (ADR-022) with no benefit, since both providers' rate/timeout
+  needs fit the same shared-client model.
+- A generic `ExternalApiAdapter` base class factoring out the
+  request/error-translation boilerplate: considered, deferred — Phase 6/7/8
+  never introduced one despite three prior adapters sharing the same
+  shape; introducing an abstraction now, for only two more adapters, adds
+  indirection without a demonstrated third consumer.
+
+**Consequences**:
+- `tests/test_weather_adapter.py`/`tests/test_event_adapter.py` reuse
+  `tests/adapter_fakes.py`'s `FakeAsyncClient` unchanged (one small
+  addition: `.get()` now also accepts an optional `timeout=` kwarg, since
+  the real adapters set an explicit per-request timeout) — no new test
+  infrastructure needed.
+- Neither adapter is verified against its live API in this worktree — no
+  `OPENWEATHER_API_KEY`/`TICKETMASTER_API_KEY` available; this is
+  explicitly reported as NOT VERIFIED, following the same convention
+  Phase 6/7/8 used for their own unverifiable pieces (no Gemini key, no
+  Postgres instance).
+
+---
+
+## ADR-050: Experience Environmental Metadata Is Additive-Only, Defaults to UNKNOWN — Never Inferred for Existing Rows
+
+**Decision**: `Experience` gains three new columns —
+`environmental_type` (INDOOR/OUTDOOR/MIXED/UNKNOWN),
+`weather_sensitivity` (LOW/MEDIUM/HIGH/UNKNOWN), `weather_policy`
+(NONE/LIGHT_RAIN_OK/WEATHER_SENSITIVE/SEVERE_WEATHER_EXCLUDE) — each
+defaulting to UNKNOWN/NONE at the database level via an explicit
+`server_default` in the migration, so every catalog row seeded before
+Phase 9 (all 353 Overture-derived + synthetic experiences) is UNKNOWN by
+construction, never silently guessed as e.g. OUTDOOR from its category
+name.
+
+**Why**: The phase brief is explicit — "if metadata unavailable → UNKNOWN,
+never invented" — and this project's Phase 6 UNKNOWN-is-never-upgraded-
+to-FEASIBLE contract is the direct precedent: `WeatherImpactService`
+(src/services/weather_impact.py) treats UNKNOWN identically whether the
+column was never backfilled or is genuinely not knowable for that
+experience, exactly mirroring how `FeasibilityService` treats a missing
+constraint fact.
+
+**Alternatives Considered**:
+- A separate `ExperienceEnvironmentalProfile` joined table: rejected —
+  three small enum columns don't warrant a second table and a join on
+  every feasibility/weather-impact check; `ProvenanceMixin` already
+  establishes the "columns directly on the entity, not a satellite table"
+  precedent for exactly this kind of per-record metadata.
+- Inferring `environmental_type` from `ExperienceCategory` (e.g.
+  "hiking" → OUTDOOR): rejected — the brief explicitly forbids inventing
+  this value, and a category-based heuristic would be exactly that kind
+  of invention, silently wrong for mixed-use venues.
+
+**Consequences**:
+- Every experience seeded before this migration ran is WEATHER_UNKNOWN
+  until explicitly curated — `WeatherImpactService` and
+  `ContextImpactService` are the only two places this matters, and both
+  already treat UNKNOWN as "cannot assess, never treat as GOOD."
+- A curation/back-fill pass (e.g. deriving environmental_type from
+  Overture Places category tags where confidently mappable) is
+  explicitly out of Phase 9 scope — noted as a PARTIAL/future item, not
+  attempted here to avoid inventing a heuristic the brief forbids.
+
+---
+
+## ADR-051: `ItineraryRevision` + `Itinerary.version`/`current_revision_id` — Extend, Don't Duplicate the Itinerary Domain
+
+**Decision**: Versioning/replanning state is split between (a) four new
+columns directly on `Itinerary` (`version`, `current_revision_id`,
+`replanning_status`, `context_last_updated_at`) and two on `ItineraryItem`
+(`is_locked`, `item_state`) for hot-path reads, and (b) one genuinely new
+table, `ItineraryRevision`, for the append-only history a single mutable
+counter cannot represent (trigger, previous/new version, normalized
+change set, idempotency key). `ContextSnapshot` is a second new table,
+used only for replan traceability/audit — the hot-path weather/event
+lookup itself still goes through `TTLCache` inside the adapters, never
+through this table.
+
+**Why**: The phase brief's own guidance — "prefer extending
+Itinerary/ItineraryItem ... but add ItineraryRevision/ContextSnapshot ...
+where the spec requires persisted history" — is a direct decision rule:
+version/locking/status are single-value-per-itinerary facts that belong
+on the row itself (matching how `Itinerary.status`/`ranking_model_version`
+already work), while a revision is inherently a growing, ordered history
+that a single mutable column cannot hold without erasing the previous
+entry — exactly the "never silently mutate history" hard invariant.
+
+**Alternatives Considered**:
+- Storing the full previous itinerary state as a JSON blob on each
+  revision (a true snapshot/diff log): rejected as unnecessary for this
+  phase's scope — `ItineraryRevision.changes` records only the normalized
+  added/removed/moved/unchanged/affected item-id sets, which is
+  sufficient for the "what changed" UI and audit trail the spec asks for,
+  without duplicating the entire itinerary schema inside a JSON column.
+- A single `itinerary_revisions` table with no `Itinerary.version` column
+  (derive "current version" via `MAX(version) WHERE itinerary_id = ...`
+  on every read): rejected — the optimistic-locking check
+  (`expected_version` vs current) is on the hot path of every replan
+  request; a denormalized counter column avoids an extra query there and
+  matches how `Itinerary.status` already denormalizes "current state."
+
+**Consequences**:
+- `(itinerary_id, idempotency_key)` carries a unique constraint on
+  `ItineraryRevision` — SQLite/Postgres both treat multiple NULL values
+  in a unique constraint as distinct, so non-idempotent replans (no key
+  supplied) never collide with each other.
+- Migration `04763f8eec67` (head was `8a004268dcb0`) adds explicit
+  `server_default` values for every new NOT NULL column so it applies
+  cleanly to the already-seeded 353-experience/multi-itinerary dataset,
+  not just an empty database — verified via upgrade→downgrade→upgrade
+  against a fresh SQLite DB plus a full seed run in this worktree.
+
+---
+
+## ADR-052: SSE (Not WebSocket) for Live Itinerary Updates, In-Process Pub/Sub Bus — Single-Process Limitation Documented, Not Solved
+
+**Decision**: `GET /api/v1/itineraries/{id}/updates` is a Server-Sent
+Events stream (`src/services/sse.py`), not a WebSocket — this codebase
+has no existing WebSocket infrastructure anywhere (confirmed by
+inspection), and the data flow is one-directional (backend → client)
+plus occasional manual REST calls for anything the client needs to send,
+which SSE's simpler request/response-shaped model fits without adding a
+new bidirectional protocol stack for a single new feature. The event bus
+is an in-process `dict[itinerary_id, list[asyncio.Queue]]` — genuinely
+single-process, matching how this app currently runs
+(`scripts/dev.ps1`/`dev.sh` launch one uvicorn process; nothing in this
+repo evidences a multi-worker production deployment).
+
+**Why**: Matches the phase brief's own instruction to confirm no existing
+WebSocket infra and "proceed with SSE per the spec regardless." Building
+a distributed pub/sub layer (Redis, etc.) for a feature with no
+multi-worker deployment target anywhere in this codebase would be
+over-engineering relative to what Phase 9 actually needs to demonstrate;
+the limitation is instead explicitly documented (`ContextMonitor`'s
+docstring, docs/PROJECT_STATE.md) rather than silently ignored or
+half-solved.
+
+**Alternatives Considered**:
+- WebSocket with a custom message envelope: rejected per the brief;
+  would also require new client-side connection-lifecycle code with no
+  corresponding server-side benefit given the one-directional event
+  shape.
+- A Redis-backed pub/sub bus from the start: rejected as premature —
+  this repo has no Redis dependency anywhere else (ADR-022's cache is
+  explicitly "prototype-grade, single-process"); adding one just for SSE
+  fan-out, with no second process to fan out to, would be unused
+  complexity.
+
+**Consequences**:
+- A second uvicorn worker/process would not receive events published in
+  another process — explicitly out of scope, documented as a known
+  limitation rather than fixed here.
+- The frontend SSE client (`apps/web/lib/api/itineraryUpdates.ts`) uses
+  `fetch()`+`ReadableStream` rather than the browser `EventSource` API,
+  because `EventSource` cannot send a custom `Authorization` header and
+  this endpoint is `require_traveler`-gated like every other authenticated
+  route — a deliberate, documented deviation from the "usual" SSE client
+  API, not an oversight.
+
+---
+
+## ADR-053: `replan_experience` Never Directly Mutates — Delegates Entirely to `ReplanningService`, the Same Path as the Manual REST Endpoint
+
+**Decision**: The fourth Gemini tool, `replan_experience`
+(`src/services/ai_tools.py::execute_replan_experience`), accepts only
+`itinerary_id`, an optional `affected_experience_id` hint, a free-text
+`requested_change`, and optional time/budget/party-size hints — never
+`traveler_id` (server-derived from the authenticated conversation, exactly
+like `compose_experience`) and never a final itinerary state or booking
+confirmation. It constructs a `USER_REQUESTED`-trigger
+`ContextImpactResult` and calls `ReplanningService.replan_itinerary()` —
+the identical call the manual `POST /itineraries/{id}/replan` REST
+endpoint makes; there is exactly one replanning code path, never a
+Gemini-specific shortcut.
+
+**Why**: Direct continuation of the Phase 6 (`check_feasibility`) and
+Phase 8 (`compose_experience`) precedent — every Gemini tool is a thin,
+argument-validated bridge to a deterministic backend service Gemini never
+gets to bypass or duplicate. Routing through `ReplanningService` means
+every invariant that service already enforces (locked-item protection,
+completed-item immutability, full re-validation, revision history) applies
+identically whether the replan was requested via REST or voice — no
+second, weaker enforcement path for the voice channel.
+
+**Alternatives Considered**:
+- Let Gemini directly propose specific replacement experience ids to
+  swap in: rejected — the brief is explicit that Gemini "never decides
+  ... whether to remove an experience"; `affected_experience_id` is
+  accepted only as a hint that is never trusted to bypass Phase 6
+  feasibility/Phase 7 ranking/Phase 8 composition.
+- A separate `GeminiReplanningService` tuned for conversational context:
+  rejected outright per the phase brief's explicit "never create a
+  DynamicRanker/ReplanningRanker" instruction (generalized here to never
+  creating a second replanning entry point of any kind).
+
+**Consequences**:
+- `tests/test_replan_experience_tool.py` includes a static-source check
+  (`execute_replan_experience`'s source must reference
+  `ReplanningService.replan_itinerary` and must never call
+  `session.add(ItineraryItem(...))` directly) as a structural regression
+  guard against a future edit accidentally adding a direct-mutation
+  shortcut.
+- The Live voice system instruction (`src/adapters/ai.py`) was updated to
+  list `replan_experience` as the fourth and final allowed tool, with
+  explicit language that Gemini must report `REPLAN_FAILED`/
+  `REQUIRES_USER_ACTION` honestly rather than claiming success.

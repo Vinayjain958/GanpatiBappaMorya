@@ -32,8 +32,14 @@ class FakeAsyncClient:
     responder: Callable[..., httpx.Response]
     calls: list[dict] = field(default_factory=list)
 
-    async def get(self, url: str, params: dict | None = None, headers: dict | None = None) -> httpx.Response:
-        self.calls.append({"method": "GET", "url": url, "params": params, "headers": headers})
+    async def get(
+        self,
+        url: str,
+        params: dict | None = None,
+        headers: dict | None = None,
+        timeout: object | None = None,
+    ) -> httpx.Response:
+        self.calls.append({"method": "GET", "url": url, "params": params, "headers": headers, "timeout": timeout})
         return self.responder(method="GET", url=url, params=params, headers=headers)
 
     async def post(self, url: str, data: dict | None = None) -> httpx.Response:

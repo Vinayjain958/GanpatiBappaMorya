@@ -71,6 +71,20 @@ class Itinerary(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     generated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    # ─── Phase 9: versioning, replanning, context freshness ──────────────
+    # `version` is the optimistic-locking counter: every successful
+    # replan increments it by exactly 1 and records an ItineraryRevision
+    # (src/models/itinerary_revision.py). Manual/automatic replan requests
+    # must supply `expected_version`; a mismatch is a 409
+    # ITINERARY_VERSION_CONFLICT (see src/services/replanning.py) —
+    # never a silent overwrite of a concurrently-updated itinerary.
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    current_revision_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    replanning_status: Mapped[str] = mapped_column(
+        String(30), default="STABLE", nullable=False
+    )  # STABLE | REPLANNING | REQUIRES_USER_ACTION
+    context_last_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
     traveler: Mapped[Traveler] = relationship()
     items: Mapped[list[ItineraryItem]] = relationship(
         back_populates="itinerary",

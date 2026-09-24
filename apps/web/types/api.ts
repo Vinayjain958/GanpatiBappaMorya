@@ -356,6 +356,10 @@ export interface ApiItineraryItem {
   location_place_name: string | null;
   location_latitude: number | null;
   location_longitude: number | null;
+  /** Phase 9 — never auto-replaced by the replanner when true. */
+  is_locked: boolean;
+  /** Phase 9 — ACTIVE | AFFECTED | INVALIDATED | CANCELLED. */
+  item_state: string;
 }
 
 export interface ApiItinerary {
@@ -380,6 +384,12 @@ export interface ApiItinerary {
   created_at: string;
   updated_at: string;
   items: ApiItineraryItem[];
+  /** Phase 9 — optimistic-locking counter; supply as expected_version on replan. */
+  version: number;
+  /** Phase 9 — STABLE | REPLANNING | REQUIRES_USER_ACTION. */
+  replanning_status: string;
+  /** Phase 9 — last time context (weather/events) was checked for this itinerary. */
+  context_last_updated_at: string | null;
 }
 
 export interface ItineraryListResponse {
@@ -451,5 +461,113 @@ export interface BookingRequestListResponse {
 export interface BookingStatusUpdate {
   status: "ACCEPTED" | "DECLINED";
   provider_note?: string | null;
+}
+
+// ─── Phase 9: real-time context + dynamic replanning ──────────────────────
+
+export type ReplanTrigger =
+  | "USER_REQUESTED"
+  | "TIME_CHANGED"
+  | "BUDGET_CHANGED"
+  | "PARTY_SIZE_CHANGED"
+  | "WEATHER_CHANGED"
+  | "EVENT_CANCELLED"
+  | "EVENT_RESCHEDULED"
+  | "EVENT_VENUE_CHANGED"
+  | "AVAILABILITY_CHANGED";
+
+export type ReplanStatus = "NO_CHANGE" | "REPLANNED" | "REPLAN_FAILED" | "REQUIRES_USER_ACTION" | "CONFLICT";
+
+export interface ReplanRequest {
+  expected_version?: number | null;
+  idempotency_key?: string | null;
+  reason?: string | null;
+  trigger?: ReplanTrigger;
+  new_start_time?: string | null;
+  new_end_time?: string | null;
+  new_max_budget?: number | null;
+  new_party_size?: number | null;
+}
+
+export interface ReplanChangeSet {
+  added_items: string[];
+  removed_items: string[];
+  moved_items: string[];
+  unchanged_items: string[];
+  affected_items: string[];
+}
+
+export interface ReplanResponse {
+  status: ReplanStatus;
+  itinerary_id: string | null;
+  previous_version: number | null;
+  new_version: number | null;
+  trigger: string | null;
+  changes: ReplanChangeSet;
+  context_summary: string;
+  validation_issues: string[];
+  reason_code: string | null;
+  message: string | null;
+  generated_at: string | null;
+}
+
+export type ContextStatus = "LIVE" | "CACHED" | "STALE" | "UNAVAILABLE" | "MOCK";
+
+export interface WeatherContextResponse {
+  latitude: number;
+  longitude: number;
+  observed_at: string | null;
+  temperature_c: number | null;
+  feels_like_c: number | null;
+  humidity: number | null;
+  wind_speed: number | null;
+  precipitation_probability: number | null;
+  precipitation_amount: number | null;
+  condition: string | null;
+  visibility_km: number | null;
+  severe_alert: boolean;
+  context_status: ContextStatus;
+  last_updated_at: string;
+  expires_at: string;
+}
+
+export type EventStatus = "SCHEDULED" | "RESCHEDULED" | "CANCELLED" | "POSTPONED" | "UNKNOWN";
+
+export interface EventResponse {
+  id: string;
+  source: string;
+  name: string;
+  description: string | null;
+  starts_at: string | null;
+  ends_at: string | null;
+  status: EventStatus;
+  venue_name: string | null;
+  venue_address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  category: string | null;
+  image_url: string | null;
+  purchase_url: string | null;
+  is_synthetic: boolean;
+  fetched_at: string;
+}
+
+/** Normalized SSE event types the backend publishes on
+ * /api/v1/itineraries/{id}/updates. The frontend only ever renders these
+ * — it never computes replanning, weather impact, or reordering itself. */
+export type ItineraryUpdateEventType =
+  | "connected"
+  | "context_update"
+  | "replan_started"
+  | "replan_completed"
+  | "replan_failed"
+  | "requires_action"
+  | "booking_status_update"
+  | "heartbeat";
+
+export interface ItineraryUpdateEvent {
+  type: ItineraryUpdateEventType;
+  id: number;
+  data: Record<string, unknown>;
 }
 

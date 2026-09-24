@@ -398,16 +398,69 @@
   Phase 7 ranked candidate set — this is by design, not a bug, but is worth flagging as a narrower
   code path than the composer's main flow.
 
+### Phase 9 — Real-Time Context + Events + Dynamic Replanning — Complete
+
+Real-time weather/event context, deterministic impact detection, dynamic itinerary replanning, and
+live SSE update delivery, built on top of the Phase 6/7/8 pipeline without duplicating any of it.
+
+- `src/adapters/weather.py` — `OpenWeatherAdapter` (real, OpenWeather Current Weather Data + 5-Day
+  Forecast REST endpoints), `MockWeatherAdapter` fallback. Shared httpx client, `IntervalRateLimiter`,
+  `TTLCache`, typed errors — same pattern as OSRM/Nominatim. `WeatherContext` normalized shape;
+  LIVE/CACHED/MOCK/UNAVAILABLE explicit. **NOT VERIFIED against the live OpenWeather API** — no
+  `OPENWEATHER_API_KEY` in this worktree; verified via `tests/test_weather_adapter.py` (fake HTTP
+  client, 11 tests: normalization, malformed response, timeout/401/403/429/5xx, cache, mock fallback).
+- `src/adapters/events.py` — `TicketmasterEventAdapter` (real, Ticketmaster Discovery API v2),
+  `SeedEventAdapter` fallback (always `is_synthetic=true`, `source="seed"`, never fabricates a live
+  event). `ExternalEventStatus` normalized strictly from `dates.status.code` — never inferred from
+  missing data. **NOT VERIFIED against the live Ticketmaster API** — no `TICKETMASTER_API_KEY` in
+  this worktree; verified via `tests/test_event_adapter.py` (13 tests).
+- `src/services/weather_impact.py` — `WeatherImpactService`, deterministic
+  WEATHER_GOOD/CAUTION/UNSUITABLE/UNKNOWN verdicts from `Experience.environmental_type` /
+  `weather_sensitivity` / `weather_policy` (new, backward-compatible, default-UNKNOWN columns) +
+  forecast + configurable thresholds (`Settings.weather_*_threshold*`).
+- `src/services/context_impact.py` — `ContextImpactService`, compares previous vs new weather/event
+  context against remaining itinerary items; NONE/LOW/MEDIUM/HIGH/CRITICAL/UNKNOWN severity with
+  hysteresis (only a strictly-worse verdict than last-known triggers impact, so GOOD→CAUTION→GOOD does
+  not flap). Never itself reorders anything — advisory only.
+- `src/services/replanning.py` — `ReplanningService.replan_itinerary()`, the exact 13-step algorithm
+  from the Phase 9 spec: preserves completed/in-progress/locked-future items, runs exactly one fresh
+  Phase 6 retrieval+feasibility / Phase 7 ranking / Phase 8 composition pass for the remaining segment,
+  full re-validation via the existing `ItineraryValidatorService`, versioned revision on success. Never
+  a second ranking engine or discovery pipeline.
+- `src/models/itinerary_revision.py`, `src/models/context_snapshot.py` — new tables (migration
+  `04763f8eec67`, head was `8a004268dcb0`). `Itinerary` extended with `version` /
+  `current_revision_id` / `replanning_status` / `context_last_updated_at`; `ItineraryItem` extended
+  with `is_locked` / `item_state`. `Experience` extended with `environmental_type` /
+  `weather_sensitivity` / `weather_policy` (all default UNKNOWN/NONE — never invented for existing
+  rows).
+- `POST /api/v1/itineraries/{id}/replan` (manual, traveler-only, `expected_version` optimistic lock →
+  409 `ITINERARY_VERSION_CONFLICT` on mismatch, `idempotency_key` → no duplicate revision),
+  `GET /api/v1/itineraries/{id}/updates` (SSE, require_traveler + ownership-checked, 404 on
+  wrong-owner — never-disclose-existence), `GET /api/v1/context/weather`,
+  `GET /api/v1/context/events` (read-only, authenticated, normalized data only).
+- `src/services/ai_tools.py` — fourth and final Phase 9 Gemini tool, `replan_experience`
+  (`REPLAN_EXPERIENCE_DECLARATION` + `execute_replan_experience`), registered in `src/core/ai.py`'s
+  tool list and the Live system instruction (`src/adapters/ai.py`). Never accepts traveler_id; never
+  mutates the itinerary directly — only calls `ReplanningService`.
+- `src/services/context_monitor.py` — `ContextMonitor`, one shared instance per process (in-process
+  double-start guard), injectable clock, polling interval scales with proximity to itinerary start
+  time. **Known limitation, explicitly documented, not solved**: this is single-process only — no
+  distributed lock/leader-election, matching the current single-uvicorn-process architecture
+  (`scripts/dev.ps1`/`dev.sh`); a future multi-worker production deployment would need one.
+- `apps/web/lib/api/itineraryUpdates.ts` + `apps/web/hooks/useItineraryUpdates.ts` — SSE client (raw
+  fetch+ReadableStream, not `EventSource`, because the endpoint needs a Bearer header `EventSource`
+  cannot send) with capped-exponential-backoff reconnect. `RealItineraryTimeline.tsx` extended with a
+  live-plan badge, last-updated time, replan-in-progress/requires-action states, and a "what changed"
+  summary — the frontend never computes weather impact, event conflicts, or reordering itself.
+- Backend: 360/360 tests pass (298 pre-Phase-9 baseline + 62 new). Frontend: 56/56 vitest tests pass,
+  `tsc --noEmit` clean, `next build` succeeds, ESLint clean.
+- Migration `04763f8eec67` verified upgrade→downgrade→upgrade against a fresh SQLite DB in this
+  worktree, plus a full `scripts/seed.py` run against the migrated schema. **PostgreSQL explicitly NOT
+  VERIFIED** — no Postgres instance in this isolated worktree (same honesty convention as Phase 6/7/8).
+
 ---
 
 ## Planned
-
-### Phase 9 — Real-Time Context + Events + Dynamic Replanning
-- Weather adapter (OpenWeather)
-- Event adapter (Ticketmaster / seed)
-- Real-time context update events
-- Dynamic Replanning Engine
-- WebSocket or SSE for live plan updates
 
 ### Phase 10 — Provider Intelligence & Two-Sided Marketplace
 - Provider analytics dashboard
@@ -439,9 +492,15 @@
 - Real-time GPS turn-by-turn navigation (route preview only)
 - Discover page UI wiring for the semantic-search pipeline endpoint (types/API client/display
   logic exist and are tested; the page itself doesn't call it yet — see Partial above)
-- Weather/events-aware replanning, live plan updates over WebSocket/SSE (explicitly Phase 9 scope;
-  `OPENWEATHER_API_KEY`/`TICKETMASTER_API_KEY` exist in `.env` but were deliberately not used in
-  Phase 8)
+- Live (network) OpenWeather/Ticketmaster API calls — Phase 9 adapters are real implementations but
+  were only verified against a fake HTTP client in this isolated worktree (no API keys available here)
+  — see Phase 9 section above.
+- Multi-worker/multi-process `ContextMonitor` coordination (distributed lock/leader election) — this
+  codebase runs single-process; documented as a limitation, not implemented, since nothing in this
+  repo currently needs it.
+- SSE event replay on reconnect — a reconnecting client gets a fresh `connected` event and new events
+  going forward, but this in-process pub/sub bus keeps no backlog buffer for events published while
+  disconnected (single-process, hackathon-scope limitation).
 
 ---
 
@@ -457,12 +516,7 @@
 
 ## Current Next Milestone
 
-**Phase 9 — Real-Time Context + Events + Dynamic Replanning**
+**Phase 10 — Provider Intelligence & Two-Sided Marketplace**
 
-Phase 8 (deterministic itinerary composition with Gemini narrative generation) is Complete — see
-above. Phase 9 deliverables (not yet started):
-- Weather adapter (OpenWeather)
-- Event adapter (Ticketmaster / seed)
-- Real-time context update events
-- Dynamic Replanning Engine
-- WebSocket or SSE for live plan updates
+Phase 9 (real-time context + events + dynamic replanning) is Complete — see above. Phase 10 has not
+started.

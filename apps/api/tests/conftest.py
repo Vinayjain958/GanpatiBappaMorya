@@ -17,7 +17,8 @@ from src.core.app import create_app
 from src.core.db import Base, get_session
 from src.core.embedding import get_embedding_adapter
 from src.core.location import get_geocoding_adapter, get_poi_adapter, get_routing_adapter
-from src.models import Experience, ExperienceCategory, Location, Provider
+from src.models import Experience, ExperienceCategory, ExperienceEmbedding, Location, Provider
+from src.services.embedding_text import build_experience_document_text
 
 # Tests never hit real Nominatim/OSRM/Overpass/Gemini — dependency-override
 # with mocks by default (real-adapter behavior is covered by
@@ -220,6 +221,24 @@ def discovery_dataset(session_factory) -> dict[str, str]:
                 ),
             ]
             session.add_all(experiences)
+            await session.flush()
+
+            # Phase 6 semantic retrieval requires an ExperienceEmbedding row
+            # per experience to be a candidate at all (see
+            # SemanticRetrievalService._sqlite_python_search) — seed
+            # deterministic mock embeddings so conversation/discovery tests
+            # that go through the real semantic path (not the keyword
+            # fallback) actually see these experiences as candidates.
+            embed_adapter = MockEmbeddingAdapter()
+            for exp in experiences:
+                doc = build_experience_document_text(exp)
+                vector = await embed_adapter.embed_document(doc.title, doc.text)
+                session.add(
+                    ExperienceEmbedding(
+                        experience_id=exp.id, embedding=vector, embedding_model="mock",
+                        embedding_dimensions=len(vector), source_content_hash=doc.content_hash,
+                    )
+                )
             await session.commit()
 
             return {

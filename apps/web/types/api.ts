@@ -307,3 +307,149 @@ export interface TravelerPreferenceResponse extends UpdatePreferenceRequest {
   traveler_id: string;
 }
 
+/** Phase 8 — itinerary composition + booking. Mirrors
+ * apps/api/src/schemas/itinerary.py and src/schemas/booking.py. */
+
+export type ItineraryStatus = "DRAFT" | "VALIDATED" | "BOOKING_REQUESTED" | "COMPLETED" | "CANCELLED";
+export type ItinerarySource = "COMPOSER" | "MANUAL";
+export type CompositionPace = "relaxed" | "balanced" | "packed";
+export type TravelMode = "driving" | "walking" | "cycling";
+
+export interface ComposeItineraryRequest {
+  query?: string | null;
+  interests?: string[];
+  category_slugs?: string[];
+  itinerary_date: string; // YYYY-MM-DD
+  start_time: string; // HH:MM:SS
+  end_time: string; // HH:MM:SS
+  max_experiences?: number | null;
+  max_budget?: number | null;
+  pace?: CompositionPace;
+  origin_lat?: number | null;
+  origin_lng?: number | null;
+  travel_mode?: TravelMode;
+  party_size?: number | null;
+  accessibility_requirements?: string[];
+  city?: string | null;
+  locality?: string | null;
+}
+
+export interface ApiItineraryItem {
+  id: string;
+  experience_id: string;
+  sequence_order: number;
+  planned_start: string;
+  planned_end: string;
+  duration_minutes: number;
+  travel_from_previous_minutes: number | null;
+  travel_from_previous_distance_km: number | null;
+  travel_mode: string | null;
+  buffer_before_minutes: number;
+  buffer_after_minutes: number;
+  estimated_cost: number | null;
+  source_rank_position: number | null;
+  source_ranking_score: number | null;
+  narrative_text: string | null;
+  title: string | null;
+  short_description: string | null;
+  category_name: string | null;
+  location_place_name: string | null;
+  location_latitude: number | null;
+  location_longitude: number | null;
+}
+
+export interface ApiItinerary {
+  id: string;
+  traveler_id: string;
+  title: string;
+  itinerary_date: string;
+  start_time: string;
+  end_time: string;
+  status: ItineraryStatus;
+  source: ItinerarySource;
+  total_duration_minutes: number | null;
+  total_travel_minutes: number | null;
+  estimated_total_cost: number | null;
+  currency: string;
+  narrative_title: string | null;
+  narrative_summary: string | null;
+  narrative_closing_message: string | null;
+  ranking_model_version: string | null;
+  narrative_model_version: string | null;
+  generated_at: string | null;
+  created_at: string;
+  updated_at: string;
+  items: ApiItineraryItem[];
+}
+
+export interface ItineraryListResponse {
+  items: ApiItinerary[];
+  total: number;
+}
+
+export interface CompositionValidationIssue {
+  code: string;
+  constraint: string;
+  message: string;
+  evidence: Record<string, unknown>;
+}
+
+export interface CompositionValidationResponse {
+  valid: false;
+  reason_code: string;
+  message: string;
+  issues: CompositionValidationIssue[];
+  candidate_count: number;
+  feasible_count: number;
+}
+
+export type ComposeItineraryResult = ApiItinerary | CompositionValidationResponse;
+
+export function isCompositionFailure(result: ComposeItineraryResult): result is CompositionValidationResponse {
+  return (result as CompositionValidationResponse).valid === false;
+}
+
+export interface AddItineraryItemRequest {
+  experience_id: string;
+  planned_start?: string | null;
+  travel_mode?: TravelMode;
+}
+
+export type BookingStatus = "REQUESTED" | "ACCEPTED" | "DECLINED" | "CANCELLED" | "EXPIRED";
+
+export interface BookingRequestCreate {
+  itinerary_item_id: string;
+  party_size?: number;
+  traveler_note?: string | null;
+}
+
+export interface ApiBookingRequest {
+  id: string;
+  traveler_id: string;
+  itinerary_id: string;
+  itinerary_item_id: string;
+  experience_id: string;
+  provider_id: string;
+  requested_start: string;
+  requested_end: string;
+  party_size: number;
+  traveler_note: string | null;
+  status: BookingStatus;
+  requested_at: string;
+  responded_at: string | null;
+  provider_note: string | null;
+  created_at: string;
+  updated_at: string;
+  experience_title: string | null;
+}
+
+export interface BookingRequestListResponse {
+  items: ApiBookingRequest[];
+  total: number;
+}
+
+export interface BookingStatusUpdate {
+  status: "ACCEPTED" | "DECLINED";
+  provider_note?: string | null;
+}
+

@@ -187,17 +187,21 @@ registered accounts' data. See docs/DECISIONS.md ADR-021.
 ### INV-14: The LLM never invents catalog facts or fabricates a booking
 Gemini (text or Live) must never invent an experience name, price,
 rating, duration, opening hours, availability, or travel time — every
-fact it discusses must come from a real `search_experiences` result.
-"Book this" requests are explicitly declined, never faked. See
-docs/DECISIONS.md ADR-035.
+fact it discusses must come from a real `search_experiences` result (or,
+as of Phase 8, a real `check_feasibility`/`compose_experience` result).
+Gemini can trigger a real `compose_experience` booking-adjacent itinerary
+(Phase 8), but it never confirms a booking itself — booking state is
+always REQUESTED/ACCEPTED/DECLINED as returned by the backend, never a
+free-form claim. See docs/DECISIONS.md ADR-035, ADR-046, ADR-047.
 
-### INV-15: search_experiences is the only Gemini tool, and only the
-backend executes it
+### INV-15: search_experiences/check_feasibility/compose_experience are
+the only Gemini tools, and only the backend executes them
 The browser is a transport/UI layer for Gemini Live — it forwards a
 `tool_call` verbatim to `POST /conversations/{id}/tool-calls` and relays
 the real result back via `sendToolResponse`. It never implements
-discovery logic itself, and no tool name other than `search_experiences`
-is ever accepted. See docs/DECISIONS.md ADR-035/ADR-036.
+discovery/feasibility/composition logic itself, and no tool name outside
+this three-tool allowlist is ever accepted. See docs/DECISIONS.md
+ADR-035/ADR-036/ADR-044/ADR-048.
 
 ### INV-16: GEMINI_API_KEY is backend-only; only ephemeral tokens reach
 the browser
@@ -454,18 +458,32 @@ tools are implemented and registered in the Live session config
   `Experience` row from the database, so a fabricated fact in the model's
   tool call is structurally impossible to inject, not merely discouraged.
 
-Any tool name other than `search_experiences`/`check_feasibility` is
-rejected (422) by that endpoint — the model can never trigger arbitrary
-application behavior. The Live system instruction (locked into the
-ephemeral token's `live_connect_constraints`) explicitly restricts the
-model to these two tools and forbids phrasing an UNKNOWN feasibility
-verdict as reassuring.
+Any tool name other than `search_experiences`/`check_feasibility`/
+`compose_experience` is rejected (422) by that endpoint — the model can
+never trigger arbitrary application behavior. The Live system
+instruction (locked into the ephemeral token's `live_connect_constraints`)
+explicitly restricts the model to these three tools and forbids phrasing
+an UNKNOWN feasibility verdict as reassuring or a REQUESTED booking as
+confirmed.
+
+`compose_experience` (Phase 8, `src/services/ai_tools.py`) composes a
+chronological, travel-aware itinerary from experiences
+`search_experiences` already returned in the same conversation — it
+validates every `experience_id` Gemini supplies against
+`ConversationSession.last_search_candidates` (never trusting a raw id
+blindly) and triggers at most one fresh Phase 6+7 pipeline pass when no
+candidate context yet exists (never a redundant second pass otherwise).
+It never confirms a booking; booking state is always the real backend
+`BookingRequest.status`.
 
 Later-phase tools remain explicitly NOT implemented — do not add them
 before their owning phase:
-- `get_weather` (Phase 9), `get_events` (Phase 9)
-- `compose_experience` (Phase 8), `replan_experience` (Phase 9)
-- `save_experience`, `create_booking_request` (Phase 8)
+- `get_weather` (Phase 9), `get_events` (Phase 9), `replan_experience` (Phase 9)
+- `save_experience`, `create_booking_request` as standalone Gemini tools were
+  considered for Phase 8 but not implemented — saving is automatic on a
+  successful `compose_experience`/`POST /itineraries/compose`, and
+  booking-request creation is a direct API call rather than a
+  conversational tool in Phase 8
 
-See docs/DECISIONS.md ADR-035/ADR-036/ADR-037/ADR-044 for the full
-architecture and security rationale.
+See docs/DECISIONS.md ADR-035/ADR-036/ADR-037/ADR-044/ADR-045/ADR-046/
+ADR-047/ADR-048 for the full architecture and security rationale.

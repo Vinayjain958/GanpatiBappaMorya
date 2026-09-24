@@ -272,22 +272,23 @@
 
 ---
 
-## P8 — AI Experience Composer + Itinerary + Booking
+## P8 — Deterministic Itinerary Composition with Gemini Narrative Generation ✅ Complete
 
 > **Target**: Valid time-ordered itinerary narrative produced from traveler context.
 
-- [ ] Composition algorithm (select + order + time-allocate)
-- [ ] `Itinerary` model
-- [ ] `ItineraryItem` model (experience, time_start, time_end, travel_gap)
-- [ ] Gemini narrative composer (post-feasibility only)
-- [ ] Post-composition feasibility re-validation
-- [ ] `POST /itineraries` (save itinerary)
-- [ ] `GET /itineraries/{id}`
-- [ ] Booking request model + `POST /booking-requests`
-- [ ] Tool: `compose_experience`
-- [ ] Tool: `save_experience`
-- [ ] Tool: `create_booking_request`
-- [ ] Itinerary view UI (frontend)
+- [x] Composition algorithm (select + order + time-allocate) — `ExperienceComposerService`
+- [x] `Itinerary` model
+- [x] `ItineraryItem` model (experience, time_start, time_end, travel_gap)
+- [x] Gemini narrative composer (post-feasibility only) — `ItineraryNarratorService`
+- [x] Post-composition feasibility re-validation — `ItineraryValidatorService`
+- [x] `POST /api/v1/itineraries/compose` (compose + save)
+- [x] `GET /api/v1/itineraries`, `GET /api/v1/itineraries/{id}`
+- [x] Booking request model + `POST /api/v1/itineraries/{itinerary_id}/booking-requests`
+- [x] Tool: `compose_experience`
+- [ ] Tool: `save_experience` (not in Phase 8 scope — itineraries are auto-saved on successful compose)
+- [ ] Tool: `create_booking_request` (booking is a direct API call, not exposed as a separate Gemini tool in Phase 8)
+- [x] Itinerary view UI (frontend) — `ItineraryComposerForm`, `RealItineraryTimeline`, `BookingRequestButton`
+  wired into `/trip`; real Gemini narrative generation not live-verified (see PROJECT_STATE.md Partial)
 
 ---
 

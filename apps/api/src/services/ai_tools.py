@@ -25,6 +25,8 @@ reads them from the loaded Experience row.
 
 from __future__ import annotations
 
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.adapters.routing import RoutingAdapter
@@ -32,9 +34,17 @@ from src.core.category_map import CATEGORY_SLUGS
 from src.core.config import Settings
 from src.core.errors import ApiError
 from src.repositories.experience_repository import ExperienceRepository
-from src.schemas.conversation import CheckFeasibilityArgs, SearchExperiencesArgs, SearchExperiencesResult
+from src.schemas.conversation import (
+    CheckFeasibilityArgs,
+    ComposeExperienceArgs,
+    SearchExperiencesArgs,
+    SearchExperiencesResult,
+    TravelerContext,
+)
 from src.schemas.experience import ExperienceSummary
 from src.schemas.feasibility import FeasibilityVerdict, TravelerConstraints
+from src.schemas.itinerary import ComposeItineraryRequest, ItineraryResponse
+from src.schemas.ranking import RankedExperienceItem
 from src.services.discovery_pipeline import DiscoveryPipelineService
 from src.services.feasibility import FeasibilityService
 
@@ -69,34 +79,61 @@ SEARCH_EXPERIENCES_DECLARATION: dict[str, object] = {
 
 
 async def execute_search_experiences(
-    session: AsyncSession, 
-    settings: Settings, 
+    session: AsyncSession,
+    settings: Settings,
     args: SearchExperiencesArgs,
     traveler_id: str | None = None,
     context: TravelerContext | None = None,
     routing_adapter: RoutingAdapter | None = None,
     embedding_adapter: Any | None = None,
 ) -> SearchExperiencesResult:
+    result, _ranked = await execute_search_experiences_with_candidates(
+        session, settings, args,
+        traveler_id=traveler_id, context=context,
+        routing_adapter=routing_adapter, embedding_adapter=embedding_adapter,
+    )
+    return result
+
+
+async def execute_search_experiences_with_candidates(
+    session: AsyncSession,
+    settings: Settings,
+    args: SearchExperiencesArgs,
+    traveler_id: str | None = None,
+    context: TravelerContext | None = None,
+    routing_adapter: RoutingAdapter | None = None,
+    embedding_adapter: Any | None = None,
+) -> tuple[SearchExperiencesResult, list[RankedExperienceItem] | None]:
+    """Same execution as execute_search_experiences, but also returns the
+    ranked FEASIBLE candidate list (None for anonymous callers, who never
+    get ranking) — used by the conversation route to persist the
+    compose_experience candidate context (ConversationSession.
+    last_search_candidates). Both functions run the pipeline exactly once;
+    execute_search_experiences is a thin wrapper over this one so there is
+    only ever one real execution path."""
     category_slug = args.category_slug if args.category_slug in CATEGORY_SLUGS else None
 
-    # Fallbacks in case adapters aren't injected here yet
+    # Fallbacks in case adapters aren't injected here yet. Both provider
+    # functions are process-wide lru_cache singletons that read settings
+    # via get_settings() internally — they take no arguments.
     if not routing_adapter:
         from src.core.location import get_routing_adapter
-        routing_adapter = get_routing_adapter(settings)
-        
+        routing_adapter = get_routing_adapter()
+
     if not embedding_adapter:
         from src.core.embedding import get_embedding_adapter
-        embedding_adapter = get_embedding_adapter(settings)
+        embedding_adapter = get_embedding_adapter()
 
     pipeline = DiscoveryPipelineService(session, settings, embedding_adapter, routing_adapter)
-    
+
     constraints = TravelerConstraints(
         budget_max=args.max_price,
         budget_min=args.min_price,
     )
     if args.max_duration_minutes:
         constraints.available_duration_minutes = args.max_duration_minutes
-        
+
+    ranked_items: list[RankedExperienceItem] | None = None
     if traveler_id:
         result, ranked_items = await pipeline.run_with_ranking(
             traveler_id=traveler_id,
@@ -123,7 +160,8 @@ async def execute_search_experiences(
         summaries = [ExperienceSummary.model_validate(item.experience) for item in result.items]
         total = result.candidate_count
 
-    return SearchExperiencesResult(items=summaries, total=total, truncated=total > len(summaries))
+    search_result = SearchExperiencesResult(items=summaries, total=total, truncated=total > len(summaries))
+    return search_result, ranked_items
 
 
 CHECK_FEASIBILITY_DECLARATION: dict[str, object] = {
@@ -186,9 +224,123 @@ async def execute_check_feasibility(
     return await service.evaluate(experience, constraints, travel_profile=settings.osrm_profile)
 
 
+COMPOSE_EXPERIENCE_DECLARATION: dict[str, object] = {
+    "name": "compose_experience",
+    "description": (
+        "Compose a chronological, travel-aware itinerary from experiences "
+        "already returned by search_experiences in this conversation. "
+        "Never call this with an experience_id that search_experiences did "
+        "not just return. This tool deterministically decides ordering, "
+        "timing, travel gaps, and feasibility — you (the model) never "
+        "invent or override any of that; only narrate the validated result "
+        "it returns. If composition fails, tell the traveler honestly "
+        "that no valid plan could be built for their constraints — never "
+        "present a partial or guessed itinerary as final."
+    ),
+    "parameters": {
+        "type": "OBJECT",
+        "properties": {
+            "experience_ids": {
+                "type": "ARRAY",
+                "items": {"type": "STRING"},
+                "description": "Experience ids from the most recent search_experiences result to consider.",
+            },
+            "itinerary_date": {"type": "STRING", "description": "YYYY-MM-DD"},
+            "start_time": {"type": "STRING", "description": "HH:MM, 24-hour"},
+            "end_time": {"type": "STRING", "description": "HH:MM, 24-hour"},
+            "max_experiences": {"type": "INTEGER"},
+            "max_budget": {"type": "NUMBER"},
+            "pace": {"type": "STRING", "enum": ["relaxed", "balanced", "packed"]},
+            "must_include_ids": {"type": "ARRAY", "items": {"type": "STRING"}},
+            "exclude_ids": {"type": "ARRAY", "items": {"type": "STRING"}},
+        },
+        "required": ["itinerary_date", "start_time", "end_time"],
+    },
+}
+
+
+async def execute_compose_experience(
+    session: AsyncSession,
+    settings: Settings,
+    routing_adapter: RoutingAdapter,
+    embedding_adapter: Any,
+    ai_adapter: Any,
+    args: ComposeExperienceArgs,
+    traveler_id: str,
+    candidate_context: list[dict[str, object]] | None,
+) -> ItineraryResponse | dict[str, object]:
+    """The ONLY implementation of the compose_experience tool.
+
+    traveler_id is always server-derived by the caller (conversation.py)
+    — never accepted as a tool argument. experience_ids Gemini supplies
+    are validated against `candidate_context`
+    (ConversationSession.last_search_candidates, populated by the most
+    recent search_experiences call in this conversation) — an id not
+    present there is silently dropped, never trusted blindly. If no
+    candidate context exists yet, this function runs exactly one fresh
+    Phase 6+7 pipeline pass (never a redundant second pass when a context
+    already exists).
+    """
+    from src.services.compose_itinerary import compose_and_persist_itinerary
+
+    ranked_candidates: list[RankedExperienceItem] | None = None
+    if candidate_context:
+        allowed_ids = set(args.experience_ids) or None
+        ranked_candidates = [
+            RankedExperienceItem.model_validate(c)
+            for c in candidate_context
+            if allowed_ids is None or c.get("id") in allowed_ids
+        ]
+
+    if candidate_context is not None and args.exclude_ids:
+        exclude = set(args.exclude_ids)
+        ranked_candidates = [c for c in (ranked_candidates or []) if c.id not in exclude]
+
+    request = ComposeItineraryRequest(
+        itinerary_date=args.itinerary_date,
+        start_time=args.start_time,
+        end_time=args.end_time,
+        max_experiences=args.max_experiences,
+        max_budget=args.max_budget,
+        pace=args.pace,
+    )
+
+    outcome = await compose_and_persist_itinerary(
+        session=session,
+        settings=settings,
+        routing_adapter=routing_adapter,
+        embedding_adapter=embedding_adapter,
+        ai_adapter=ai_adapter,
+        traveler_id=traveler_id,
+        request=request,
+        # Only pass a pre-built candidate list when we actually have one —
+        # None triggers exactly one fresh Phase 6+7 pipeline run inside
+        # compose_and_persist_itinerary, never a redundant extra pass when
+        # a context already exists.
+        ranked_candidates=ranked_candidates if candidate_context else None,
+    )
+
+    if not outcome.valid or outcome.itinerary is None:
+        return {
+            "valid": False,
+            "reason_code": outcome.reason_code or "COMPOSITION_NO_VALID_PLAN",
+            "message": outcome.message or "No valid itinerary could be composed for the given constraints.",
+            "issues": [
+                {"code": i.code.value, "constraint": i.constraint, "message": i.message} for i in outcome.issues
+            ],
+        }
+
+    from src.api.v1.itineraries import _to_itinerary_response
+
+    return await _to_itinerary_response(outcome.itinerary, session)
+
+
 __all__ = [
     "CHECK_FEASIBILITY_DECLARATION",
+    "COMPOSE_EXPERIENCE_DECLARATION",
     "SEARCH_EXPERIENCES_DECLARATION",
     "execute_check_feasibility",
+    "execute_compose_experience",
     "execute_search_experiences",
+    "execute_search_experiences_with_candidates",
 ]

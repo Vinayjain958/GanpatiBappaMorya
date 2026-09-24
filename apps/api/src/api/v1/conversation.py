@@ -32,9 +32,11 @@ from src.core.errors import ApiError
 from src.core.location import get_routing_adapter
 from src.models.conversation_message import ConversationMessage
 from src.models.conversation_session import ConversationSession
+from src.models.traveler import Traveler
 from src.repositories.conversation_repository import ConversationRepository
 from src.schemas.conversation import (
     CheckFeasibilityArgs,
+    ComposeExperienceArgs,
     ConversationCreateResponse,
     ConversationDetailResponse,
     ConversationMessagePublic,
@@ -46,6 +48,7 @@ from src.schemas.conversation import (
     TravelerContext,
 )
 from src.schemas.feasibility import FeasibilityVerdict
+from src.schemas.itinerary import ItineraryResponse
 from src.services import ai_tools
 from src.services.conversation import create_conversation, handle_text_turn
 
@@ -125,10 +128,13 @@ async def get_conversation(
     )
 
 
-_KNOWN_TOOLS = {"search_experiences", "check_feasibility"}
+_KNOWN_TOOLS = {"search_experiences", "check_feasibility", "compose_experience"}
 
 
-@router.post("/{conversation_id}/tool-calls", response_model=SearchExperiencesResult | FeasibilityVerdict)
+@router.post(
+    "/{conversation_id}/tool-calls",
+    response_model=SearchExperiencesResult | FeasibilityVerdict | ItineraryResponse | dict,
+)
 async def execute_tool_call(
     conversation_id: str,
     payload: ToolCallRequest,
@@ -136,16 +142,27 @@ async def execute_tool_call(
     session: Annotated[AsyncSession, Depends(get_session)],
     settings: Annotated[Settings, Depends(get_settings)],
     routing: Annotated[RoutingAdapter, Depends(get_routing_adapter)],
-) -> SearchExperiencesResult | FeasibilityVerdict:
+    embedding_adapter: Annotated[EmbeddingAdapter, Depends(get_embedding_adapter)],
+    ai: Annotated[AIAdapter, Depends(get_ai_adapter)],
+) -> SearchExperiencesResult | FeasibilityVerdict | ItineraryResponse | dict:
     """Voice-path bridge: the browser forwards Gemini Live's tool_call
     here verbatim and forwards this response back to Gemini via
     session.send_tool_response(...). This endpoint — not the browser —
-    is the only place search_experiences/check_feasibility actually
-    execute; both tools are backend-owned per the allowlist above."""
+    is the only place search_experiences/check_feasibility/
+    compose_experience actually execute; all three tools are
+    backend-owned per the allowlist above."""
     conversation = await _get_owned_or_404(session, conversation_id, user.id)
 
     if payload.name not in _KNOWN_TOOLS:
         raise ApiError(f"Unknown tool: {payload.name}", status_code=422)
+
+    # traveler_id is server-derived: a `traveler`-role user has exactly
+    # one Traveler row (see registration); a `provider`-role user has
+    # none, so traveler_id is None and the anonymous (unranked) path is
+    # used where applicable — never trust a client-supplied traveler id.
+    from sqlalchemy import select
+
+    traveler_id = await session.scalar(select(Traveler.id).where(Traveler.user_id == user.id))
 
     if payload.name == "search_experiences":
         try:
@@ -153,25 +170,21 @@ async def execute_tool_call(
         except Exception as exc:  # noqa: BLE001 — never trust raw model tool arguments
             raise ApiError(f"Invalid tool arguments: {exc}", status_code=422) from exc
 
-        # We also need traveler_id. In conversation.py, user may have traveler.
-        # However, to be safe, we'll try to find the traveler_id for the user.
-        from sqlalchemy import select
-        from src.models.traveler import Traveler
-        traveler_id = await session.scalar(select(Traveler.id).where(Traveler.user_id == user.id))
-        
-        # We need embedding_adapter.
-        from src.core.embedding import get_embedding_adapter
-        embedding_adapter = get_embedding_adapter(settings)
-        
-        result = await ai_tools.execute_search_experiences(
-            session=session, 
-            settings=settings, 
+        result, ranked_items = await ai_tools.execute_search_experiences_with_candidates(
+            session=session,
+            settings=settings,
             args=args,
             traveler_id=traveler_id,
             context=conversation.latest_traveler_context,
             routing_adapter=routing,
             embedding_adapter=embedding_adapter,
         )
+
+        # Cache the authorized candidate context for a subsequent
+        # compose_experience call in THIS conversation — overwritten by
+        # every new search, never trusted blindly by compose_experience.
+        if ranked_items is not None:
+            conversation.last_search_candidates = [item.model_dump(mode="json") for item in ranked_items]
 
         session.add(
             ConversationMessage(
@@ -187,6 +200,40 @@ async def execute_tool_call(
         )
         await session.commit()
         return result
+
+    if payload.name == "compose_experience":
+        try:
+            compose_args = ComposeExperienceArgs.model_validate(payload.args)
+        except Exception as exc:  # noqa: BLE001 — never trust raw model tool arguments
+            raise ApiError(f"Invalid tool arguments: {exc}", status_code=422) from exc
+
+        if traveler_id is None:
+            raise ApiError("Not authenticated", status_code=401)
+
+        outcome = await ai_tools.execute_compose_experience(
+            session=session,
+            settings=settings,
+            routing_adapter=routing,
+            embedding_adapter=embedding_adapter,
+            ai_adapter=ai,
+            args=compose_args,
+            traveler_id=traveler_id,
+            candidate_context=conversation.last_search_candidates,
+        )
+
+        session.add(
+            ConversationMessage(
+                session_id=conversation.id,
+                role="assistant",
+                text="[voice tool call] compose_experience",
+                tool_call_metadata={
+                    "tool": "compose_experience",
+                    "args": compose_args.model_dump(mode="json", exclude_none=True),
+                },
+            )
+        )
+        await session.commit()
+        return outcome
 
     # check_feasibility
     try:

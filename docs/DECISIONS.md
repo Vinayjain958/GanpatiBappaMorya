@@ -1496,3 +1496,241 @@ to these two tools and forbids phrasing `UNKNOWN` as reassuring.
   origin_lat/lng, travel_mode, max_distance_km,
   max_travel_time_minutes, accessibility_requirements,
   existing_commitments) — strictly additive, no Phase 5 field changed
+
+## ADR-045: Two-Stage Deterministic Composer, No External Optimizer
+
+**Decision**: `ExperienceComposerService` (`src/services/experience_composer.py`)
+composes an itinerary in two deterministic stages over an already-ranked,
+already-FEASIBLE candidate list (Phase 6 retrieval -> Phase 6 feasibility
+-> Phase 7 ranking): (A) a greedy walk in Phase 7 rank order that checks
+time window, travel time from the previous stop (via the existing
+`RoutingAdapter` — never assumed to be 0 when unknown), opening-hours-
+adjacent budget/duration fit, and overlap, appending whatever fits next;
+(B) a bounded local-improvement pass (at most a fixed number of swap
+attempts) that only ever replaces the single lowest-value selected item
+with a strictly higher-`ranking_score` unused candidate when the swap
+keeps the schedule valid and within budget. No external
+optimization/solver library — the whole thing is a documented, bounded,
+bounded-iteration Python loop. The composer never recomputes or mutates a
+Phase 7 `ranking_score`; it only ever reads it as an ordering signal.
+
+**Why**:
+- The hard invariant "never compose an experience that isn't FEASIBLE"
+  is trivially satisfied because the composer only ever sees candidates
+  that already passed Phase 6 feasibility and were already ranked by
+  Phase 7 — composition is a pure scheduling/selection problem on top of
+  that, never a second feasibility judgment
+- A bounded, deterministic loop is provably terminating and reproducible
+  (same inputs -> same output, asserted directly by
+  `tests/test_experience_composer.py::test_determinism_same_inputs_identical_output`)
+  — an external solver would trade that reproducibility for opacity with
+  no proportionate benefit at this candidate-set scale
+- Treating an unknown travel-time transition as a hard skip (never 0
+  minutes) is the same discipline Phase 6's `FeasibilityService` already
+  applies to UNKNOWN — Phase 8 does not get to be looser about honesty
+  than Phase 6 was
+
+**Alternatives Considered**:
+- A single-pass greedy composer with no improvement stage: rejected —
+  would leave an obviously-better unused candidate on the table whenever
+  the first-fit greedy choice was merely "good enough," with no
+  mechanism to ever reconsider it
+- A full constraint-solver (e.g. OR-tools) for optimal composition:
+  rejected — disproportionate for a small (≤ `composer_max_candidates`)
+  candidate pool, adds a new dependency and a harder-to-audit black box,
+  and the phase brief explicitly calls for "no external optimization
+  library, keep it a bounded, documented, deterministic loop"
+
+**Consequences**:
+- Objective hierarchy is fixed and documented in the module docstring:
+  hard feasibility > aggregate ranking value > count within window >
+  minimize travel time > minimize idle gaps > respect budget > category
+  variety > experience-id tie-break — any future change to this ordering
+  is a deliberate, reviewable diff to that one docstring, not an
+  implicit behavior drift
+- `ItineraryValidatorService` (ADR-046) is mandatory and independent —
+  the composer's own checks are a performance/quality heuristic during
+  selection, not the system's actual feasibility guarantee
+
+## ADR-046: Mandatory Post-Composition Validator Reusing `FeasibilityReasonCode`; REQUESTED-Only Booking Lifecycle
+
+**Decision**: `ItineraryValidatorService` (`src/services/itinerary_validator.py`)
+re-runs after composition and before any narrative is generated —
+never optional, never skippable. It re-evaluates every item's
+underlying `Experience` against `FeasibilityService` at that item's own
+scheduled slot (never trusting the composer's earlier snapshot alone,
+since the DB may have changed), plus schedule-level checks (chronological
+order, overlap including buffers, travel-time-transition known,
+duplicate experiences, window bounds) and itinerary-level checks (budget,
+count limit, non-empty). Every issue is reported using the existing
+`FeasibilityReasonCode` enum from Phase 6 — extended with a handful of
+itinerary/schedule-specific codes (`EXPERIENCE_NOT_FEASIBLE`,
+`SCHEDULE_OVERLAP`, `TRAVEL_TRANSITION_IMPOSSIBLE`,
+`DUPLICATE_EXPERIENCE`, `OUTSIDE_REQUESTED_WINDOW`,
+`ITINERARY_BUDGET_EXCEEDED`, `ITINERARY_COUNT_LIMIT_EXCEEDED`,
+`ITINERARY_EMPTY`, `SCHEDULE_NOT_CHRONOLOGICAL`, `INVALID_BUFFER`) —
+never a parallel free-form string set. On INVALID, `compose_and_persist_itinerary`
+(`src/services/compose_itinerary.py`) returns a structured
+`CompositionValidationResponse` (`valid: false` + reason code + every
+issue found) instead of ever forcing a partial plan through.
+
+Separately: `BookingRequest.status` is a closed enum
+(`REQUESTED`/`ACCEPTED`/`DECLINED`/`CANCELLED`/`EXPIRED`) with no
+`CONFIRMED` value anywhere in the schema, model, or TypeScript mirror,
+and no payment field exists on the model, schema, or API surface at all.
+
+**Why**:
+- Reusing `FeasibilityReasonCode` rather than inventing a second code
+  taxonomy keeps "every reason the system can give a traveler" auditable
+  from one file, matching the exact rationale ADR-044 already established
+  for Phase 6 — Phase 8 is additive to that contract, not a fork of it
+- Re-checking feasibility against the *scheduled* slot (not the original
+  unscheduled constraint) closes a real correctness gap: an experience
+  that was FEASIBLE for a loose "sometime today" constraint during
+  retrieval can still turn out infeasible once the composer gives it a
+  concrete 14:00-15:00 slot (e.g. outside opening hours at that specific
+  time) — only the validator, running after scheduling, can catch that
+- Making `CONFIRMED` structurally absent from the status enum (not just
+  "unused by convention") means a future contributor cannot silently
+  introduce a false confirmation claim without first changing this
+  contract file, which is exactly the kind of accidental scope creep the
+  phase brief's hard invariants exist to prevent
+
+**Alternatives Considered**:
+- Trust the composer's own in-loop feasibility checks as sufficient,
+  skip a separate validation pass: rejected — the composer's checks are
+  a selection heuristic scoped to "does this fit next," not a
+  from-scratch verification of the whole finished schedule; a
+  local-improvement swap (stage B) could in principle introduce an issue
+  stage A never had to consider
+- Add a `CONFIRMED` status now with an explicit "never set it" comment,
+  planning to wire real payment/confirmation flows later: rejected — an
+  achievable-but-unused enum member is exactly the kind of thing that
+  gets set accidentally under deadline pressure; Phase 8 has no payment
+  processing in scope at all, so the value should not exist yet
+
+**Consequences**:
+- `compose_and_persist_itinerary` retries are bounded to the composer's
+  own single deterministic pass (stage A + stage B) — if that pass's
+  result is INVALID, the whole compose request fails honestly rather
+  than looping the composer indefinitely trying alternate combinations
+- Every itinerary-related test (`test_itinerary_validator.py`,
+  `test_itinerary_api.py`, `test_booking_api.py`) explicitly asserts an
+  INFEASIBLE/UNKNOWN item is never accepted and that REQUESTED/ACCEPTED
+  are never rendered as confirmed — this is a permanent regression gate,
+  not a one-time check
+
+## ADR-047: Gemini Narrative Layer Is Purely Decorative — Facts-Only Prompt, Deterministic Template Fallback
+
+**Decision**: `ItineraryNarratorService` (`src/services/itinerary_narrator.py`)
+reuses the existing `AIAdapter` (`src/adapters/ai.py`) — no second AI
+client. Its prompt contains only backend-validated facts (already-VALID
+itinerary items' real ids/titles/prices/times/travel-gaps/booking
+status) and an explicit anti-hallucination system instruction forbidding
+invented prices/hours/reviews/availability/transport-time/locations and
+forbidding any booking-confirmation claim beyond what the backend status
+actually says. The structured `NarrativeResponse` (Pydantic, validated
+via the same `generate_text(..., response_schema=...)` pattern Phase 5/6
+already use) is post-processed to drop any `item_narratives` entry whose
+`experience_id` was not in the supplied fact set — a hallucinated id is
+silently dropped, never surfaced. On any Gemini failure (adapter error,
+timeout, or invalid structured output), a deterministic backend template
+(`_template_fallback`) produces the narrative instead — the itinerary's
+validity and persistence never depend on Gemini succeeding.
+
+**Why**:
+- The phase brief's ordering invariant (RETRIEVAL -> FEASIBILITY ->
+  RANKING -> COMPOSITION -> POST-COMPOSITION VALIDATION -> NARRATIVE)
+  places narrative strictly last and non-authoritative — this is not
+  just documentation, it is enforced by construction: the narrator's
+  only inputs are already-validated `ComposedItem`s, so there is no
+  code path by which Gemini's text could influence what gets scheduled
+  or persisted
+- Dropping (not repairing or trusting) a hallucinated `experience_id`
+  keeps the same "structurally cannot smuggle a fact" discipline ADR-044
+  established for `check_feasibility`'s argument schema — here it is
+  the *output* schema that gets the same treatment
+- A template fallback that always succeeds (even for zero items) means
+  "Gemini is unconfigured/down" is never a reason a traveler cannot get
+  a usable itinerary, matching the adapter-fallback contract already
+  established for every other AI/location adapter in this codebase
+
+**Alternatives Considered**:
+- Let a Gemini failure fail the whole compose request: rejected — would
+  make an entirely deterministic, already-correct itinerary unusable
+  because of an unrelated third-party outage, directly contradicting the
+  existing "the app must work with Gemini disabled" contract
+- Ask Gemini to also select/order experiences via free text, then parse
+  its output into the schedule: rejected outright by the phase brief's
+  hard invariants — Gemini is never authoritative for feasibility,
+  timing, or booking state
+
+**Consequences**:
+- `Itinerary.narrative_model_version` is deliberately a distinct string
+  from `Itinerary.ranking_model_version` (`"gemini-narrative-v1"` /
+  `"template-fallback-v1"` vs Phase 7's `"weighted-v1"`) — the two
+  version fields must never be conflated since they describe unrelated
+  subsystems with unrelated failure modes
+- `tests/test_itinerary_narrator.py` mocks `AIAdapter` entirely — no
+  live Gemini call in the automated test suite, matching every other
+  Phase 5/6 AI test in this repo
+
+## ADR-048: `compose_experience` Tool Reuses the Conversation's Cached Candidate Context — Never a Blind Second Pipeline Pass
+
+**Decision**: `ConversationSession` gains one new JSON column,
+`last_search_candidates` — a snapshot of the most recent
+`search_experiences` tool call's ranked+feasible result for that specific
+conversation, overwritten on every new search. `execute_compose_experience`
+(`src/services/ai_tools.py`) validates every `experience_id` Gemini
+supplies against this cached context (an id not present there is
+silently dropped, never trusted) and, only when no context exists yet,
+triggers exactly one fresh Phase 6+7 pipeline pass of its own — it never
+re-runs retrieval/feasibility/ranking when a context already exists. This
+mechanism is a minimal, additive extension of the exact JSON-snapshot
+pattern Phase 5 already established for `latest_traveler_context` on the
+same model, not a new parallel state-storage design.
+
+**Why**:
+- The phase brief requires the tool to "verify any experience_ids Gemini
+  supplies belong to the current conversation's authorized ranked-
+  candidate context" — extending the conversation's own existing
+  session-scoped JSON snapshot mechanism is the natural fit, rather than
+  inventing a second cache (e.g. Redis, a new table) for what is
+  fundamentally the same kind of per-conversation ephemeral state
+  `latest_traveler_context` already models
+- The "never redundant when a context already exists" requirement is a
+  direct instance of the same Phase 7 preflight invariant (retrieval +
+  feasibility execute exactly once per logical request) this phase's
+  preflight gate already re-verified and regression-tested — extending
+  that discipline to the new tool rather than introducing an exception
+  to it keeps the whole pipeline's execution-count guarantee uniform
+- Silently dropping an unauthorized id (rather than erroring the whole
+  compose call) matches how `search_experiences`' own argument
+  validation already treats an unrecognized `category_slug` (ADR-034/035
+  precedent: drop what cannot be trusted, don't fail the whole turn over
+  one bad field)
+
+**Alternatives Considered**:
+- Trust `experience_ids` from Gemini directly, re-fetch each by id: 
+  rejected — this is exactly the "trusting raw ids Gemini supplies
+  blindly" the phase brief explicitly forbids; an id Gemini fabricates
+  or misremembers from an earlier turn would otherwise silently reach
+  the composer
+- Store the candidate context in `ConversationMessage.tool_call_metadata`
+  instead of a new `ConversationSession` column: rejected — that column
+  already exists as a bounded observability record for the transcript
+  and is not queried as "the current state"; a dedicated session-level
+  field keeps "what is Gemini currently allowed to compose from" a single
+  well-defined lookup rather than "scan recent messages for the last
+  matching tool call"
+
+**Consequences**:
+- `tests/test_compose_experience_tool.py::test_no_duplicate_pipeline_execution_when_context_exists`
+  is the permanent regression proof for this invariant — it patches
+  `DiscoveryPipelineService.run` process-wide and asserts zero calls when
+  a context already exists, mirroring the same call-counting technique
+  `tests/test_pipeline_single_execution.py` uses for the Phase 7 preflight
+- `last_search_candidates` is added via the same Phase 8 Alembic
+  migration as the new itinerary/booking tables (`8a004268dcb0`) rather
+  than a separate migration, since it is a small additive column on an
+  existing table with no data-migration concern

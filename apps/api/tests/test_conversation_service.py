@@ -15,17 +15,23 @@ def _settings() -> Settings:
 
 
 def test_execute_search_experiences_uses_discovery_service(session_factory, discovery_dataset) -> None:
+    # Phase 6 replaced the pre-Phase-6 keyword hard-filter with semantic
+    # ranking (SemanticRetrievalService) — a "food" query now *ranks*
+    # food-relevant experiences to the top rather than excluding every
+    # non-matching experience from the result set entirely. Assert on the
+    # top (most-similar) result's relevance instead of every returned item.
     async def _run() -> None:
         async with session_factory() as session:
             result = await execute_search_experiences(
                 session, _settings(), SearchExperiencesArgs(q="food", limit=5)
             )
             assert result.total >= 1
-            assert all(
-                "food" in item.title.lower()
-                or "food" in item.short_description.lower()
-                or "food" in item.category.name.lower()
-                for item in result.items
+            assert result.items, "expected at least one ranked result"
+            top = result.items[0]
+            assert (
+                "food" in top.title.lower()
+                or "food" in top.short_description.lower()
+                or "food" in top.category.name.lower()
             )
 
     asyncio.run(_run())

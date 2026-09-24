@@ -58,7 +58,15 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    # render_as_batch: SQLite cannot ALTER most constraints in place (no
+    # DROP/ADD CONSTRAINT); Alembic's batch mode works around this with a
+    # copy-and-move strategy. PostgreSQL ignores this flag and applies
+    # migrations directly — this is purely additive, not a migration
+    # content change (docs/DECISIONS.md: SQLite/PostgreSQL dual support).
+    is_sqlite = connection.dialect.name == "sqlite"
+    context.configure(
+        connection=connection, target_metadata=target_metadata, render_as_batch=is_sqlite
+    )
 
     with context.begin_transaction():
         context.run_migrations()

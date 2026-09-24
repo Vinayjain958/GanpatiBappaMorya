@@ -226,7 +226,7 @@ key / no PostgreSQL instance available in this environment)
 
 ### PHASE 7 — Real ML Ranking + Feedback Learning
 
-**Status**: ⏳ Not started
+**Status**: ✅ Complete (deterministic personalized weighted ranking with behavioral feedback learning)
 
 **Depends on**: Phase 6
 
@@ -244,9 +244,9 @@ key / no PostgreSQL instance available in this environment)
 
 ---
 
-### PHASE 8 — AI Experience Composer + Itinerary + Booking
+### PHASE 8 — Deterministic Itinerary Composition with Gemini Narrative Generation
 
-**Status**: ⏳ Not started
+**Status**: ✅ Complete (real live Gemini narrative call not exercised this session; PostgreSQL migration path NOT VERIFIED)
 
 **Depends on**: Phase 7
 

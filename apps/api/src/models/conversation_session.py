@@ -34,6 +34,14 @@ class ConversationSession(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     mode: Mapped[str] = mapped_column(ConversationMode, default="text", nullable=False)
     latest_traveler_context: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    # Phase 8: the authorized candidate-context cache for the
+    # compose_experience tool — a JSON snapshot of the most recent
+    # search_experiences ranked-and-feasible result for THIS conversation
+    # (list of RankedExperienceItem dicts). compose_experience only ever
+    # accepts experience_ids drawn from here; it is overwritten by every
+    # new search_experiences call and never trusts raw ids Gemini supplies
+    # directly (see src/services/ai_tools.py execute_compose_experience).
+    last_search_candidates: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     user: Mapped[User] = relationship()

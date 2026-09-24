@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
 import { DemoDataBadge } from "@/components/ui/DemoDataBadge";
 import { RequireRole } from "@/components/common/RequireRole";
+import { TripComposerSection } from "@/components/trip/TripComposerSection";
 import { mockTrip } from "@/mocks/trip";
 
 export const metadata: Metadata = { title: "Trips" };
@@ -20,8 +21,14 @@ export default function TripListPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Your trips</h1>
-            <p className="text-sm text-ink-muted">Plans LocaLens has put together for you.</p>
+            <p className="text-sm text-ink-muted">Compose a new plan, or revisit an existing one.</p>
           </div>
+        </div>
+
+        <TripComposerSection />
+
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-6">
+          <h2 className="text-lg font-semibold text-ink">Demo plan</h2>
           <DemoDataBadge />
         </div>
 

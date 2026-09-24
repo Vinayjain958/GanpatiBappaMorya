@@ -6,6 +6,110 @@
 
 ---
 
+## [Phase 8] 2026-09-24 — Deterministic Itinerary Composition with Gemini Narrative Generation
+
+### Phase 7 preflight fixes (found and fixed before Phase 8 work began)
+
+`POST /api/v1/recommendations` and the `search_experiences`/`compose_experience` conversational
+tool path were both completely broken end-to-end prior to this session — no existing test exercised
+either path with a real ranked candidate set. Fixed:
+
+- `get_embedding_adapter`/`get_routing_adapter` (both no-argument `lru_cache` singletons) were being
+  called with a `Settings` argument in three call sites (`src/api/v1/recommendations.py`,
+  `src/api/v1/conversation.py`, `src/services/ai_tools.py`) — `TypeError: unhashable type: 'Settings'`
+  on every call
+- `DiscoveryPipelineService.run_with_ranking` accessed `self._retrieval.session` (a private attribute
+  that doesn't exist as public) — `AttributeError` on every ranked call
+- `WeightedPersonalizedRanker` built `RankedExperienceItem` from the wrong/incomplete field set
+  (referenced a non-existent `Experience.slug`, was missing several schema-required fields such as
+  `short_description`/`currency`/`is_price_estimated`) — crashed on every real ranking pass
+- `PersonalizedRankingService.rank` constructed `TravelerContext()` with no `raw_query`, which is a
+  required field — crashed whenever no conversational context was available (i.e. every direct
+  `/recommendations` call)
+- `RecommendationResponse.excluded_summary` expected `ExcludedReasonSummary` (Pydantic) but the
+  pipeline produced a different `ExcludedSummary` dataclass — `ValidationError` on every response
+- `discovery_dataset` test fixture never seeded `ExperienceEmbedding` rows, so semantic retrieval
+  legitimately (and silently) returned zero candidates for two existing Phase 5/6 tests
+- Existing SQLite `alembic upgrade head` was broken outright (`op.drop_constraint` outside batch
+  mode is unsupported on SQLite) — fixed by wrapping in `op.batch_alter_table` and enabling
+  `render_as_batch` for the SQLite dialect in `alembic/env.py` (PostgreSQL behavior unchanged)
+- Added `tests/test_pipeline_single_execution.py` — the required regression proof that retrieval and
+  feasibility each execute exactly once per logical request, for both the direct
+  `/recommendations` endpoint and the conversational `search_experiences` tool path
+
+All 250 pre-existing backend tests passed after these fixes, before any Phase 8 code was written.
+
+### Added — Backend
+
+- `Itinerary`, `ItineraryItem`, `BookingRequest` models (`src/models/itinerary.py`,
+  `src/models/itinerary_item.py`, `src/models/booking_request.py`) and Alembic migration
+  `8a004268dcb0_phase8_itinerary_composer` (verified against fresh SQLite; up/down/up round-trip
+  verified; **PostgreSQL path NOT VERIFIED — no PostgreSQL instance available**)
+- `ExperienceComposerService` (`src/services/experience_composer.py`) — deterministic two-stage
+  composition (greedy selection + bounded local-improvement pass), no external optimizer; never
+  recomputes Phase 7 `ranking_score` (see docs/DECISIONS.md ADR-045)
+- `ItineraryValidatorService` (`src/services/itinerary_validator.py`) — mandatory post-composition
+  validation reusing `FeasibilityReasonCode` (extended with itinerary/schedule-specific codes); runs
+  before any narrative or persistence (see ADR-046)
+- `ItineraryNarratorService` (`src/services/itinerary_narrator.py`) — Gemini narrative generation via
+  the existing `AIAdapter`, facts-only prompt, anti-hallucination system instruction, deterministic
+  template fallback on any Gemini failure (see ADR-047)
+- `compose_itinerary.py` — orchestrates the full pipeline (retrieval -> feasibility -> ranking ->
+  composition -> validation -> narrative -> persist) for both the HTTP endpoint and the
+  `compose_experience` tool, guaranteeing they never diverge in ordering
+- `compose_experience` Gemini tool (`COMPOSE_EXPERIENCE_DECLARATION`/`execute_compose_experience` in
+  `src/services/ai_tools.py`) — reuses a new `ConversationSession.last_search_candidates` cache so it
+  never re-runs the Phase 6+7 pipeline redundantly when a candidate context already exists (see
+  ADR-048); added to the Live tool allowlist and system instruction
+- `ItineraryRepository`, `ItineraryItemRepository`, `BookingRequestRepository`
+- `src/api/v1/itineraries.py` — `POST /api/v1/itineraries/compose`, `GET /api/v1/itineraries`,
+  `GET /api/v1/itineraries/{id}`, `POST /api/v1/itineraries/{id}/items`,
+  `DELETE /api/v1/itineraries/{id}`
+- `src/api/v1/bookings.py` — `POST /api/v1/itineraries/{itinerary_id}/booking-requests`,
+  `GET /api/v1/bookings/me`, `GET /api/v1/provider/booking-requests`,
+  `PATCH /api/v1/provider/booking-requests/{id}`, `POST /api/v1/bookings/{id}/cancel`. REQUESTED
+  intent only — `BookingRequestStatus` has no `CONFIRMED` value and no payment field exists anywhere
+  on the model/schema/API surface
+- `src/schemas/itinerary.py`, `src/schemas/booking.py`
+- Config: `composer_default_max_experiences`, `composer_max_candidates`,
+  `composer_max_optimization_iterations`, `composer_min_buffer_minutes`,
+  `composer_default_travel_mode`, `composer_narrative_model_version`,
+  `composer_template_narrative_version`
+- Tests: `test_experience_composer.py` (8), `test_itinerary_validator.py` (10),
+  `test_itinerary_narrator.py` (7), `test_compose_experience_tool.py` (6),
+  `test_itinerary_api.py` (9), `test_booking_api.py` (8) — all passing, no live Gemini/network calls
+
+### Added — Frontend
+
+- `lib/api/itineraries.ts`, `lib/api/bookings.ts` — typed fetch wrappers matching the existing
+  `lib/api/feasibility.ts`/`recommendations.ts` pattern, exported through `lib/api/index.ts`
+- `lib/itinerary/itineraryDisplay.ts` — pure display helpers (booking status label/tone, travel gap
+  text, cost formatting); 15 passing unit tests in `itineraryDisplay.test.ts` (matches the Phase 6
+  `feasibilityDisplay.test.ts` precedent) — explicitly asserts REQUESTED/ACCEPTED are never labelled
+  "Confirmed"
+- `ItineraryComposerForm`, `BookingRequestButton`, `RealItineraryTimeline`, `TripComposerSection`
+  components; wired into `/trip`, gated behind the existing `RequireRole` auth guard
+- Fixed two genuine pre-existing Phase 7 defects blocking a clean `tsc --noEmit`/`next build`:
+  `lib/api/recommendations.ts`/`lib/api/feedback.ts` imported a `fetchApi` export that
+  `lib/api/client.ts` never provided (only `apiClient`); `types/experience.ts`'s `Experience` type
+  was missing the `matchSignals`/`personalized` fields the Phase 7 adapter already populated
+
+### Verification
+
+- Backend: `pytest -q` — **298 passed**, 0 failed (250 pre-existing + 48 new Phase 8 tests)
+- Backend: `alembic upgrade head` against a fresh SQLite DB — verified clean; up/down/up round-trip
+  verified; PostgreSQL explicitly **NOT VERIFIED** (no PostgreSQL instance available)
+- Frontend: `npx tsc --noEmit` — clean; `npm run lint` — clean; `npx vitest run` — **51 passed**
+  (6 files); `npm run build` — succeeds
+- Real (live, network) Gemini narrative generation: **NOT VERIFIED in this session** — the
+  root `.env`'s `GEMINI_API_KEY` is not reachable from this worktree without copying the secret file
+  into the worktree, which this session's permission model correctly blocked as credential
+  materialization; the narrator's Gemini call path mirrors the exact Phase 5/6
+  `generate_text(..., response_schema=...)` pattern already exercised by passing tests elsewhere in
+  this repo, and the fallback path is fully tested, but no live API round-trip was made
+
+---
+
 ## [Phase 6] 2026-09-23 — Semantic Retrieval + Deterministic Feasibility Engine
 
 ### Added

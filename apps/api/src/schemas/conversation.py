@@ -109,6 +109,27 @@ class CheckFeasibilityArgs(BaseModel):
     )
 
 
+class ComposeExperienceArgs(BaseModel):
+    """Tool-call argument schema for compose_experience (Phase 8). Never
+    accepts traveler_id — it is always server-derived. experience_ids are
+    only a *hint*; the tool implementation verifies every id against the
+    conversation's authorized candidate context
+    (ConversationSession.last_search_candidates) rather than trusting raw
+    ids Gemini supplies (see src/services/ai_tools.py)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    experience_ids: list[str] = Field(default_factory=list)
+    itinerary_date: date
+    start_time: time
+    end_time: time
+    max_experiences: int | None = Field(default=None, ge=1, le=20)
+    max_budget: float | None = Field(default=None, ge=0)
+    pace: Literal["relaxed", "balanced", "packed"] = "balanced"
+    must_include_ids: list[str] = Field(default_factory=list)
+    exclude_ids: list[str] = Field(default_factory=list)
+
+
 class ToolCallRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

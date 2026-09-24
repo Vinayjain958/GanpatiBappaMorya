@@ -46,4 +46,9 @@ export interface Experience {
   openingHours: string | null;
   highlights: string[];
   isSynthetic: boolean;
+  /** Phase 7 — only present when this result came from the personalized
+   * ranking pipeline (POST /api/v1/recommendations); undefined for plain
+   * discovery/search results. */
+  matchSignals?: string[];
+  personalized?: boolean;
 }

@@ -25,11 +25,19 @@ export {
   updateExperience,
 } from "@/lib/api/experiencesWrite";
 
-/**
- * Placeholder namespace for future domain modules, wired up in the
- * phases that introduce their backend routes:
- *   - itinerary   (Phase 8)
- *   - itinerary   (Phase 8)
- */
 export { recommendationApi } from "@/lib/api/recommendations";
 export { feedbackApi } from "@/lib/api/feedback";
+export {
+  addItineraryItem,
+  cancelItinerary,
+  composeItinerary,
+  getItinerary,
+  listMyItineraries,
+} from "@/lib/api/itineraries";
+export {
+  cancelBookingRequest,
+  createBookingRequest,
+  listMyBookingRequests,
+  listProviderBookingRequests,
+  updateProviderBookingRequest,
+} from "@/lib/api/bookings";

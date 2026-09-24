@@ -101,26 +101,37 @@ class WeightedPersonalizedRanker:
                 match_signals.append("High affinity category")
             if novelty == 1.0 and affinity_score > 0.0:
                 match_signals.append("New for you")
+            if not match_signals and semantic_relevance >= 0.5:
+                # No personalization signal fired (new/anonymous traveler) —
+                # fall back to a relevance-based signal rather than leaving
+                # match_signals empty for every non-personalized result.
+                match_signals.append("Relevant to your search")
                 
             is_personalized = bool(traveler_profile.preference or traveler_profile.affinities)
                 
-            # Create dict matching schema ExperienceSummary
-            # and append extra fields
+            # Field set matches schemas.experience.ExperienceSummary exactly
+            # (RankedExperienceItem extends it) — see src/schemas/experience.py.
+            # getattr fallbacks accommodate both a real ORM Experience and a
+            # pre-built ExperienceSummary (e.g. in unit tests) as `candidate.experience`.
             exp_dict = {
                 "id": candidate.experience.id,
                 "title": candidate.experience.title,
+                "short_description": candidate.experience.short_description,
                 "category": candidate.experience.category,
                 "location": candidate.experience.location,
                 "provider": candidate.experience.provider,
-                "slug": candidate.experience.slug,
+                "currency": getattr(candidate.experience, "currency", "INR"),
+                "price": getattr(candidate.experience, "price", None),
+                "minimum_price": getattr(candidate.experience, "minimum_price", None),
+                "maximum_price": getattr(candidate.experience, "maximum_price", None),
+                "price_type": getattr(candidate.experience, "price_type", "unknown"),
+                "is_price_estimated": getattr(candidate.experience, "is_price_estimated", False),
+                "duration_minutes": getattr(candidate.experience, "duration_minutes", None),
+                "duration_is_estimated": getattr(candidate.experience, "duration_is_estimated", False),
+                "rating": getattr(candidate.experience, "rating", None),
+                "review_count": getattr(candidate.experience, "review_count", None),
                 "status": getattr(candidate.experience, "status", "active"),
                 "verification_status": getattr(candidate.experience, "verification_status", "verified"),
-                "price_type": getattr(candidate.experience, "price_type", "unknown"),
-                "price_currency": getattr(candidate.experience, "price_currency", None),
-                "price_min": getattr(candidate.experience, "price_min", None),
-                "price_max": getattr(candidate.experience, "price_max", None),
-                "duration_estimated_minutes": getattr(candidate.experience, "duration_estimated_minutes", None),
-                "images": getattr(candidate.experience, "images", []),
                 "is_synthetic": getattr(candidate.experience, "is_synthetic", True),
                 "is_enriched": getattr(candidate.experience, "is_enriched", False),
             }
@@ -162,7 +173,12 @@ class PersonalizedRankingService:
             raise ValueError("traveler_id is required")
             
         if not context:
-            context = TravelerContext()
+            # Not every ranking caller has a TravelerContext (e.g. the
+            # direct /recommendations endpoint has no conversational
+            # context) — raw_query is required by the schema for the
+            # conversational path, so synthesize an empty one rather than
+            # weakening TravelerContext for every other caller.
+            context = TravelerContext(raw_query="")
             
         pref_repo = PreferenceRepository(session)
         preference = await pref_repo.get_by_traveler_id(traveler_id)

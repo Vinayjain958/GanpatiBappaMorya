@@ -5,11 +5,13 @@ from fastapi import APIRouter
 from src.api.v1 import (
     auth,
     availability,
+    bookings,
     categories,
     conversation,
     experiences,
     feasibility,
     health,
+    itineraries,
     location,
     providers,
     recommendations,
@@ -28,3 +30,5 @@ api_v1_router.include_router(conversation.router)
 api_v1_router.include_router(feasibility.router)
 api_v1_router.include_router(recommendations.router)
 api_v1_router.include_router(feedback.router)
+api_v1_router.include_router(itineraries.router)
+api_v1_router.include_router(bookings.router)

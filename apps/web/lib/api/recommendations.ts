@@ -1,11 +1,8 @@
 import { RecommendationRequest, RecommendationResponse } from "@/types/api";
-import { fetchApi } from "./client";
+import { apiClient } from "./client";
 
 export const recommendationApi = {
   getRecommendations: async (request: RecommendationRequest): Promise<RecommendationResponse> => {
-    return fetchApi("/api/v1/recommendations", {
-      method: "POST",
-      body: JSON.stringify(request),
-    });
+    return apiClient.post("/api/v1/recommendations", request);
   },
 };

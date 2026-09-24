@@ -137,6 +137,15 @@ class Settings(BaseSettings):
     affinity_recency_tau: int = 50
     recommendation_default_top_k: int = 10
 
+    # ─── Itinerary Composer (Phase 8) ───────────────────────────────────────
+    composer_default_max_experiences: int = 5
+    composer_max_candidates: int = 20
+    composer_max_optimization_iterations: int = 25
+    composer_min_buffer_minutes: int = 10
+    composer_default_travel_mode: str = "driving"
+    composer_narrative_model_version: str = "gemini-narrative-v1"
+    composer_template_narrative_version: str = "template-fallback-v1"
+
     @model_validator(mode="after")
     def _validate_ranking_weights(self) -> "Settings":
         total = sum([

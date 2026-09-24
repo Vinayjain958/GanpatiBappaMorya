@@ -52,7 +52,7 @@ def test_weighted_personalized_ranker():
         recently_seen_experience_ids=set()
     )
     
-    context = TravelerContext()
+    context = TravelerContext(raw_query="")
     
     ranked_items = ranker.rank([item], profile, context, settings)
     

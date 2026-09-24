@@ -12,7 +12,11 @@ from functools import lru_cache
 
 from src.adapters.ai import AIAdapter, GeminiAIAdapter, MockAIAdapter
 from src.core.config import get_settings
-from src.services.ai_tools import CHECK_FEASIBILITY_DECLARATION, SEARCH_EXPERIENCES_DECLARATION
+from src.services.ai_tools import (
+    CHECK_FEASIBILITY_DECLARATION,
+    COMPOSE_EXPERIENCE_DECLARATION,
+    SEARCH_EXPERIENCES_DECLARATION,
+)
 
 
 @lru_cache
@@ -20,4 +24,7 @@ def get_ai_adapter() -> AIAdapter:
     settings = get_settings()
     if not (settings.gemini_enabled and settings.gemini_api_key):
         return MockAIAdapter()
-    return GeminiAIAdapter(settings, [SEARCH_EXPERIENCES_DECLARATION, CHECK_FEASIBILITY_DECLARATION])
+    return GeminiAIAdapter(
+        settings,
+        [SEARCH_EXPERIENCES_DECLARATION, CHECK_FEASIBILITY_DECLARATION, COMPOSE_EXPERIENCE_DECLARATION],
+    )

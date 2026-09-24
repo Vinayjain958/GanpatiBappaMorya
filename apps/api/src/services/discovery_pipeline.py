@@ -64,6 +64,7 @@ class DiscoveryPipelineService:
         embedding_adapter: EmbeddingAdapter | None,
         routing_adapter: RoutingAdapter,
     ) -> None:
+        self._session = session
         self._retrieval = SemanticRetrievalService(session, settings, embedding_adapter)
         self._feasibility = FeasibilityService(routing_adapter)
         self._settings = settings
@@ -171,7 +172,7 @@ class DiscoveryPipelineService:
             traveler_id=traveler_id,
             pipeline_items=result.items,
             context=context,
-            session=self._retrieval.session,
+            session=self._session,
         )
         
         # We replace items in result with ranked items?

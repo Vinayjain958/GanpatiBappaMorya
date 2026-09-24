@@ -24,6 +24,7 @@
 | 5 | Conversational AI + Gemini Live Voice Agent | ✅ Complete (manual live-key verification pending) |
 | 6 | Semantic Retrieval + Constraint / Feasibility Engine | ✅ Complete (real Gemini embedding + live pgvector verification pending — no API key / no Postgres instance available) |
 | 7 | Real ML Ranking + Feedback Learning | ✅ Complete |
+| 8 | Deterministic Itinerary Composition with Gemini Narrative Generation | ✅ Complete (real live Gemini narrative call not exercised — see Partial below; PostgreSQL migration path NOT VERIFIED) |
 | 8 | AI Experience Composer + Itinerary + Booking | ⏳ Not started |
 | 9 | Real-Time Context + Events + Dynamic Replanning | ⏳ Not started |
 | 10 | Provider Intelligence & Two-Sided Marketplace | ⏳ Not started |
@@ -336,29 +337,70 @@
 
 - `TravelerAffinity`/`Interaction` models implemented and synced to DB.
 - Backend tracking of interactions (views, saves, etc.).
-- `WeightedPersonalizedRanker` engine computing personalized scores based on semantic relevance, affinities, and constraints.
-- Real ML feedback loops calculating exponentially decayed recency-weighted affinities.
+- Deterministic personalized weighted ranking with behavioral feedback learning (`WeightedPersonalizedRanker`), combining semantic relevance, affinities, preferences, and constraints.
+- Real feedback loops calculating exponentially decayed recency-weighted affinities.
 - `POST /api/v1/recommendations` and `POST /api/v1/feedback/interactions` endpoints deployed.
 - Frontend components: `FeedbackControls`, `PersonalizationBadge` wired into `ExperienceCard` and `ExperienceDetail`.
 - 100% of pipeline tests extended to cover scoring math and Phase 7 integrations.
+- **Phase 8 preflight fixes** (found and corrected before Phase 8 work began, see docs/DECISIONS.md
+  ADR-045 family and CHANGELOG.md 2026-09-24): `POST /api/v1/recommendations` was completely broken
+  end-to-end (`get_embedding_adapter(settings)` called with an argument the singleton doesn't accept;
+  `RecommendationResponse.excluded_summary` type mismatch); `DiscoveryPipelineService.run_with_ranking`
+  crashed on `self._retrieval.session` (private attribute); `WeightedPersonalizedRanker` crashed
+  building `RankedExperienceItem` (wrong/missing field set); the voice tool-call bridge crashed the
+  same way as the endpoint. All fixed; a new regression test
+  (`tests/test_pipeline_single_execution.py`) proves retrieval+feasibility execute exactly once per
+  logical request for both the direct endpoint and the conversational tool path.
+
+---
+
+### Phase 8 — Deterministic Itinerary Composition with Gemini Narrative Generation
+
+- `ExperienceComposerService` (`src/services/experience_composer.py`): deterministic two-stage
+  composition (greedy selection + bounded local-improvement pass) over already-ranked,
+  already-FEASIBLE Phase 7 candidates. No external optimizer.
+- `ItineraryValidatorService` (`src/services/itinerary_validator.py`): mandatory post-composition
+  validation reusing `FeasibilityReasonCode`; runs before any narrative and before persistence.
+- `ItineraryNarratorService` (`src/services/itinerary_narrator.py`): Gemini narrative generation via
+  the existing `AIAdapter`, facts-only prompt, anti-hallucination system instruction, deterministic
+  template fallback on any Gemini failure.
+- Models: `Itinerary`, `ItineraryItem`, `BookingRequest` (migration `8a004268dcb0`, verified against
+  fresh SQLite; **PostgreSQL path NOT VERIFIED — no PostgreSQL instance available**).
+- APIs: `POST /api/v1/itineraries/compose`, `GET /api/v1/itineraries`, `GET /api/v1/itineraries/{id}`,
+  `POST /api/v1/itineraries/{id}/items`, `DELETE /api/v1/itineraries/{id}`,
+  `POST /api/v1/itineraries/{itinerary_id}/booking-requests`, `GET /api/v1/bookings/me`,
+  `GET /api/v1/provider/booking-requests`, `PATCH /api/v1/provider/booking-requests/{id}`,
+  `POST /api/v1/bookings/{id}/cancel`.
+- `compose_experience` Gemini tool added alongside `search_experiences`/`check_feasibility`; reuses a
+  new `ConversationSession.last_search_candidates` cache so it never re-runs the Phase 6+7 pipeline
+  redundantly when a candidate context already exists (regression-tested).
+- Booking lifecycle is REQUESTED-only — no `CONFIRMED` status exists anywhere in the schema, and no
+  payment fields exist anywhere in the model/schema/API surface.
+- Frontend: `lib/api/itineraries.ts`, `lib/api/bookings.ts`, `lib/itinerary/itineraryDisplay.ts` (pure
+  display helpers, tested), `ItineraryComposerForm`, `BookingRequestButton`, `RealItineraryTimeline`
+  components wired into `/trip`.
+- Full backend suite green (298 tests). Frontend `tsc --noEmit`/`lint`/`vitest`/`build` all green.
 
 ---
 
 ## Partial
 
-- Backend ML models are currently configured as heuristic rule sets (Weighted sums) due to no active model training infrastructure (wait for phase 10 insights and telemetry scale out).
+- Backend ranking is currently configured as a deterministic heuristic rule set (weighted sums) due
+  to no active model training infrastructure (wait for Phase 10 insights and telemetry scale-out).
+- Phase 8 real (live, network) Gemini narrative generation was not exercised in this session — the
+  narrator's Gemini call path mirrors the exact Phase 5/6 `generate_text(..., response_schema=...)`
+  pattern used by tests elsewhere in this repo, and the deterministic template fallback path is
+  fully tested, but no live API call against the real Gemini service was made (see CHANGELOG.md
+  2026-09-24 for why).
+- Phase 8's manual "add item to an existing itinerary" endpoint
+  (`POST /api/v1/itineraries/{id}/items`) builds a lightweight stand-in `RankedExperienceItem` for
+  validation purposes (source_ranking_score is null) since a manually-added item was never part of a
+  Phase 7 ranked candidate set — this is by design, not a bug, but is worth flagging as a narrower
+  code path than the composer's main flow.
 
 ---
 
 ## Planned
-
-### Phase 8 — AI Experience Composer + Itinerary + Booking
-- Experience composition algorithm
-- AI narrative composer (Gemini LLM)
-- Post-composition feasibility validation
-- Itinerary object model
-- Booking request flow
-- Save experience to itinerary
 
 ### Phase 9 — Real-Time Context + Events + Dynamic Replanning
 - Weather adapter (OpenWeather)
@@ -392,11 +434,14 @@
 
 ## Not Implemented
 
-- Booking flow / payments (availability *slots* exist; no reservation logic; the voice/text
-  agent explicitly declines "book this" requests rather than faking one)
+- Payments of any kind (Phase 8 booking is REQUESTED intent only — no Stripe/Razorpay, no card
+  storage, no payment intent; a provider can ACCEPT/DECLINE but that is never a payment event)
 - Real-time GPS turn-by-turn navigation (route preview only)
 - Discover page UI wiring for the semantic-search pipeline endpoint (types/API client/display
   logic exist and are tested; the page itself doesn't call it yet — see Partial above)
+- Weather/events-aware replanning, live plan updates over WebSocket/SSE (explicitly Phase 9 scope;
+  `OPENWEATHER_API_KEY`/`TICKETMASTER_API_KEY` exist in `.env` but were deliberately not used in
+  Phase 8)
 
 ---
 
@@ -412,12 +457,12 @@
 
 ## Current Next Milestone
 
-**Phase 8 — AI Experience Composer + Itinerary + Booking**
+**Phase 9 — Real-Time Context + Events + Dynamic Replanning**
 
-Deliverables (not yet started):
-- Experience composition algorithm
-- AI narrative composer (Gemini LLM)
-- Post-composition feasibility validation
-- Itinerary object model
-- Booking request flow
-- Save experience to itinerary
+Phase 8 (deterministic itinerary composition with Gemini narrative generation) is Complete — see
+above. Phase 9 deliverables (not yet started):
+- Weather adapter (OpenWeather)
+- Event adapter (Ticketmaster / seed)
+- Real-time context update events
+- Dynamic Replanning Engine
+- WebSocket or SSE for live plan updates

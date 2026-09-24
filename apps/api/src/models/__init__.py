@@ -17,6 +17,9 @@ from src.models.user import User
 from src.models.interaction import TravelerInteraction
 from src.models.preference import TravelerPreference
 from src.models.affinity import TravelerAffinity
+from src.models.itinerary import Itinerary
+from src.models.itinerary_item import ItineraryItem
+from src.models.booking_request import BookingRequest
 
 __all__ = [
     "Base",
@@ -35,4 +38,7 @@ __all__ = [
     "TravelerInteraction",
     "TravelerPreference",
     "TravelerAffinity",
+    "Itinerary",
+    "ItineraryItem",
+    "BookingRequest",
 ]

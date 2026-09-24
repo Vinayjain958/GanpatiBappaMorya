@@ -177,26 +177,53 @@ USER NATURAL LANGUAGE / VOICE INPUT
      Deterministic Feasibility Engine   ← DETERMINISTIC  [Phase 6 — IMPLEMENTED]
      (FeasibilityService: tri-state verdict per candidate;
       only FEASIBLE candidates survive; UNKNOWN never
-      becomes FEASIBLE; DiscoveryPipelineService is the
-      hard gate — this is the CURRENT END of the pipeline)
+      becomes FEASIBLE; DiscoveryPipelineService.run() is the
+      hard gate)
               ↓
-     [ Personalized Ranking Engine — Phase 7, NOT IMPLEMENTED ]
-     (would score the FEASIBLE candidate pool; does not
-      exist yet — Phase 6's pipeline returns candidates
-      unranked)
+     Personalized Ranking Engine   ← DETERMINISTIC  [Phase 7 — IMPLEMENTED]
+     (WeightedPersonalizedRanker: scores the FEASIBLE candidate
+      pool using semantic relevance + affinity + preference +
+      budget/duration/distance fit + novelty; deterministic
+      weighted ranking with behavioral feedback learning, NOT
+      a trained ML model — DiscoveryPipelineService.run_with_ranking()
+      wraps run() + ranking as one logical pass)
               ↓
-     [ AI Experience Composer — Phase 8, NOT IMPLEMENTED ]
+     Itinerary Composition   ← DETERMINISTIC  [Phase 8 — IMPLEMENTED]
+     (ExperienceComposerService: two-stage greedy + bounded
+      local-improvement selection over the ranked FEASIBLE pool;
+      never recomputes Phase 7 scores; no external optimizer)
               ↓
-     [ Plan Validation (Feasibility Engine again) — Phase 8 ]
+     Post-Composition Validation   ← DETERMINISTIC  [Phase 8 — IMPLEMENTED]
+     (ItineraryValidatorService: re-runs FeasibilityService per
+      scheduled slot + schedule/itinerary-level checks; reuses
+      FeasibilityReasonCode; on INVALID, no plan is ever forced
+      through)
               ↓
-     [ Personalized Output → Client — Phase 8 ]
+     Gemini Narrative Generation   ← NON-AUTHORITATIVE  [Phase 8 — IMPLEMENTED]
+     (ItineraryNarratorService: facts-only prompt over the
+      already-VALID itinerary; anti-hallucination system
+      instruction; deterministic template fallback on any
+      Gemini failure — narrative success is never required for
+      a valid itinerary)
+              ↓
+     Persisted Itinerary → Client   [Phase 8 — IMPLEMENTED]
+     (Itinerary/ItineraryItem persisted; optional BookingRequest,
+      REQUESTED status only — never CONFIRMED)
 ```
 
-Phase 6 concretely implements the first two deterministic stages above
+Phase 6 implements the first two deterministic stages above
 (`src/services/semantic_retrieval.py`, `src/services/feasibility.py`,
-wired together by `src/services/discovery_pipeline.py`) and stops there
-by design — ranking, composition, and plan validation remain explicitly
-out of scope until Phases 7–8.
+wired together by `src/services/discovery_pipeline.py`). Phase 7 adds
+personalized ranking on top (`src/services/ranking.py`,
+`DiscoveryPipelineService.run_with_ranking()`). Phase 8 adds
+deterministic composition + mandatory re-validation + a purely
+decorative Gemini narrative layer on top of that
+(`src/services/experience_composer.py`,
+`src/services/itinerary_validator.py`,
+`src/services/itinerary_narrator.py`, orchestrated by
+`src/services/compose_itinerary.py`). Gemini is never authoritative for
+feasibility, ranking, ordering, timing, or booking confirmation at any
+stage of this pipeline.
 
 ### Dynamic Replanning Flow
 
@@ -335,11 +362,11 @@ All queries must be portable to PostgreSQL.
 | ExperienceMedia | 4 | PLANNED (no new media model added in Phase 4 — out of scope, see ROADMAP) |
 | ConversationSession, ConversationMessage | 5 | IMPLEMENTED (user-owned; transcript text + structured metadata only, no audio persisted) |
 | Event | 4/9 | PLANNED |
-| TravelerPreference, TravelerAffinity | 7 | PLANNED |
-| Review, Rating | 7 | PLANNED |
-| Itinerary, ItineraryItem | 8 | PLANNED |
-| Booking | 8 | PLANNED |
-| Interaction, SavedExperience | 7/8 | PLANNED |
+| TravelerPreference, TravelerAffinity | 7 | IMPLEMENTED |
+| Review, Rating | 7 | PLANNED (not part of Phase 7's actual scope — ranking uses affinity/preference, not reviews) |
+| Itinerary, ItineraryItem | 8 | IMPLEMENTED |
+| BookingRequest | 8 | IMPLEMENTED (REQUESTED/ACCEPTED/DECLINED/CANCELLED/EXPIRED — no CONFIRMED status, no payment fields) |
+| Interaction | 7 | IMPLEMENTED (as TravelerInteraction) |
 | ProviderInsight, DemandSignal | 10 | PLANNED |
 | WeatherSnapshot | 9 | PLANNED |
 | ReplanningEvent | 9 | PLANNED |
@@ -366,17 +393,23 @@ All queries must be portable to PostgreSQL.
 - Itinerary conflict detection
 - Capacity/group size validation
 
-### ML Responsibilities (Phase 7+)
-- Personalized ranking scores
-- Traveler affinity vectors
+### Deterministic Ranking Responsibilities (Phase 7 — IMPLEMENTED)
+- Personalized ranking scores (deterministic weighted sums — NOT a trained
+  ML model, see docs/PROJECT_STATE.md Partial)
+- Traveler affinity scores (per-category, exponentially decayed recency)
 - Traveler–experience matching
+
+### ML Responsibilities (Phase 10, future — not started)
 - Traveler–provider matching
 - Demand prediction
 
-### Optimization Responsibilities (Phase 8+)
-- Experience composition selection
-- Itinerary time slot allocation
-- Route ordering optimization
+### Optimization Responsibilities (Phase 8 — IMPLEMENTED)
+- Experience composition selection — `ExperienceComposerService`
+  (deterministic two-stage greedy + bounded local-improvement, no
+  external solver)
+- Itinerary time slot allocation — same service, timezone-aware
+- Route ordering — follows Phase 7 rank order; the composer never
+  recomputes or overrides a Phase 7 `ranking_score`
 
 **Critical invariant**: These responsibilities must never be merged.
 A single "AI service" that handles both LLM and deterministic logic is forbidden.

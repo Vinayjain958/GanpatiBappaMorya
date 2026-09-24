@@ -94,3 +94,10 @@ test-results/
 *.bak
 tmp/
 temp/
+
+# ─── Data pipeline ────────────────────────────────────────────────────────────
+# Raw ingested snapshots can be large and are reproducible from
+# scripts/ingest_overture.py — never commit them. Processed/curated
+# output (data/processed/) is small and IS committed for reproducibility.
+data/raw/*
+!data/raw/.gitkeep

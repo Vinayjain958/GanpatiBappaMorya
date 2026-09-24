@@ -30,115 +30,190 @@
 ## P1 — Application Foundation & UI System
 
 > **Target**: Working dev environment with both apps running. No business logic.
+> **Status**: ✅ Complete (2026-09-22)
 
 ### Frontend (apps/web/)
-- [ ] Initialize Next.js 16 project (`npx create-next-app@latest`)
-- [ ] Configure TypeScript (strict mode)
-- [ ] Configure Tailwind CSS v4
-- [ ] Establish color palette and design tokens
-- [ ] Create root layout component (`app/layout.tsx`)
-- [ ] Create shell/navigation components (header, sidebar)
-- [ ] Create page templates (traveler, provider)
-- [ ] Create typed API client (`src/lib/api/client.ts`)
-- [ ] Configure `NEXT_PUBLIC_API_BASE_URL` environment handling
-- [ ] Responsive layout foundations (mobile + desktop)
-- [ ] Add Google Fonts (Inter or Outfit)
-- [ ] Create `app/page.tsx` (landing page placeholder — not full UI)
+- [x] Initialize Next.js 16 project (`npx create-next-app@latest`)
+- [x] Configure TypeScript (strict mode)
+- [x] Configure Tailwind CSS v4
+- [x] Establish color palette and design tokens
+- [x] Create root layout component (`app/layout.tsx`)
+- [x] Create shell/navigation components (header, mobile tab bar)
+- [x] Create page templates (traveler, provider)
+- [x] Create typed API client (`lib/api/client.ts`)
+- [x] Configure `NEXT_PUBLIC_API_BASE_URL` environment handling
+- [x] Responsive layout foundations (mobile + desktop)
+- [x] Add Google Font (Plus Jakarta Sans, geometric sans)
+- [x] Create `app/page.tsx` (full landing page — hero, loop, examples, composer preview, provider CTA)
 
 ### Backend (apps/api/)
-- [ ] Initialize FastAPI project structure
-- [ ] Configure Pydantic v2 settings (env-based config)
-- [ ] Create `GET /health` endpoint
-- [ ] Create CORS middleware configuration
-- [ ] Create application factory (`create_app()`)
-- [ ] Define project module structure (`modules/`, `adapters/`, `core/`)
-- [ ] Create adapter interfaces (Python Protocol) for all external services
-- [ ] Create mock implementations for all adapters
-- [ ] Create environment startup validation (warn on missing optional keys; fail on required)
+- [x] Initialize FastAPI project structure
+- [x] Configure Pydantic v2 settings (env-based config)
+- [x] Create `GET /api/v1/health` endpoint
+- [x] Create CORS middleware configuration
+- [x] Create application factory (`create_app()`)
+- [x] Define project module structure (`api/`, `adapters/`, `core/`)
+- [x] Create adapter interfaces (Python Protocol) for all external services
+- [x] Create mock implementations for all adapters
+- [x] Create environment startup validation (warn on missing optional keys; fail on required)
 
 ### Developer Experience
-- [ ] Configure `pyproject.toml` / `requirements.txt` with pinned versions
-- [ ] Configure `package.json` scripts for concurrent dev (`npm run dev`)
-- [ ] Linting: Ruff (Python), ESLint + Prettier (TypeScript)
-- [ ] Type checking: mypy or pyright (Python), `tsc --noEmit` (TypeScript)
-- [ ] Add `scripts/dev.sh` or `scripts/dev.ps1` to start both apps
+- [x] Configure `pyproject.toml` / `requirements.txt` with pinned versions
+- [x] Configure `package.json` scripts for dev (`npm run dev`)
+- [x] Linting: Ruff (Python), ESLint (TypeScript)
+- [x] Type checking: mypy --strict (Python), `tsc --noEmit` (TypeScript)
+- [x] Add `scripts/dev.sh` and `scripts/dev.ps1` to start both apps
 
 ---
 
-## P2 — Database, Models & Realistic Seed Data
+## P2 — Database, Models, Open Data Ingestion & Realistic Experience Data
 
-> **Target**: Queryable database with realistic demo data.
+> **Target**: Queryable database with a real-open-data + synthetic hybrid catalog.
+> **Status**: ✅ Complete (2026-09-22)
 
-- [ ] Configure SQLAlchemy async engine factory
-- [ ] Configure Alembic (async-compatible)
-- [ ] Create base model class (timestamps, UUID primary keys)
-- [ ] Model: `User` (id, email, hashed_password, role, created_at)
-- [ ] Model: `Traveler` (extends User; preferences, accessibility)
-- [ ] Model: `Provider` (extends User; business name, description)
-- [ ] Model: `Experience` (id, provider_id, title, description, category, location, pricing, capacity, accessibility, opening_hours, is_synthetic)
-- [ ] Model: `ExperienceCategory` (id, name, slug)
-- [ ] Model: `Location` (id, lat, lng, place_name, address, city, country)
-- [ ] Generate initial Alembic migration
-- [ ] Create seed script (`scripts/seed.py`)
-- [ ] Seed data: 15–25 Mumbai/Fort/Kala Ghoda area experiences (synthetic; labelled)
-- [ ] Seed data: 3–5 demo provider accounts (synthetic; labelled)
-- [ ] Verify seed data runs clean on fresh database
+### Database & models
+- [x] Configure SQLAlchemy async engine factory (`apps/api/src/core/db.py`)
+- [x] Configure Alembic (async-compatible; `apps/api/alembic/`)
+- [x] Create shared mixins: `UUIDPrimaryKeyMixin`, `TimestampMixin`, `ProvenanceMixin`
+- [x] Model: `User` (id, email, password_hash, role, is_active)
+- [x] Model: `Traveler` (user_id, traveler_type, preferences, accessibility_requirements)
+- [x] Model: `Provider` (business_name, provider_type, verification_status, provenance)
+- [x] Model: `ExperienceCategory` (slug, name, description, icon, sort_order)
+- [x] Model: `Location` (lat, lng, place_name, address, locality, city, provenance)
+- [x] Model: `Experience` (full field set — see `apps/api/src/models/experience.py`)
+- [x] Model: `ExperienceOpeningHour` (day_of_week, open_time, close_time, is_closed)
+- [x] Generate + verify initial Alembic migration against a fresh database
+
+### Overture Maps ingestion
+- [x] Research current official Overture docs/tooling (DuckDB spatial/httpfs, no API key)
+- [x] `scripts/ingest_overture.py` — Mumbai bbox query, category allowlist, confidence threshold
+- [x] `src/core/category_map.py` — 20-category LocaLens taxonomy + Overture category mapping
+- [x] Deduplication (source_record_id, normalized-name + proximity) and validation
+- [x] Provenance extraction (source dataset, record id, license) preserved per record
+- [x] Ingestion report (raw/accepted/rejected counts by reason) written to `data/processed/`
+
+### Synthetic layer & seeding
+- [x] `scripts/synthetic_data.py` — templated, deterministic, clearly labelled synthetic data
+- [x] `scripts/seed.py` — full reseed: categories, Overture-derived + synthetic providers/experiences
+- [x] Verify seed data runs clean on a fresh database (353 experiences, 311 providers, 20
+      categories, 353 locations, 0 duplicate source IDs)
+
+### API & frontend integration
+- [x] `ExperienceRepository`/`ProviderRepository`/`CategoryRepository`/`LocationRepository`
+- [x] Pydantic response schemas (`schemas/experience.py`) — no SQLAlchemy model exposed directly
+- [x] `GET /api/v1/experiences` (category/city/status/limit/offset) + `GET /api/v1/experiences/{id}`
+- [x] Discover page + detail page render database-backed data with loading/error states
+- [x] `data/README.md` — full provenance, licensing, and attribution documentation
+
+### Tests
+- [x] Database/session/relationship tests, ingestion pure-function tests, synthetic-data
+      determinism tests, API list/detail/pagination/filter/404 tests (27 total, all passing)
 
 ---
 
 ## P3 — Authentication, Roles & Provider Foundation
 
 > **Target**: Secure API; providers can create listings.
+> **Status**: ✅ Complete (2026-09-22)
 
-- [ ] JWT access + refresh token implementation
-- [ ] `POST /auth/register` (traveler and provider)
-- [ ] `POST /auth/login`
-- [ ] `POST /auth/refresh`
-- [ ] Role enum: `TRAVELER`, `PROVIDER`, `ADMIN`
-- [ ] Role-based route guards (FastAPI dependency)
-- [ ] `GET/PUT /providers/me` (provider profile)
-- [ ] `POST /experiences` (provider creates listing)
-- [ ] `PUT /experiences/{id}` (provider edits listing)
-- [ ] `DELETE /experiences/{id}` (provider removes listing)
-- [ ] Availability model + CRUD endpoints
-- [ ] Frontend: login, register, role-based routing
-- [ ] Frontend: provider dashboard shell
+### Backend — auth
+- [x] JWT access (~15 min, memory-only) + refresh (~7 days, HttpOnly cookie) token implementation
+- [x] `POST /api/v1/auth/register` (traveler and provider; ADMIN rejected)
+- [x] `POST /api/v1/auth/login`
+- [x] `POST /api/v1/auth/refresh` (rotation + reuse detection)
+- [x] `POST /api/v1/auth/logout` (session revocation)
+- [x] `GET /api/v1/auth/me`
+- [x] `AuthSession` model — hashed refresh tokens, rotation, revocation
+- [x] Argon2 password hashing (`pwdlib`)
+- [x] Role enum: `TRAVELER`, `PROVIDER`, `ADMIN`
+- [x] Role-based route guards (`get_current_user`, `require_role`, `get_current_provider`)
+- [x] `scripts/create_admin.py` — env-driven, the only way to create an ADMIN account
+
+### Backend — provider & experience CRUD
+- [x] `GET/PUT /api/v1/providers/me` (provider profile)
+- [x] `GET /api/v1/providers/me/experiences` (owner-scoped list)
+- [x] `GET /api/v1/categories`
+- [x] `POST /api/v1/experiences` (provider creates listing; `provider_id` server-derived)
+- [x] `PATCH /api/v1/experiences/{id}` (owner-only; protected fields excluded)
+- [x] `DELETE /api/v1/experiences/{id}` (owner-only soft-delete → `status="inactive"`)
+- [x] `ExperienceAvailability` model + full CRUD endpoints (owner-scoped mutations, public read)
+- [x] Fixed a Phase 2 seed-script bug that would have wiped registered accounts on reseed
+
+### Frontend
+- [x] `AuthProvider`/`useAuth`, in-memory token store, automatic 401-refresh-retry API client
+- [x] Real login/register forms wired to the API
+- [x] Role-aware navigation (`SiteHeader`)
+- [x] `apps/web/proxy.ts` — optimistic route guard for `/trip`, `/saved`, `/provider*`
+- [x] Provider dashboard connected to real data (no fabricated analytics)
+- [x] `/provider/experiences` full CRUD UI (`ExperienceForm`, `AvailabilityManager`)
+
+### Tests
+- [x] 45 new tests (72 total): registration/login/refresh-rotation/reuse-detection/logout, role
+      authorization, provider/availability ownership isolation, catalog-experience protection,
+      CORS/cookie flags, seed-safety — all passing alongside `ruff`, `mypy --strict`, frontend
+      `lint`/`tsc --noEmit`/`build`
 
 ---
 
 ## P4 — Experience Discovery, Catalog & OSM Location Layer
 
 > **Target**: Experiences discoverable via location + basic filters + map view.
+> **Status**: ✅ Complete (2026-09-22)
 
-- [ ] `GET /experiences` (search, filter, paginate, location radius)
-- [ ] `GET /experiences/{id}` (detail)
-- [ ] `GeocodingAdapter` interface + Nominatim implementation + mock
-- [ ] `RoutingAdapter` interface + OSRM implementation + mock
-- [ ] `POIAdapter` interface + Overpass implementation + mock
-- [ ] Location radius search (PostGIS or haversine formula)
-- [ ] MapLibre GL JS map component (frontend)
-- [ ] Experience pins on map
-- [ ] Experience detail page (frontend)
-- [ ] Category filter UI
-- [ ] Distance + travel time display
+- [x] `GET /experiences` (search, filter, paginate, location radius)
+- [x] `GET /experiences/{id}` (detail — already existed from Phase 2, unchanged)
+- [x] `GeocodingAdapter` interface + Nominatim implementation + mock
+- [x] `RoutingAdapter` interface + OSRM implementation + mock
+- [x] `POIAdapter` interface + Overpass implementation + mock
+- [x] Location radius search (portable Haversine + bounding-box, no PostGIS — see ADR-022)
+- [x] MapLibre GL JS map component (frontend, replacing the Phase 1 placeholder)
+- [x] Experience pins on map (clustered GeoJSON source, not per-marker DOM nodes)
+- [x] Experience detail page location/route section (frontend)
+- [x] Category filter UI (chips, carried forward + wired to real filter params)
+- [x] Distance + travel time display (honestly labelled `osrm` vs `haversine_estimate`)
+- [x] `GET/POST /api/v1/location/{search,reverse,nearby-pois,route,travel-time-matrix}`
+- [x] `LOCATION_SERVICES_ENABLED` kill switch + Mock adapter fallback
+- [x] URL-synchronized discovery state (`?q=&category=&lat=&lng=&radius_km=&sort=`)
+- [x] "Search this area" — map pan/zoom never auto-triggers a re-query
+- [x] 70 new backend tests (142 total) — geo math, discovery, adapters (fake HTTP client, no real
+      network calls in the suite), location API, categories — all passing alongside `ruff`,
+      `mypy --strict`, frontend `lint`/`tsc --noEmit`/`build`
+- [x] `data/README.md` §9 — Nominatim/Overpass/OSRM/MapLibre/OpenFreeMap attribution & scope
+- [x] `docs/DECISIONS.md` ADR-022 through ADR-032
 
 ---
 
 ## P5 — Conversational AI + Gemini Live Voice Agent
 
 > **Target**: Traveler can describe request in text or voice; system returns relevant experiences.
+> **Status**: ✅ Complete (2026-09-22), pending user's manual live-key verification
 
-- [ ] `AIAdapter` interface + GeminiAdapter + MockAIAdapter
-- [ ] `TravelerContext` Pydantic schema (full context model)
-- [ ] Prompt template for intent extraction → `TravelerContext`
-- [ ] `POST /conversation/extract-context` endpoint
-- [ ] Conversational session model (server-side state)
-- [ ] `POST /conversation/message` endpoint (text turn)
-- [ ] `POST /auth/live-token` (ephemeral token for Gemini Live)
-- [ ] Voice UI component (browser WebSocket → Gemini Live)
-- [ ] Gemini function/tool calling integration
-- [ ] Tool: `search_experiences` (calls discovery engine)
-- [ ] End-to-end: voice input → intent extraction → experience results
+- [x] `AIAdapter` interface + `GeminiAIAdapter` + `MockAIAdapter` (graceful text fallback,
+      voice always fails loudly rather than faking a connection)
+- [x] `TravelerContext` Pydantic schema (scoped to Phase 5 needs — understanding + retrieval,
+      not itinerary/feasibility), shared by text and voice paths
+- [x] Structured-output prompt for intent extraction → `TravelerContext` (one Gemini call per
+      text turn; `response_mime_type`/`response_schema`)
+- [x] `POST /api/v1/conversations` + `POST /api/v1/conversations/{id}/messages` (text turn)
+- [x] Conversation session model (`ConversationSession`/`ConversationMessage`, user-owned,
+      cascade-deleted, transcript text only — no audio persisted)
+- [x] `GET /api/v1/conversations/{id}` (bounded history)
+- [x] `POST /api/v1/auth/live-token` (`require_traveler`-gated ephemeral token for Gemini Live,
+      `live_connect_constraints` locks model/tools/system instruction server-side)
+- [x] Real voice UI (`components/voice/`, `hooks/useVoiceAgent.ts`) — AudioWorklet PCM capture,
+      scheduled PCM playback with barge-in, `@google/genai` browser SDK Live connection
+- [x] Gemini function/tool calling integration (session resumption, GoAway handling,
+      transcription)
+- [x] Tool: `search_experiences` (thin wrapper around the existing `ExperienceDiscoveryService`
+      — zero new search logic) — the only Gemini tool this phase
+- [x] `POST /api/v1/conversations/{id}/tool-calls` — the voice-path bridge; the only place
+      `search_experiences` actually executes, never the browser
+- [x] End-to-end: text/voice input → intent extraction → real experience results →
+      `DiscoveryState` patch (app-controlled translation, never the model)
+- [x] 30 new backend tests (172 total), 20 new frontend Vitest tests (framework newly
+      introduced) — all passing alongside `ruff`/`mypy --strict`/`tsc --noEmit`/`eslint`/`build`
+- [ ] Manual verification with a real `GEMINI_API_KEY` (browser↔Google Live audio round-trip) —
+      requires the user's own key; see docs/DECISIONS.md ADR-035
 
 ---
 
@@ -146,20 +221,39 @@
 
 > **Target**: Semantic search active. Infeasible experiences never reach ranking.
 
-- [ ] Experience embedding generation (Gemini embedding model)
-- [ ] pgvector setup (Supabase / production migration)
-- [ ] Semantic search endpoint
-- [ ] Keyword fallback for SQLite/dev mode
-- [ ] Feasibility Engine: opening hours check
-- [ ] Feasibility Engine: budget check
-- [ ] Feasibility Engine: travel time / distance check
-- [ ] Feasibility Engine: group size / capacity check
-- [ ] Feasibility Engine: accessibility check
-- [ ] Feasibility Engine: itinerary conflict check
-- [ ] Feasibility Engine: availability / provider availability check
-- [ ] Machine-readable rejection reason codes
-- [ ] Tool: `check_feasibility`
-- [ ] Integration tests: verify no infeasible experience passes the filter
+- [x] Experience embedding generation (Gemini embedding model) — `GeminiEmbeddingAdapter`
+      implemented against the documented `google-genai` SDK surface; **NOT VERIFIED live — no
+      `GEMINI_API_KEY` available**. `MockEmbeddingAdapter` (deterministic) verified via the full
+      test suite and `scripts/index_embeddings.py` run against the seeded dev DB
+- [x] pgvector setup (Supabase / production migration) — Alembic migration branches per-dialect
+      (`CREATE EXTENSION IF NOT EXISTS vector`, `vector(1536)` column, HNSW cosine index);
+      **NOT VERIFIED live — no PostgreSQL instance available**
+- [x] Semantic search endpoint — `POST /api/v1/experiences/semantic-search`, verified on SQLite
+- [x] Keyword fallback for SQLite/dev mode — reuses the existing Phase 4
+      `ExperienceDiscoveryService`, selected automatically when embeddings are
+      unavailable/disabled or when the query text is empty
+- [x] Feasibility Engine: opening hours check — timezone-aware (`zoneinfo`), handles
+      overnight/midnight-crossing windows and closed days; missing data + required = UNKNOWN
+- [x] Feasibility Engine: budget check — INR-only (no currency conversion); missing price +
+      hard budget = UNKNOWN; mismatched currency = UNKNOWN
+- [x] Feasibility Engine: travel time / distance check — Haversine for explicit max-distance;
+      OSRM (existing `RoutingAdapter`) for travel time; OSRM unavailable + hard constraint =
+      UNKNOWN, never substituted with Haversine
+- [x] Feasibility Engine: group size / capacity check — real stored `capacity`/
+      `maximum_group_size` only; missing + required = UNKNOWN
+- [x] Feasibility Engine: accessibility check — only checked when explicitly requested; only
+      from stored `wheelchair_accessible`/`step_free`; missing + required = UNKNOWN
+- [x] Feasibility Engine: itinerary conflict check — plain `CommittedTimeBlock` interval input
+      (deterministic interval arithmetic); no `Itinerary`/`ItineraryItem` persistence model
+      (that's Phase 8's scope, per the phase brief)
+- [x] Feasibility Engine: availability / provider availability check — real
+      `ExperienceAvailability` slot containment; missing + required = UNKNOWN
+- [x] Machine-readable rejection reason codes — centralized `FeasibilityReasonCode` enum
+- [x] Tool: `check_feasibility` — second Gemini tool; backend-owned execution; schema has no
+      field for price/hours/capacity/availability
+- [x] Integration tests: verify no infeasible experience passes the filter —
+      `tests/test_discovery_pipeline.py` (3-candidate scenario + all-excluded-returns-empty
+      case); 41 additional unit tests cover every individual check
 
 ---
 

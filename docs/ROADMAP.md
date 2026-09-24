@@ -77,7 +77,7 @@ PHASE 12 (Integration, Testing, Hardening & Deployment)
 
 ### PHASE 1 — Application Foundation & UI System
 
-**Status**: ⏳ Not started
+**Status**: ✅ Complete
 
 **Depends on**: Phase 0
 
@@ -97,109 +97,130 @@ PHASE 12 (Integration, Testing, Hardening & Deployment)
 
 ---
 
-### PHASE 2 — Database, Models & Realistic Seed Data
+### PHASE 2 — Database, Models, Open Data Ingestion & Realistic Experience Data
 
-**Status**: ⏳ Not started
+**Status**: ✅ Complete
 
 **Depends on**: Phase 1
 
-**Goal**: Establish the database layer and a realistic dataset for development.
+**Goal**: Establish the database layer and a realistic hybrid (open-data + synthetic) dataset.
 
 **Deliverables**:
-- SQLAlchemy async engine + session factory
-- Alembic migration pipeline initialized
-- Core models: User, Traveler, Provider, Experience, ExperienceCategory, Location
-- Seed data: Mumbai/Fort/Kala Ghoda area experiences (realistic; explicitly synthetic)
-- Seed script (`scripts/seed.py`)
-- Model schemas validated via Pydantic
+- SQLAlchemy async engine + session factory; Alembic migration pipeline initialized
+- Core models: User, Traveler, Provider, ExperienceCategory, Location, Experience,
+  ExperienceOpeningHour, with a shared provenance mixin
+- Overture Maps Places ingestion pipeline (Mumbai bbox, DuckDB spatial/httpfs, no API key)
+- LocaLens category taxonomy (20 categories) + Overture category mapping
+- Deduplication, validation, and provenance-preserving normalization
+- Synthetic demo layer (templated, labelled) filling gaps open POI data cannot describe
+- Seed script populating 353 experiences / 311 providers / 20 categories / 353 locations
+- `GET /api/v1/experiences` + `GET /api/v1/experiences/{id}`, Pydantic schemas, repositories
+- Discover UI connected to the live API
+- `data/README.md` — full source, licensing, and attribution documentation
 
-**Phase Gate**: Database migrates. Seed script runs. Experiences queryable via API.
+**Phase Gate**: Database migrates. Seed script runs. Experiences queryable via API. ✅ Met.
 
 ---
 
 ### PHASE 3 — Authentication, Roles & Provider Foundation
 
-**Status**: ⏳ Not started
+**Status**: ✅ Complete
 
 **Depends on**: Phase 2
 
 **Goal**: Secure the API and enable provider accounts and experience listings.
 
 **Deliverables**:
-- JWT authentication (access + refresh tokens)
-- Role system: TRAVELER, PROVIDER, ADMIN
+- JWT authentication (memory-only access token + HttpOnly-cookie refresh token, rotation +
+  reuse detection via `AuthSession`)
+- Role system: TRAVELER, PROVIDER, ADMIN (ADMIN never self-registrable)
 - User registration + login endpoints
 - Provider profile creation and editing
-- Experience CRUD (provider-owned)
-- Availability management (provider-side)
-- Route guards (frontend + API)
+- Experience CRUD (provider-owned, ownership always server-derived)
+- Availability management (provider-side, `ExperienceAvailability` model)
+- Route guards (frontend optimistic `proxy.ts` + authoritative FastAPI dependencies)
+- Catalog-imported/synthetic provider lineages kept distinct from registered accounts
 
-**Phase Gate**: A provider can register, create a listing, and set availability. Authentication enforced.
+**Phase Gate**: A provider can register, create a listing, and set availability. Authentication
+enforced. ✅ Met — see docs/PROJECT_STATE.md and the Phase 3 changelog entry.
 
 ---
 
 ### PHASE 4 — Experience Discovery, Catalog & OSM Location Layer
 
-**Status**: ⏳ Not started
+**Status**: ✅ Complete
 
 **Depends on**: Phase 2, Phase 3
 
 **Goal**: Make experiences discoverable via location and basic filters.
 
 **Deliverables**:
-- Experience catalog API (search, filter, paginate)
+- Experience catalog API (search, filter, paginate) — `GET /api/v1/experiences` extended with
+  keyword/category/price/duration/radius/sort
 - `GeocodingAdapter` (Nominatim) + mock fallback
 - `RoutingAdapter` (OSRM) for travel time + mock fallback
 - `POIAdapter` (Overpass) for nearby POI discovery + mock fallback
-- Location-radius search endpoint
-- MapLibre GL JS integration (frontend map view)
-- Experience detail page
+- Location-radius search endpoint — portable Haversine + bounding-box (ADR-022)
+- MapLibre GL JS integration (frontend map view, OpenFreeMap tiles)
+- Experience detail page location/route section
 
-**Phase Gate**: Traveler can browse experiences on a map and filter by location radius.
+**Phase Gate**: Traveler can browse experiences on a map and filter by location radius. ✅ Met —
+see docs/PROJECT_STATE.md and docs/DECISIONS.md ADR-022 through ADR-032.
 
 ---
 
 ### PHASE 5 — Conversational AI + Gemini Live Voice Agent
 
-**Status**: ⏳ Not started
+**Status**: ✅ Complete (pending user's manual live-key verification)
 
 **Depends on**: Phase 4
 
 **Goal**: Enable natural language and voice as the primary traveler interaction mode.
 
 **Deliverables**:
-- `AIAdapter` (Gemini text) + mock fallback
-- `TravelerContext` structured schema
-- Intent extraction from natural language → `TravelerContext`
-- Conversational session management (server-side)
-- Ephemeral token endpoint (`POST /auth/live-token`) for Gemini Live
-- Voice UI component (browser WebSocket to Gemini Live)
-- Gemini function/tool calling → application tools
-- Initial tool: `search_experiences`
+- `AIAdapter` (`GeminiAIAdapter`, `gemini-3.8-flash`/`gemini-3.8-live`) + `MockAIAdapter` fallback
+- `TravelerContext` structured schema, shared by text and voice
+- Intent extraction from natural language → `TravelerContext` (one Gemini call per text turn)
+- Conversational session management (server-side, `ConversationSession`/`ConversationMessage`)
+- Ephemeral token endpoint (`POST /auth/live-token`) for Gemini Live, `live_connect_constraints`
+  locking model/tools/system instruction server-side
+- Real voice UI (`@google/genai` browser SDK, AudioWorklet PCM capture/playback)
+- Gemini function/tool calling → application tools, backend-only execution
+- Initial (and only) tool: `search_experiences` — reuses the Phase 4 discovery engine directly
 
-**Phase Gate**: Traveler can describe a request in text or voice; system returns relevant experiences.
+**Phase Gate**: Traveler can describe a request in text or voice; system returns relevant
+experiences. ✅ Met for text and the application-side voice contract (automated tests, no real
+Gemini network calls); the real browser↔Google audio round-trip requires the user's own
+`GEMINI_API_KEY` to manually verify — see docs/DECISIONS.md ADR-035.
 
 ---
 
 ### PHASE 6 — Semantic Retrieval + Constraint / Feasibility Engine
 
-**Status**: ⏳ Not started
+**Status**: ✅ Complete (real Gemini embedding + live pgvector verification pending — no API
+key / no PostgreSQL instance available in this environment)
 
 **Depends on**: Phase 5
 
 **Goal**: Replace keyword search with semantic retrieval. Enforce deterministic feasibility.
 
 **Deliverables**:
-- Experience embedding generation (via Gemini embedding model)
-- pgvector integration (Supabase/PostgreSQL)
-- Semantic search endpoint
-- Keyword fallback for SQLite/dev mode
-- Deterministic Feasibility Engine (all constraint types)
-- Machine-readable rejection reason codes
-- Full pipeline: retrieval → feasibility → filtered candidates
-- Feasibility tool for Gemini: `check_feasibility`
+- Experience embedding generation (via Gemini embedding model) — implemented
+  (`GeminiEmbeddingAdapter`, NOT VERIFIED live) + `MockEmbeddingAdapter` (verified)
+- pgvector integration (Supabase/PostgreSQL) — migration + repository path implemented,
+  NOT VERIFIED live
+- Semantic search endpoint — `POST /api/v1/experiences/semantic-search`, verified on SQLite
+- Keyword fallback for SQLite/dev mode — reuses the Phase 4 discovery service
+- Deterministic Feasibility Engine (all constraint types) — active status, budget, duration,
+  distance, travel time, total time, opening hours, availability, capacity, accessibility,
+  itinerary conflicts; zero LLM calls; tri-state verdict
+- Machine-readable rejection reason codes — centralized `FeasibilityReasonCode` enum
+- Full pipeline: retrieval → feasibility → filtered candidates — `DiscoveryPipelineService`
+- Feasibility tool for Gemini: `check_feasibility` — backend-owned, schema forbids invented facts
 
-**Phase Gate**: Infeasible experiences are never returned to the ranking stage. Reason codes returned.
+**Phase Gate**: ✅ Met — `DiscoveryPipelineService` only ever returns FEASIBLE candidates in
+`items`; excluded candidates are summarized with reason codes; verified via
+`tests/test_discovery_pipeline.py` and 41 `FeasibilityService` unit tests.
 
 ---
 

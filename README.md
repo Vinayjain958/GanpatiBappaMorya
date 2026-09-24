@@ -80,9 +80,16 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full architectural co
 /
 ├── apps/
 │   ├── web/          ← Next.js frontend (Phase 1+)
-│   └── api/          ← FastAPI backend (Phase 1+)
+│   └── api/          ← FastAPI backend + database + ingestion scripts (Phase 1+)
+│       ├── src/models/, src/repositories/, src/schemas/  ← database layer (Phase 2)
+│       ├── alembic/                                       ← migrations (Phase 2)
+│       └── scripts/    ← ingest_overture.py, synthetic_data.py, seed.py (Phase 2)
+├── data/
+│   ├── processed/    ← committed, curated ingestion output (small)
+│   ├── raw/          ← gitignored raw Overture export
+│   └── README.md     ← data source, licensing & attribution documentation
 ├── docs/             ← Architecture, contracts, decisions, roadmap
-├── scripts/          ← Developer utility scripts
+├── scripts/          ← Cross-repo developer utility scripts (dev.ps1/dev.sh)
 ├── tests/            ← Cross-app integration tests
 ├── .env.example      ← Environment variable contract (no secrets)
 ├── .gitignore
@@ -93,10 +100,57 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full architectural co
 
 ## Current Phase
 
-**PHASE 0 — Reset, Baseline & Master Contract**
+**PHASE 6 — Semantic Retrieval + Constraint / Feasibility Engine** ✅ (real Gemini embedding
+verification and live pgvector verification both pending — no API key / no PostgreSQL instance
+available in this environment)
 
-The engineering foundation, documentation, and architectural contract have been established.
-No application code exists yet. Phase 1 begins next.
+LocaLens now retrieves candidates semantically and verifies every one deterministically before
+it can ever reach a traveler, on top of the Phase 5 conversational understanding layer and the
+Phase 4 location-aware discovery engine (353 experiences — 288 Overture-derived + 65 labelled
+synthetic — across 20 categories, 311 providers). A traveler's request is embedded and matched
+against the catalog (real `pgvector` on PostgreSQL — not yet verified live; a portable Python
+cosine-similarity path on SQLite — verified), then every candidate is run through a 100%
+deterministic `FeasibilityService` (budget, duration, travel time/distance, opening hours,
+availability, capacity, accessibility, itinerary conflicts) that returns a tri-state
+FEASIBLE/INFEASIBLE/UNKNOWN verdict — the LLM is never the feasibility authority, and only
+FEASIBLE candidates are ever returned to the traveler. Gemini gained a second tool,
+`check_feasibility`, whose argument schema has no field for price/hours/capacity/availability,
+so it cannot supply an invented fact even if it tried. `GEMINI_API_KEY` still never reaches the
+browser — only a short-lived, server-locked ephemeral token. See `docs/DECISIONS.md`
+ADR-040–ADR-044 for the architecture and `docs/PROJECT_STATE.md` for full status labels.
+Personalized ML ranking, the AI experience composer, itinerary generation, and booking are not
+implemented yet.
+
+To try voice locally, set a real `GEMINI_API_KEY` in `.env` (see `.env.example`) — without one,
+text discovery still works via a deterministic mock, and the microphone clearly shows
+unavailable rather than faking a connection.
+
+### Running locally
+
+```bash
+# Backend
+cd apps/api && python -m venv .venv && .venv\Scripts\activate
+pip install -r requirements-dev.txt
+alembic upgrade head
+python scripts/seed.py          # reseed the catalog (uses the committed data/processed/ snapshot)
+uvicorn src.main:app --reload --port 8000
+
+# Frontend (separate terminal)
+cd apps/web && npm install && npm run dev
+```
+
+Or run both together: `powershell -File scripts/dev.ps1` (Windows) / `./scripts/dev.sh` (POSIX).
+
+Then register a traveler or provider account at `/register`. To create a local ADMIN account
+(never self-registrable), set `ADMIN_SEED_EMAIL`/`ADMIN_SEED_PASSWORD` in `.env` and run
+`python scripts/create_admin.py` from `apps/api/`.
+
+To re-run open-data ingestion against Overture directly (optional — requires network access
+and `pip install -r requirements-ingestion.txt`):
+
+```bash
+cd apps/api && python scripts/ingest_overture.py
+```
 
 See [`docs/PROJECT_STATE.md`](docs/PROJECT_STATE.md) for detailed status.
 See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the full phase roadmap.

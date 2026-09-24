@@ -1,0 +1,202 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { List, Map as MapIcon, SearchX } from "lucide-react";
+import { PageContainer } from "@/components/layout/PageContainer";
+import { ConversationalDiscoveryInput } from "@/components/discovery/ConversationalDiscoveryInput";
+import { CategoryChips } from "@/components/discovery/CategoryChips";
+import { FilterBar } from "@/components/discovery/FilterBar";
+import { LocationBar } from "@/components/discovery/LocationBar";
+import { ExperienceCard } from "@/components/experience/ExperienceCard";
+import { MapSurface } from "@/components/common/MapSurface";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { Button } from "@/components/ui/Button";
+import { useExperienceDiscovery } from "@/hooks/useExperienceDiscovery";
+import { discoveryStateToParams, parseDiscoveryStateFromParams } from "@/lib/discovery/urlState";
+import { experiencesToFeatureCollection } from "@/lib/geo/geojson";
+import { haversineKm } from "@/lib/geo/haversine";
+import { DEFAULT_DISCOVERY_STATE } from "@/types/discovery";
+import { cn } from "@/lib/utils/cn";
+
+export function DiscoverExperience() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const [discoveryState, setDiscoveryState] = useState(() => parseDiscoveryStateFromParams(searchParams));
+  const [reloadToken, setReloadToken] = useState(0);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [mobileView, setMobileView] = useState<"list" | "map">("list");
+
+  const { experiences, total, status } = useExperienceDiscovery(discoveryState, reloadToken);
+
+  // Keep the URL shareable/reproducible without triggering a full navigation.
+  useEffect(() => {
+    const params = discoveryStateToParams(discoveryState);
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [discoveryState]);
+
+  const hasLocation = discoveryState.lat != null && discoveryState.lng != null;
+  const origin = hasLocation ? { lat: discoveryState.lat!, lng: discoveryState.lng! } : null;
+
+  const featureCollection = useMemo(
+    () => experiencesToFeatureCollection(experiences, selectedId),
+    [experiences, selectedId],
+  );
+
+  function handleSearchThisArea(bounds: { minLat: number; maxLat: number; minLng: number; maxLng: number }) {
+    const centerLat = (bounds.minLat + bounds.maxLat) / 2;
+    const centerLng = (bounds.minLng + bounds.maxLng) / 2;
+    const radius = haversineKm(centerLat, centerLng, bounds.maxLat, bounds.maxLng);
+    setDiscoveryState((s) => ({
+      ...s,
+      lat: centerLat,
+      lng: centerLng,
+      locationLabel: s.locationLabel ?? "this area",
+      radiusKm: Math.max(0.5, Math.round(radius * 10) / 10),
+    }));
+  }
+
+  return (
+    <PageContainer className="space-y-6 py-8">
+      <div className="space-y-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Discover</h1>
+          <p className="text-sm text-ink-muted">Search by what you want, then narrow by location.</p>
+        </div>
+        <ConversationalDiscoveryInput
+          size="compact"
+          suggestions={discoveryState.q ? [] : undefined}
+          onSubmitQuery={(q) => setDiscoveryState((s) => ({ ...s, q }))}
+          onDiscoveryPatch={(patch) => setDiscoveryState((s) => ({ ...s, ...patch }))}
+        />
+        {discoveryState.q ? (
+          <p className="text-sm text-ink-muted">
+            Showing results shaped by:{" "}
+            <span className="font-medium text-ink">&ldquo;{discoveryState.q}&rdquo;</span>{" "}
+            <span className="text-ink-subtle">(keyword + filter matching &mdash; no AI retrieval yet)</span>
+          </p>
+        ) : null}
+      </div>
+
+      <div className="space-y-3">
+        <LocationBar
+          value={{
+            lat: discoveryState.lat,
+            lng: discoveryState.lng,
+            label: discoveryState.locationLabel,
+            radiusKm: discoveryState.radiusKm,
+          }}
+          onChange={(loc) =>
+            setDiscoveryState((s) => ({
+              ...s,
+              lat: loc.lat,
+              lng: loc.lng,
+              locationLabel: loc.label,
+              radiusKm: loc.radiusKm,
+              sort: loc.lat == null && s.sort === "distance" ? "relevance" : s.sort,
+            }))
+          }
+        />
+        <CategoryChips
+          value={discoveryState.category}
+          onChange={(category) => setDiscoveryState((s) => ({ ...s, category }))}
+        />
+        <FilterBar
+          value={{ budget: discoveryState.budget, duration: discoveryState.duration, sort: discoveryState.sort }}
+          onChange={(v) => setDiscoveryState((s) => ({ ...s, ...v }))}
+          hasLocation={hasLocation}
+        />
+      </div>
+
+      {/* Mobile: list/map toggle — never a permanent split-screen on small viewports. */}
+      <div className="flex items-center gap-2 lg:hidden">
+        <Button
+          size="sm"
+          variant={mobileView === "list" ? "primary" : "outline"}
+          onClick={() => setMobileView("list")}
+        >
+          <List className="size-4" aria-hidden="true" />
+          List
+        </Button>
+        <Button
+          size="sm"
+          variant={mobileView === "map" ? "primary" : "outline"}
+          onClick={() => setMobileView("map")}
+        >
+          <MapIcon className="size-4" aria-hidden="true" />
+          Map
+        </Button>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
+        <div className={cn("space-y-4", mobileView === "map" && "hidden lg:block")}>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-ink-muted">
+              {status === "success" ? `${experiences.length} of ${total} experiences` : "Loading experiences…"}
+            </p>
+          </div>
+
+          {status === "loading" ? (
+            <div className="grid gap-5 sm:grid-cols-2" aria-busy="true" aria-live="polite">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <Skeleton key={index} className="h-72 w-full rounded-xl" />
+              ))}
+            </div>
+          ) : status === "error" ? (
+            <ErrorState
+              title="Couldn't load experiences"
+              description="The LocaLens API might not be running. Start it and try again."
+              onRetry={() => setReloadToken((token) => token + 1)}
+            />
+          ) : experiences.length === 0 ? (
+            <EmptyState
+              icon={SearchX}
+              title="No experiences found"
+              description="Try a different category, a larger radius, or loosen your filters."
+              action={
+                discoveryState.q || discoveryState.category || hasLocation ? (
+                  <Button size="sm" variant="outline" onClick={() => setDiscoveryState(DEFAULT_DISCOVERY_STATE)}>
+                    Clear all filters
+                  </Button>
+                ) : undefined
+              }
+            />
+          ) : (
+            <div className="grid gap-5 sm:grid-cols-2">
+              {experiences.map((experience) => (
+                <div
+                  key={experience.id}
+                  onMouseEnter={() => setSelectedId(experience.id)}
+                  className={cn(
+                    "rounded-xl transition-shadow",
+                    selectedId === experience.id && "ring-2 ring-accent",
+                  )}
+                >
+                  <ExperienceCard experience={experience} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className={cn("lg:sticky lg:top-24 lg:self-start", mobileView === "list" && "hidden lg:block")}>
+          <MapSurface
+            features={featureCollection}
+            onSelectFeature={setSelectedId}
+            origin={origin}
+            center={origin ?? undefined}
+            onSearchThisArea={handleSearchThisArea}
+            className="h-[420px] lg:h-[calc(100vh-8rem)]"
+            label="Discover experiences map"
+          />
+        </div>
+      </div>
+    </PageContainer>
+  );
+}

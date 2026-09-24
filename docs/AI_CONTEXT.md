@@ -2,7 +2,7 @@
 
 > **READ THIS FIRST before modifying any code in this repository.**
 > This file is the primary orientation document for AI coding agents.
-> Last updated: 2026-09-22 | Current phase: PHASE 0
+> Last updated: 2026-09-22 | Current phase: PHASE 5
 
 ---
 
@@ -32,7 +32,7 @@ The core product loop: **understand → retrieve → verify feasibility → pers
 | Migrations | Alembic | latest |
 | Database (dev) | SQLite + aiosqlite | — |
 | Database (prod) | PostgreSQL + asyncpg, Supabase | — |
-| AI | Google Gemini (text + Live voice) | Gemini 2.0 |
+| AI | Google Gemini (text + Live voice), `google-genai`/`@google/genai` SDKs | gemini-3.8-flash / gemini-3.8-live |
 | Maps | MapLibre GL JS, OSM, Nominatim, OSRM | — |
 | Weather | OpenWeather (adapter-based) | — |
 | Events | Ticketmaster adapter + seed events | — |
@@ -89,7 +89,8 @@ Dynamic Replanning Engine → loops back to feasibility check
 ```
 
 External adapters (all behind interface boundaries):
-- `AIAdapter` — Gemini text generation and ephemeral Live token issuance
+- `AIAdapter` — Gemini text generation (structured TravelerContext extraction) and ephemeral
+  Live token issuance (`GeminiAIAdapter` / `MockAIAdapter`, Phase 5)
 - `GeocodingAdapter` — Nominatim
 - `RoutingAdapter` — OSRM
 - `POIAdapter` — Overpass API
@@ -103,19 +104,26 @@ External adapters (all behind interface boundaries):
 
 | Module | Phase | Status |
 |---|---|---|
-| Context & Intent Engine | 5 | PLANNED |
-| Experience Discovery Engine | 4 | PLANNED |
+| Context & Intent Engine | 5 | IMPLEMENTED (text: TravelerContext extraction; voice: Gemini Live + search_experiences tool) |
+| Experience Discovery Engine | 4 | IMPLEMENTED (deterministic keyword/filter/radius — not ML) |
 | Constraint & Feasibility Engine | 6 | PLANNED |
 | Personalized Ranking Engine | 7 | PLANNED |
-| AI Experience Composer | 8 | PLANNED |
-| Dynamic Replanning Engine | 9 | PLANNED |
+| AI Experience Composer | 8 | PLANNED (UI shell IMPLEMENTED) |
+| Dynamic Replanning Engine | 9 | PLANNED (UI affordance IMPLEMENTED) |
 | Feedback & Learning Engine | 7 | PLANNED |
-| Provider Intelligence | 10 | PLANNED |
-| Safety & Emergency Module | 11 | PLANNED |
-| Authentication & Roles | 3 | PLANNED |
-| Database models & migrations | 2 | PLANNED |
-| UI system & design | 1 | PLANNED |
-| API foundation | 1 | PLANNED |
+| Provider Intelligence | 10 | PLANNED (UI shell IMPLEMENTED) |
+| Safety & Emergency Module | 11 | PLANNED (UI shell IMPLEMENTED) |
+| Authentication & Roles | 3 | IMPLEMENTED |
+| Provider profile & experience/availability CRUD | 3 | IMPLEMENTED (owner-only) |
+| Database models & migrations | 2/3 | IMPLEMENTED |
+| Open data ingestion (Overture Places) | 2 | IMPLEMENTED |
+| Experience read API | 4 | IMPLEMENTED (full search/filter/radius/sort — Phase 2 read API extended) |
+| Geocoding adapter (Nominatim) | 4 | IMPLEMENTED |
+| Routing/travel-time adapter (OSRM) | 4 | IMPLEMENTED |
+| Nearby-POI adapter (Overpass) | 4 | IMPLEMENTED |
+| Map rendering (MapLibre GL JS + OpenFreeMap) | 4 | IMPLEMENTED |
+| UI system & design | 1 | IMPLEMENTED |
+| API foundation | 1 | IMPLEMENTED |
 
 ---
 
@@ -158,38 +166,227 @@ Mumbai/Fort area may be used as seed data, but logic must generalize.
 Always use: IMPLEMENTED / PARTIAL / PLANNED / NOT IMPLEMENTED.
 Never mark a placeholder as IMPLEMENTED.
 
+### INV-11: Tokens never persist in browser storage
+The access token lives only in memory (`apps/web/lib/auth/tokenStore.ts`) —
+never `localStorage`, `sessionStorage`, or IndexedDB. The refresh token is
+never readable by JavaScript at all — only an HttpOnly cookie. See
+docs/DECISIONS.md ADR-019.
+
+### INV-12: Ownership is always server-derived, never client-supplied
+`provider_id` (or any ownership field) is never accepted from a request
+body. It always comes from the authenticated user loaded server-side.
+See docs/DECISIONS.md ADR-021.
+
+### INV-13: Catalog/synthetic/registered provider data must never be blurred
+A provider row's lineage (`source_type`) determines what it may do:
+catalog-imported and synthetic providers have no `user_id` and can never
+log in; only `source_type="registered"` providers are real accounts.
+Reseeding the Overture/synthetic catalog must never delete or renumber
+registered accounts' data. See docs/DECISIONS.md ADR-021.
+
+### INV-14: The LLM never invents catalog facts or fabricates a booking
+Gemini (text or Live) must never invent an experience name, price,
+rating, duration, opening hours, availability, or travel time — every
+fact it discusses must come from a real `search_experiences` result.
+"Book this" requests are explicitly declined, never faked. See
+docs/DECISIONS.md ADR-035.
+
+### INV-15: search_experiences is the only Gemini tool, and only the
+backend executes it
+The browser is a transport/UI layer for Gemini Live — it forwards a
+`tool_call` verbatim to `POST /conversations/{id}/tool-calls` and relays
+the real result back via `sendToolResponse`. It never implements
+discovery logic itself, and no tool name other than `search_experiences`
+is ever accepted. See docs/DECISIONS.md ADR-035/ADR-036.
+
+### INV-16: GEMINI_API_KEY is backend-only; only ephemeral tokens reach
+the browser
+The master key never appears in browser code, bundles, logs, or
+responses. The browser only ever holds a short-lived ephemeral token
+(from `POST /api/v1/auth/live-token`), in memory only. See
+docs/DECISIONS.md ADR-035.
+
 ---
 
 ## Current Implementation Status
 
-**Phase**: PHASE 0 — Reset, Baseline & Master Contract
+**Phase**: PHASE 5 — Conversational AI + Gemini Live Voice Agent
 
-**IMPLEMENTED:**
-- Repository initialized
-- Full documentation baseline (this file + all docs/)
-- Architectural contract
-- Environment variable contract (.env.example)
-- .gitignore
-- README.md
+**IMPLEMENTED (Phase 1/2 — carried forward):**
+- Next.js 16 (App Router, TypeScript strict, Tailwind CSS v4) frontend; FastAPI backend
+- Async SQLAlchemy 2.0 + Alembic; hybrid Overture Places + synthetic catalog (353 experiences,
+  311 providers, 20 categories, 353 locations); `GET /api/v1/experiences` + `/{id}` + `/categories`
+
+**IMPLEMENTED (Phase 3 — carried forward):**
+- JWT auth: HS256 access token (~15 min, memory-only) + refresh token (~7 days, HttpOnly cookie,
+  distinct secret) — `src/core/security.py`, `src/core/cookies.py`
+- `AuthSession` model — hashed refresh tokens, rotation on every `/auth/refresh`, reuse detection
+  (revokes all sessions for the user), logout revocation — `src/models/auth_session.py`
+- `POST /api/v1/auth/{register,login,refresh,logout}`, `GET /api/v1/auth/me`
+- Role system (`traveler`/`provider`/`admin`) with centralized dependencies
+  (`get_current_user`, `require_role`, `get_current_provider`) in `src/core/deps.py` — ADMIN
+  cannot self-register; `scripts/create_admin.py` is the only way to create one (env-driven)
+- Provider profile API (`GET/PUT /api/v1/providers/me`), owner-scoped experience list
+  (`GET /api/v1/providers/me/experiences`)
+- Provider-owned Experience CRUD (`POST /api/v1/experiences`, `PATCH/DELETE /{id}` — soft-delete
+  via `status="inactive"`) — `provider_id` always server-derived, never client-supplied
+- `ExperienceAvailability` model + CRUD (`/api/v1/experiences/{id}/availability/*`), owner-scoped,
+  public read
+- Explicit provider lineages never blurred: catalog-imported/synthetic providers have no
+  `user_id`; only `source_type="registered"` providers are real accounts (see ADR-021)
+- `scripts/seed.py` reseeds only Overture/synthetic rows — registered accounts' data and shared
+  categories (now upserted by slug) survive every reseed (a real bug found and fixed in Phase 3)
+- Frontend: `AuthProvider`/`useAuth` (`lib/auth/AuthContext.tsx`), in-memory token store
+  (`lib/auth/tokenStore.ts`), typed API client with automatic 401-refresh-retry, real login/
+  register forms, role-aware nav, `proxy.ts` optimistic route guard, provider dashboard + full
+  experience/availability management UI backed by the real API
+
+**IMPLEMENTED (Phase 4 — new):**
+- `GET /api/v1/experiences` extended: keyword/category/price/duration/lat+lng+radius_km/sort
+  filters, deterministic non-personalized relevance scoring
+  (`src/services/discovery.py::ExperienceDiscoveryService`) — explicitly not ML/AI
+- Portable Haversine + bounding-box radius search (`src/core/geo.py`) — no PostGIS/spatial
+  extension, works identically on SQLite (dev) and PostgreSQL (prod); see ADR-022
+- Real adapters: `NominatimGeocodingAdapter`, `OSRMRoutingAdapter`, `OverpassPOIAdapter`
+  (`src/adapters/{geocoding,routing,poi}.py`) — each rate-limited (`IntervalRateLimiter`) and
+  TTL-cached (`TTLCache[T]`) per its own usage policy; see ADR-023/024/025/030
+- `LOCATION_SERVICES_ENABLED` kill switch — falls back to existing `Mock*Adapter`s; catalog
+  discovery keeps working with real DB results even when all three external services are off;
+  see ADR-031
+- `GET /api/v1/location/{search,reverse,nearby-pois}`, `POST /api/v1/location/{route,
+  travel-time-matrix}` (`src/api/v1/location.py`) — the only path to Nominatim/Overpass/OSRM;
+  the browser never calls them directly
+- Travel-time/distance enrichment on `GET /experiences` always labels its source
+  (`travel_time_source: "osrm" | "haversine_estimate"`) — never presented as exact when
+  estimated; see ADR-024
+- Frontend: real MapLibre GL JS map (`components/common/MapSurface.tsx`, replacing the Phase 1
+  placeholder) with OpenFreeMap tiles, clustered GeoJSON experience source (never one DOM marker
+  per result — ADR-027), "Search this area" bounds-triggered re-query that never auto-fires on
+  pan/zoom alone (ADR-028)
+- URL-synchronized discovery state (`?q=&category=&lat=&lng=&radius_km=&sort=` —
+  `lib/discovery/urlState.ts`, ADR-029); explicit-trigger-only geolocation/place search
+  (`hooks/useUserLocation.ts`, `hooks/useLocationSearch.ts` — never auto-requested, never
+  server-persisted, see ADR-032)
+- Experience detail page: "Set a starting point" + "Show route" using the real routing adapter
+- 142 backend tests total for Phase 4 — all passing alongside `ruff`/`mypy --strict`; frontend
+  `lint`/`tsc --noEmit`/`build` all pass
+
+**IMPLEMENTED (Phase 5 — new):**
+- `GeminiAIAdapter` (`src/adapters/ai.py`) — real `google-genai` SDK, `generate_content` with
+  Pydantic `response_schema` for structured `TravelerContext` extraction, `auth_tokens.create`
+  for ephemeral Live tokens with `live_connect_constraints` locking model/tools/system
+  instruction server-side. `MockAIAdapter.generate_text` rewritten to a graceful deterministic
+  keyword extraction (never raises); `issue_live_token` still fails loudly — voice is never
+  faked. `src/core/ai.py` DI provider mirrors the Phase 4 `location.py` pattern
+- `TravelerContext`/`SearchExperiencesArgs`/`SearchExperiencesResult` schemas
+  (`src/schemas/conversation.py`) shared by both text and voice paths — one structured-intent
+  model, not two parallel schemas
+- `search_experiences` — the only Gemini tool this phase (`src/services/ai_tools.py`); a thin
+  wrapper around the existing `ExperienceDiscoveryService`, zero new search logic
+- Text-mode orchestration (`src/services/conversation.py`) — one Gemini call per turn
+  (extraction only), bounded recent-history window, deterministic template assistant reply
+  (never a second free-form Gemini call, so text prose can never fabricate result claims)
+- `ConversationSession`/`ConversationMessage` models — user-owned, cascade-deleted, transcript
+  text only (audio never persisted); new Alembic migration verified against a fresh DB and the
+  existing seeded DB (353 experiences/311 providers unaffected)
+- `POST /api/v1/conversations`, `POST /conversations/{id}/messages`, `GET /conversations/{id}`,
+  `POST /conversations/{id}/tool-calls` (the voice-path bridge — the only place
+  `search_experiences` actually executes); ownership 404s for another user's conversation
+- `POST /api/v1/auth/live-token` — `require_traveler`-gated, issues a short-lived ephemeral
+  Gemini Live token; `GEMINI_API_KEY` never leaves the backend, the token is never logged/persisted
+- Frontend: real AudioWorklet-based 16-bit/16kHz PCM mic capture, 24kHz scheduled PCM playback
+  with barge-in support, `GeminiLiveClient` (transcription, tool-call bridge, session
+  resumption, GoAway handling) — `lib/voice/*`, `public/worklets/pcm-capture-worklet.js`
+- `ConversationalDiscoveryInput.tsx`'s Phase 1 permanently-disabled mic button is now a real
+  voice control; text submit now runs a real conversational turn; `DiscoverExperience.tsx`
+  threads a `Partial<DiscoveryState>` patch callback (app-controlled translation, never the
+  model — `lib/discovery/travelerContextToPatch.ts`, `location_text` never auto-geocoded)
+- 30 new backend tests (172 total) — AI adapter (mock + real against a fake SDK client, no real
+  network), conversation service/API (ownership isolation, tool validation), live-token
+  (role gate, mock-always-503, real-shape success) — all passing alongside `ruff`/`mypy --strict`
+- Vitest newly introduced for the frontend (previously no test framework existed) — 20 targeted
+  tests for the discovery-patch translator and PCM encode/decode/resample math; `tsc --noEmit`,
+  `eslint`, `next build` (15 routes) all pass
+
+**IMPLEMENTED (Phase 6 — new):**
+- `EmbeddingAdapter` (`src/adapters/embedding.py`) — `GeminiEmbeddingAdapter` (real
+  `google-genai` SDK, `gemini-embedding-2`, asymmetric query/document prompting; **NOT
+  VERIFIED live — no API key**) and `MockEmbeddingAdapter` (deterministic, not random),
+  selected by the same rule as `AIAdapter`
+- `ExperienceEmbedding` model + Alembic migration `6762a731d1f1` — portable JSON column
+  (verified on SQLite fresh + seeded DB); dialect-branched pgvector column + HNSW index on
+  PostgreSQL (**NOT VERIFIED live — no PostgreSQL instance**)
+- `scripts/index_embeddings.py` — idempotent, content-hash-based, per-record failure isolation
+- `SemanticRetrievalService` — embed → candidates → SAFE pre-filters only (status/category/
+  city, never budget/hours/etc.); honest `retrieval_mode` reporting
+  (`pgvector_semantic`/`sqlite_python_semantic`/`keyword_fallback`)
+- `FeasibilityService` (`src/services/feasibility.py`) — 100% deterministic, zero LLM calls;
+  tri-state FEASIBLE/INFEASIBLE/UNKNOWN verdict; covers active status, budget, duration,
+  distance, travel time, total time, opening hours (timezone-aware, overnight-aware),
+  availability, capacity, accessibility, itinerary conflicts (plain interval input, no
+  persisted model)
+- `DiscoveryPipelineService` — retrieval → feasibility hard gate; only FEASIBLE candidates in
+  `items`; excluded-candidate reason summary; all-excluded returns empty, never a forced result
+- `POST /api/v1/experiences/semantic-search`, `POST /api/v1/feasibility/check`
+- `check_feasibility` — second Gemini tool; schema has no field for price/hours/capacity/
+  availability, so Gemini cannot supply an invented fact; backend-owned execution only, exactly
+  like `search_experiences`
+- Live system instruction now actually attached to `LiveConnectConfig` (this closes a real gap:
+  Phase 5's ADR-037 documented the policy but the adapter had not yet wired it into the SDK call)
+- `TravelerContext` extended with optional, nullable Phase 6 fields — additive only
+- 74 new backend tests (246 total), 15 new frontend tests (35 total) — all passing alongside
+  `ruff`/`mypy --strict` (backend) and `tsc --noEmit`/`eslint`/`next build` (frontend)
 
 **PARTIAL:**
-- (nothing yet)
+- Adapter interfaces for Weather, Events, MapTiles (`apps/api/src/adapters/`) still Protocol +
+  mock only — begins Phase 9
+- `/provider/insights` remains Phase 1 mock data, explicitly labelled — real analytics is Phase 10
+- Gemini Live's real browser↔Google WebSocket path is implemented end-to-end but has not been
+  manually verified with a working `GEMINI_API_KEY` as of this writing — see ADR-035's manual
+  checklist. Automated tests prove the application-side contract without needing real credentials
+- Real Gemini embedding generation (`GeminiEmbeddingAdapter`) — implemented against the
+  documented SDK surface, **NOT VERIFIED live** (no API key available in this environment)
+- PostgreSQL/pgvector semantic retrieval path — implemented (migration + repository query),
+  **NOT VERIFIED live** (no PostgreSQL instance available in this environment)
+- Phase 6 frontend: types/API client/pure display-mapping functions exist and are tested; the
+  Discover page itself is not yet wired to call `/experiences/semantic-search` or render
+  verified-match badges/excluded summaries in the browser
 
 **PLANNED:**
 - Everything else (see docs/ROADMAP.md)
 
 **NOT IMPLEMENTED:**
-- All application code (Phase 1+)
+- Provider claiming (a real business claiming its catalog-imported record), password reset,
+  email verification, social login, MFA, full admin dashboard, ML-based personalized ranking,
+  `TravelerAffinity`/`Interaction` models, feedback learning loop, AI composer/itinerary
+  generation, `Itinerary`/`ItineraryItem` persistence models, dynamic replanning,
+  booking/payments, weather/events integration, provider analytics backend, real-time GPS
+  turn-by-turn navigation, any Gemini tool beyond `search_experiences`/`check_feasibility`
 
 ---
 
 ## Current Known Limitations
 
-- No application code exists
-- No database schema exists
-- No API endpoints exist
-- No frontend exists
-- All AI, map, weather, and event features are deferred to their respective phases
+- Database is SQLite in local dev; no PostgreSQL/Supabase instance has been provisioned yet
+  (the models and queries are written to be portable — see docs/DECISIONS.md ADR-005/006)
+- `apps/web/proxy.ts` only checks refresh-cookie *presence* for an optimistic redirect — it does
+  not verify the cookie, so a browser must use the same hostname (`localhost` vs `127.0.0.1`) for
+  the frontend and any manually-tested API calls, or cookies won't be recognized as matching
+- Next.js response streaming (routes with a `loading.tsx` boundary) means some "not found" cases
+  return an initial HTTP 200 shell before the client renders the 404 UI — a framework trade-off
+  noted in the Phase 2 changelog, not a routing defect
+- OSRM's public demo server and the public Overpass instance have no uptime SLA — the app
+  degrades gracefully (Haversine estimate / empty POI results) rather than failing, but a live
+  demo may occasionally show a fallback state if either service is under load; see ADR-024/025
+- No weather or event integrations — deferred to their respective phases (AI/conversational
+  discovery is now real as of Phase 5, map/location as of Phase 4, see above)
+- Gemini Live's real audio round-trip requires a working `GEMINI_API_KEY` in `.env` — with
+  `GEMINI_ENABLED=false` or no key, text discovery still works via `MockAIAdapter`'s
+  deterministic extraction, but voice clearly reports unavailable rather than connecting
+- Live session WebSocket connections are capped at roughly 10 minutes by the Gemini Live API
+  itself regardless of session-resumption configuration — `GeminiLiveClient` reconnects
+  proactively on `goAway`, but a very long single voice session will still see a brief
+  `RECONNECTING` state
 
 ---
 
@@ -217,6 +414,12 @@ Never mark a placeholder as IMPLEMENTED.
 2. Never put `GEMINI_API_KEY` in frontend code
 3. For Live voice: use the ephemeral token endpoint (`POST /auth/live-token`)
 4. Never trust LLM output for feasibility decisions
+5. Any Gemini tool must be backend-executed and explicitly allowlisted by name — the browser
+   only ever forwards a `tool_call` to the backend and relays the real result back
+6. Never add a new Gemini tool without updating all of: its `*_DECLARATION` registration in
+   `src/core/ai.py`'s tool list, the `/tool-calls` route's allowlist, and (if it should be
+   voice-callable) the Live system instruction's list of permitted tools — `search_experiences`
+   and `check_feasibility` are the two currently implemented and registered this way
 
 ### When adding a new experience:
 1. Include: `is_synthetic: true/false`
@@ -231,21 +434,38 @@ Never mark a placeholder as IMPLEMENTED.
 
 ---
 
-## Future Gemini Live Tool Contract (Phase 5+)
+## Gemini Live Tool Contract (Phase 5/6 — IMPLEMENTED)
 
-The voice agent will call application tools — not invent results.
+The voice agent calls application tools — it never invents results. Two
+tools are implemented and registered in the Live session config
+(`src/services/ai_tools.py`):
 
-Planned tools (NOT implemented yet):
-- `get_current_context` — retrieves traveler's current structured context
-- `search_experiences` — calls the discovery engine
-- `check_feasibility` — calls the feasibility engine
-- `get_route` — calls the routing adapter
-- `get_weather` — calls the weather adapter
-- `get_events` — calls the event adapter
-- `compose_experience` — calls the composer engine
-- `replan_experience` — calls the replanning engine
-- `save_experience` — saves to traveler's list
-- `create_booking_request` — initiates booking flow
+- `search_experiences` (`SEARCH_EXPERIENCES_DECLARATION`) — calls the
+  existing `ExperienceDiscoveryService` via
+  `execute_search_experiences`. The browser forwards Gemini's
+  `tool_call` to `POST /api/v1/conversations/{id}/tool-calls`; that
+  endpoint is the only place the tool actually executes.
+- `check_feasibility` (`CHECK_FEASIBILITY_DECLARATION`, Phase 6) — calls
+  the deterministic `FeasibilityService` via `execute_check_feasibility`.
+  Its argument schema (`CheckFeasibilityArgs`) has no field for price,
+  opening hours, capacity, or availability — Gemini can supply only an
+  `experience_id` and constraint context (budget/time/party
+  size/travel/accessibility); the tool always loads the real
+  `Experience` row from the database, so a fabricated fact in the model's
+  tool call is structurally impossible to inject, not merely discouraged.
 
-These tools are defined here for architectural awareness.
-Do not implement them until Phase 5.
+Any tool name other than `search_experiences`/`check_feasibility` is
+rejected (422) by that endpoint — the model can never trigger arbitrary
+application behavior. The Live system instruction (locked into the
+ephemeral token's `live_connect_constraints`) explicitly restricts the
+model to these two tools and forbids phrasing an UNKNOWN feasibility
+verdict as reassuring.
+
+Later-phase tools remain explicitly NOT implemented — do not add them
+before their owning phase:
+- `get_weather` (Phase 9), `get_events` (Phase 9)
+- `compose_experience` (Phase 8), `replan_experience` (Phase 9)
+- `save_experience`, `create_booking_request` (Phase 8)
+
+See docs/DECISIONS.md ADR-035/ADR-036/ADR-037/ADR-044 for the full
+architecture and security rationale.

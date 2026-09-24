@@ -120,14 +120,14 @@ Status labels: `IMPLEMENTED` | `PARTIAL` | `PLANNED` | `NOT IMPLEMENTED`
 
 | Capability | Status |
 |---|---|
-| Natural language traveler input | `PLANNED` (Phase 5) |
-| Voice interaction via Gemini Live | `PLANNED` (Phase 5) |
-| Conversational context maintenance | `PLANNED` (Phase 5) |
-| Structured intent/context extraction | `PLANNED` (Phase 5) |
-| Experience catalog & discovery | `PLANNED` (Phase 4) |
-| OSM/Nominatim/Overpass location layer | `PLANNED` (Phase 4) |
-| Deterministic feasibility engine | `PLANNED` (Phase 6) |
-| Semantic retrieval (pgvector) | `PLANNED` (Phase 6) |
+| Natural language traveler input | `IMPLEMENTED` (Phase 5 — text conversational discovery) |
+| Voice interaction via Gemini Live | `IMPLEMENTED` (Phase 5 — real mic capture/playback/tool-calling; pending user's manual live-key verification, see docs/DECISIONS.md ADR-035) |
+| Conversational context maintenance | `IMPLEMENTED` (Phase 5 — bounded recent-history window) |
+| Structured intent/context extraction | `IMPLEMENTED` (Phase 5 — `TravelerContext`, understand + retrieve only, not feasibility) |
+| Experience catalog (open-data + synthetic, read API) | `IMPLEMENTED` (Phase 4 — full keyword/category/price/duration/radius/sort search) |
+| OSM/Nominatim/Overpass/OSRM location layer + MapLibre map | `IMPLEMENTED` (Phase 4 — geocoding, nearby-POI, routing/travel-time, real map rendering) |
+| Deterministic feasibility engine | `IMPLEMENTED` (Phase 6 — tri-state FEASIBLE/INFEASIBLE/UNKNOWN verdict, zero LLM calls, 11 constraint checks, verified on SQLite) |
+| Semantic retrieval (pgvector) | `PARTIAL` (Phase 6 — SQLite Python cosine similarity + keyword fallback IMPLEMENTED and verified; pgvector production path IMPLEMENTED but NOT VERIFIED live, no PostgreSQL instance available) |
 | Personalized ML ranking | `PLANNED` (Phase 7) |
 | Traveler affinity model | `PLANNED` (Phase 7) |
 | Feedback & learning | `PLANNED` (Phase 7) |
@@ -136,11 +136,11 @@ Status labels: `IMPLEMENTED` | `PARTIAL` | `PLANNED` | `NOT IMPLEMENTED`
 | Booking request flow | `PLANNED` (Phase 8) |
 | Real-time context (weather, traffic, events) | `PLANNED` (Phase 9) |
 | Dynamic replanning | `PLANNED` (Phase 9) |
-| Provider profiles & listings | `PLANNED` (Phase 3) |
+| Provider profiles & listings | `IMPLEMENTED` (Phase 3 — profile + owner-scoped experience/availability CRUD) |
 | Provider intelligence & analytics | `PLANNED` (Phase 10) |
 | Two-sided marketplace matching | `PLANNED` (Phase 10) |
 | Safety & emergency module | `PLANNED` (Phase 11) |
-| Authentication & roles | `PLANNED` (Phase 3) |
+| Authentication & roles | `IMPLEMENTED` (Phase 3) |
 
 ---
 

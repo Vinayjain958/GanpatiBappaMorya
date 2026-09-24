@@ -1,0 +1,157 @@
+"""Conversational AI schemas (Phase 5).
+
+TravelerContext is the single structured-intent shape shared by both the
+text and voice paths — see docs/DECISIONS.md ADR-034. It is intentionally
+scoped to what Phase 5 needs (understanding + retrieval); it is not an
+itinerary/feasibility model (those are Phase 6/8).
+
+Gemini never supplies coordinates directly (location_text is free text
+only) and category_slugs are always re-validated against the canonical
+taxonomy before use — see src/services/ai_tools.py.
+"""
+
+from __future__ import annotations
+
+from datetime import date, datetime, time
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from src.schemas.experience import ExperienceSummary
+from src.schemas.feasibility import CommittedTimeBlock
+
+
+class TravelerContext(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    raw_query: str
+    interests: list[str] = Field(default_factory=list)
+    category_slugs: list[str] = Field(default_factory=list)
+    location_text: str | None = None
+    budget: Literal["any", "low", "mid", "high"] | None = None
+    duration: Literal["any", "short", "medium", "long"] | None = None
+    party_size: int | None = Field(default=None, ge=1, le=50)
+    time_context: str | None = None
+    notes: str | None = None
+
+    # ─── Phase 6 extension: optional, nullable feasibility-oriented fields.
+    # Additive only — no existing field above was changed or removed, so
+    # every Phase 5 caller/test keeps working unmodified. Gemini never
+    # supplies origin_lat/origin_lng directly in practice (the frontend/
+    # traveler device does); these exist so a fully-specified
+    # TravelerContext can be converted into TravelerConstraints for the
+    # feasibility pipeline (see src/services/ai_tools.py).
+    currency: str | None = None
+    budget_min: float | None = Field(default=None, ge=0)
+    budget_max: float | None = Field(default=None, ge=0)
+    available_date: date | None = None
+    available_start: time | None = None
+    available_end: time | None = None
+    available_duration_minutes: int | None = Field(default=None, gt=0)
+    timezone: str | None = None
+    origin_lat: float | None = Field(default=None, ge=-90, le=90)
+    origin_lng: float | None = Field(default=None, ge=-180, le=180)
+    travel_mode: Literal["driving", "walking", "cycling"] | None = None
+    max_distance_km: float | None = Field(default=None, gt=0)
+    max_travel_time_minutes: float | None = Field(default=None, gt=0)
+    accessibility_requirements: list[Literal["wheelchair_accessible", "step_free"]] = Field(
+        default_factory=list
+    )
+    existing_commitments: list[CommittedTimeBlock] = Field(default_factory=list)
+
+
+class SearchExperiencesArgs(BaseModel):
+    """Tool-call argument schema. Validated before ever reaching
+    ExperienceDiscoveryService — raw model tool arguments are never
+    trusted directly."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    q: str | None = None
+    category_slug: str | None = None
+    city: str | None = None
+    locality: str | None = None
+    min_price: float | None = Field(default=None, ge=0)
+    max_price: float | None = Field(default=None, ge=0)
+    min_duration_minutes: int | None = Field(default=None, ge=0)
+    max_duration_minutes: int | None = Field(default=None, ge=0)
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lng: float | None = Field(default=None, ge=-180, le=180)
+    radius_km: float | None = Field(default=None, gt=0)
+    sort: Literal["relevance", "distance", "price", "duration", "newest"] = "relevance"
+    limit: int = Field(default=5, ge=1, le=10)
+
+
+class SearchExperiencesResult(BaseModel):
+    items: list[ExperienceSummary]
+    total: int
+    truncated: bool
+
+
+class CheckFeasibilityArgs(BaseModel):
+    """Tool-call argument schema for check_feasibility. Gemini supplies
+    only an experience_id and constraint context — it can never invent
+    price/hours/capacity/availability values; those are always loaded
+    from the database by the tool implementation (src/services/ai_tools.py)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    experience_id: str
+    budget_max: float | None = Field(default=None, ge=0)
+    available_duration_minutes: int | None = Field(default=None, gt=0)
+    party_size: int | None = Field(default=None, ge=1, le=200)
+    max_travel_time_minutes: float | None = Field(default=None, gt=0)
+    max_distance_km: float | None = Field(default=None, gt=0)
+    origin_lat: float | None = Field(default=None, ge=-90, le=90)
+    origin_lng: float | None = Field(default=None, ge=-180, le=180)
+    accessibility_requirements: list[Literal["wheelchair_accessible", "step_free"]] = Field(
+        default_factory=list
+    )
+
+
+class ToolCallRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    args: dict[str, object] = Field(default_factory=dict)
+
+
+class ConversationTurnRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    message: str = Field(min_length=1, max_length=2000)
+
+
+class ConversationTurnResponse(BaseModel):
+    message_id: str
+    assistant_text: str
+    traveler_context: TravelerContext
+    tool_results: SearchExperiencesResult | None = None
+
+
+class ConversationCreateResponse(BaseModel):
+    id: str
+    created_at: datetime
+
+
+class ConversationMessagePublic(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    role: Literal["user", "assistant"]
+    text: str
+    created_at: datetime
+
+
+class ConversationDetailResponse(BaseModel):
+    id: str
+    created_at: datetime
+    messages: list[ConversationMessagePublic]
+    latest_traveler_context: TravelerContext | None = None
+
+
+class LiveTokenResponse(BaseModel):
+    token: str
+    expire_time: datetime
+    new_session_expire_time: datetime
+    model: str

@@ -30,6 +30,16 @@ export function RegisterForm() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+    if (role === "provider" && !businessName.trim()) {
+      setError("Business name is required for provider accounts.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {

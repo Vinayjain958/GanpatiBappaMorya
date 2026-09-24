@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, useSyncExternalStore } from "react";
 import { createConversation, issueLiveToken } from "@/lib/api/conversation";
 import { ApiError } from "@/lib/api/client";
 import { isMicrophoneSupported } from "@/lib/voice/audioCapture";
@@ -22,15 +22,32 @@ export function useVoiceAgent(onDiscoveryPatch: (patch: Partial<DiscoveryState>)
   const clientRef = useRef<GeminiLiveClient | null>(null);
   const conversationIdRef = useRef<string | null>(null);
 
-  const isAvailable = isMicrophoneSupported();
+  // The value never changes after mount, so useSyncExternalStore's "no
+  // subscription" form is a plain snapshot read — no setState-in-effect
+  // cascading render, and the server snapshot (false, no window/navigator)
+  // matches the first client render, avoiding a hydration mismatch on the
+  // mic button's disabled/aria/icon state (see ADR-034 for why this can
+  // never be faked as available before it's actually checked).
+  const isAvailable = useSyncExternalStore(
+    () => () => {},
+    isMicrophoneSupported,
+    () => false,
+  );
 
   const handleTranscript = useCallback((entry: VoiceTranscriptEntry) => {
     setTranscript((prev) => {
-      // Merge incremental fragments of the same in-progress turn rather
-      // than appending a new row per partial transcript event.
+      // Gemini Live streams inputTranscription/outputTranscription as
+      // incremental delta chunks, not the cumulative text so far — so a
+      // continuing turn must be concatenated onto the previous row, never
+      // replaced with just the newest chunk (that previously showed only
+      // the last few words of a longer reply).
       const last = prev[prev.length - 1];
       if (last && last.role === entry.role && !last.final) {
-        return [...prev.slice(0, -1), entry];
+        const merged: VoiceTranscriptEntry = {
+          ...entry,
+          text: last.text + entry.text,
+        };
+        return [...prev.slice(0, -1), merged];
       }
       return [...prev, entry];
     });

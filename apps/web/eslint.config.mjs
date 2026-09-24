@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendor asset copied verbatim from node_modules (MapLibre GL's
+    // worker bundle, served statically — see components/common/MapSurface.tsx).
+    "public/maplibre/**",
   ]),
 ]);
 

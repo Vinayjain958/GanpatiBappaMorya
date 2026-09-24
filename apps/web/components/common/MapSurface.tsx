@@ -8,6 +8,7 @@ import {
   MapLayerMouseEvent,
   NavigationControl,
   Popup,
+  setWorkerUrl,
 } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { RefreshCw } from "lucide-react";
@@ -25,6 +26,25 @@ const ROUTE_SOURCE_ID = "map-route";
 const ROUTE_LAYER = "map-route-line";
 
 const EMPTY_COLLECTION: ExperienceFeatureCollection = { type: "FeatureCollection", features: [] };
+
+// MapLibre GL v6 loads its render worker via `import.meta.url`-relative
+// resolution, which Turbopack's dev server doesn't serve as a valid
+// module route (404 -> HTML -> "non-JavaScript MIME type" console error).
+// Point it at a static copy in public/ instead, which Next.js always
+// serves verbatim regardless of bundler — same pattern as
+// public/worklets/ for the audio capture worklet. Set once, before any
+// Map is constructed.
+//
+// IMPORTANT: maplibre-gl-worker.mjs itself `import`s a sibling
+// maplibre-gl-shared.mjs (both from node_modules/maplibre-gl/dist/) —
+// both files must be copied into public/maplibre/ together and kept in
+// sync on every maplibre-gl version bump, or the worker's own module
+// import 404s inside the worker thread. That failure is silent: the map
+// still constructs, controls still render, and dataloading/
+// sourcedataloading events keep firing optimistically from the main
+// thread forever, but zero real tile network requests ever go out,
+// because the fetch logic lives entirely in the (dead) worker.
+setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
 
 export interface MapSurfaceProps {
   /** Selection state is encoded in `features` (each feature's

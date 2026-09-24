@@ -13,6 +13,35 @@ export class ApiError extends Error {
   }
 }
 
+interface FastApiValidationError {
+  loc?: unknown[];
+  msg?: string;
+}
+
+/** FastAPI/Pydantic 422 bodies carry a generic top-level "message" (e.g.
+ * "Validation failed") with the real per-field reasons in `detail`. Turn
+ * those into one readable sentence instead of showing the generic string
+ * or a raw Pydantic error dump. */
+function describeValidationError(detail: unknown): string | null {
+  if (!Array.isArray(detail) || detail.length === 0) return null;
+  const messages = (detail as FastApiValidationError[])
+    .map((item) => {
+      const field = Array.isArray(item.loc) ? item.loc[item.loc.length - 1] : undefined;
+      const label = typeof field === "string" ? fieldLabels[field] ?? field : null;
+      return label && item.msg ? `${label}: ${item.msg}` : item.msg;
+    })
+    .filter((message): message is string => Boolean(message));
+  return messages.length ? messages.join(" ") : null;
+}
+
+const fieldLabels: Record<string, string> = {
+  email: "Email",
+  password: "Password",
+  display_name: "Full name",
+  business_name: "Business name",
+  role: "Account type",
+};
+
 interface RequestOptions {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
@@ -117,10 +146,16 @@ async function request<TResponse>(
     : undefined;
 
   if (!response.ok) {
+    const detail = typeof payload === "object" && payload && "detail" in payload
+      ? (payload as { detail?: unknown }).detail
+      : undefined;
+    const validationMessage = response.status === 422 ? describeValidationError(detail) : null;
+
     throw new ApiError(
-      typeof payload === "object" && payload && "message" in payload
-        ? String((payload as { message?: unknown }).message)
-        : `Request failed with status ${response.status}`,
+      validationMessage
+        ?? (typeof payload === "object" && payload && "message" in payload
+          ? String((payload as { message?: unknown }).message)
+          : `Request failed with status ${response.status}`),
       response.status,
       payload,
     );

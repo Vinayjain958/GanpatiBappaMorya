@@ -57,26 +57,26 @@ def test_real_adapter_generate_text_success(monkeypatch) -> None:
 
     @dataclass
     class FakeResponse:
-        parsed: object
+        text: str
 
     def models_responder(**_kwargs: object) -> FakeResponse:
-        return FakeResponse(parsed=parsed)
+        return FakeResponse(text=parsed.model_dump_json())
 
     fake = FakeGenAIClient(models_responder=models_responder, auth_tokens_responder=lambda **_: None)
     _install_fake_client(monkeypatch, fake)
 
     adapter = GeminiAIAdapter(_settings(), [SEARCH_EXPERIENCES_DECLARATION, CHECK_FEASIBILITY_DECLARATION])
     result = asyncio.run(adapter.generate_text("cheap food near Fort", response_schema=TravelerContext))
-    assert result is parsed
+    assert result == parsed
 
 
 def test_real_adapter_generate_text_empty_response_raises_no_result(monkeypatch) -> None:
     @dataclass
     class FakeResponse:
-        parsed: object
+        text: str | None
 
     def models_responder(**_kwargs: object) -> FakeResponse:
-        return FakeResponse(parsed=None)
+        return FakeResponse(text=None)
 
     fake = FakeGenAIClient(models_responder=models_responder, auth_tokens_responder=lambda **_: None)
     _install_fake_client(monkeypatch, fake)

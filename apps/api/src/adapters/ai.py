@@ -28,6 +28,27 @@ from src.schemas.conversation import TravelerContext
 T = TypeVar("T", bound=BaseModel)
 
 
+def _gemini_safe_schema(model: type[BaseModel]) -> dict[str, object]:
+    """Pydantic's `extra="forbid"` emits `additionalProperties: false` in
+    the generated JSON Schema; Gemini's response_schema endpoint rejects
+    `additionalProperties` outright ("Unknown name ... Cannot find
+    field"). Strip it (recursively, including $defs) rather than relax
+    the model's own request-validation strictness elsewhere."""
+
+    def strip(node: object) -> object:
+        if isinstance(node, dict):
+            return {
+                key: strip(value)
+                for key, value in node.items()
+                if key != "additionalProperties"
+            }
+        if isinstance(node, list):
+            return [strip(item) for item in node]
+        return node
+
+    return strip(model.model_json_schema())  # type: ignore[return-value]
+
+
 @dataclass(frozen=True)
 class LiveTokenIssueResult:
     token: str
@@ -132,7 +153,7 @@ class GeminiAIAdapter:
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
-                    response_schema=response_schema,
+                    response_schema=_gemini_safe_schema(response_schema),
                 ),
             )
         except genai_errors.APIError as exc:
@@ -140,9 +161,15 @@ class GeminiAIAdapter:
         except (TimeoutError, ConnectionError) as exc:
             raise AdapterUnavailableError(str(exc)) from exc
 
-        if response.parsed is None:
+        # A raw-dict response_schema (unlike passing the Pydantic class
+        # directly) opts out of the SDK's own auto-parsing, so we validate
+        # the returned JSON text against the real model ourselves.
+        if not response.text:
             raise AdapterNoResultError("Gemini returned no parseable structured result.")
-        return response.parsed  # type: ignore[return-value]
+        try:
+            return response_schema.model_validate_json(response.text)
+        except Exception as exc:
+            raise AdapterNoResultError("Gemini returned an invalid structured result.") from exc
 
     async def issue_live_token(self) -> LiveTokenIssueResult:
         now = datetime.now(UTC)

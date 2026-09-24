@@ -6,9 +6,12 @@ from src.core.config import Settings
 
 
 def test_model_defaults_are_current() -> None:
-    settings = Settings()
-    assert settings.gemini_model_text == "gemini-3.8-flash"
-    assert settings.gemini_model_live == "gemini-3.8-live"
+    # Settings() reads the real project .env (model_config.env_file), so a
+    # developer's locally-chosen model overrides the class default there —
+    # assert against the Settings class's own hardcoded fallback instead,
+    # which is what "current" actually means here.
+    assert Settings.model_fields["gemini_model_text"].default == "gemini-3.8-flash"
+    assert Settings.model_fields["gemini_model_live"].default == "gemini-3.8-live"
 
 
 def test_get_ai_adapter_returns_mock_when_disabled(monkeypatch) -> None:

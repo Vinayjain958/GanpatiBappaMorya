@@ -47,13 +47,19 @@ class TravelerContext(BaseModel):
     available_date: date | None = None
     available_start: time | None = None
     available_end: time | None = None
-    available_duration_minutes: int | None = Field(default=None, gt=0)
+    # ge=0 rather than gt=0: Gemini's structured-output schema converter
+    # (response_schema=TravelerContext is sent directly to the API, unlike
+    # the tool-argument schemas below which Gemini never parses as JSON
+    # Schema) rejects Pydantic's `exclusiveMinimum` keyword as an
+    # unsupported property. Downstream feasibility validation already
+    # treats a supplied 0 the same as "not meaningfully constrained".
+    available_duration_minutes: int | None = Field(default=None, ge=0)
     timezone: str | None = None
     origin_lat: float | None = Field(default=None, ge=-90, le=90)
     origin_lng: float | None = Field(default=None, ge=-180, le=180)
     travel_mode: Literal["driving", "walking", "cycling"] | None = None
-    max_distance_km: float | None = Field(default=None, gt=0)
-    max_travel_time_minutes: float | None = Field(default=None, gt=0)
+    max_distance_km: float | None = Field(default=None, ge=0)
+    max_travel_time_minutes: float | None = Field(default=None, ge=0)
     accessibility_requirements: list[Literal["wheelchair_accessible", "step_free"]] = Field(
         default_factory=list
     )

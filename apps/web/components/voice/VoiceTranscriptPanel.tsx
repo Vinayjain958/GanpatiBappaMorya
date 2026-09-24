@@ -18,7 +18,7 @@ export function VoiceTranscriptPanel({
       className={cn("max-h-48 space-y-2 overflow-y-auto rounded-xl border border-line bg-surface-sunken p-3", className)}
     >
       {entries.map((entry, index) => (
-        <p key={index} className="text-sm">
+        <p key={index} className="whitespace-pre-wrap break-words text-sm">
           <span className={cn("font-medium", entry.role === "user" ? "text-ink" : "text-accent")}>
             {entry.role === "user" ? "You: " : "LocaLens: "}
           </span>

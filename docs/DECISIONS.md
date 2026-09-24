@@ -1967,3 +1967,78 @@ second, weaker enforcement path for the voice channel.
   list `replan_experience` as the fourth and final allowed tool, with
   explicit language that Gemini must report `REPLAN_FAILED`/
   `REQUIRES_USER_ACTION` honestly rather than claiming success.
+
+---
+
+## ADR-054: Feasibility Opening-Hours/Availability Checks Distinguish "Precise Window" (Containment) from "Date-Only" (Overlap) — and the Composer Gets a Bounded Post-Validation Retry
+
+**Decision**: `FeasibilityService._check_opening_hours` and
+`_check_availability` now branch on whether the caller supplied a
+specific `available_start`/`available_end` (a "precise window") or only
+`available_date`. A precise window keeps the original semantics: the
+experience's opening hours/availability slot must fully *contain* the
+given window — correct for verifying one specific visit (the standalone
+`POST /api/v1/feasibility/check` endpoint, and the mandatory
+post-composition per-item re-check in `ItineraryValidatorService`, which
+always supplies the item's own precise `planned_start`/`planned_end`). A
+date-only constraint — used by the itinerary composer's whole-day
+candidate gate in `compose_itinerary.py`, before any specific slot has
+been chosen for a candidate — now means "is this open/bookable at all
+that day" (any overlap), not "is this open across the traveler's entire
+requested day." Additionally, `compose_itinerary.py`'s composition step
+is now a bounded retry loop (`Settings.composer_max_validation_retries`,
+default 5): when the post-composition validator rejects a specific item
+as no-longer-feasible at its assigned slot, that one experience id is
+excluded from the candidate pool and composition is retried from
+scratch, rather than failing outright on the first rejection.
+
+**Why**: Discovered live, not in the automated test suite — a real
+compose request against real seed data with real opening-hours rows
+(most venues open 10:00–19:00, not 24 hours) failed 100% of the time
+with `feasible_count: 0`, because the candidate gate was defaulting an
+omitted start/end to a synthetic `00:00`–`23:59` window and then
+requiring full containment of that entire day, a bar essentially no real
+business can clear. Once that was fixed and a `feasible_count > 0`
+candidate pool existed, composition *still* failed outright the first
+time the greedy scheduler placed a candidate into a slot its precise
+hours didn't cover (e.g. scheduling the very first item to start exactly
+at the traveler's 9am window-open, when the venue opens at 10am) —
+because nothing ever retried, despite the Phase 8 brief's own spec
+describing "bounded deterministic alternatives" as the required behavior
+for exactly this case. Both fixes were necessary together: the overlap
+check alone still leaves the *scheduler* free to pick a slot a candidate
+doesn't actually fit; the retry alone would have had to churn through
+nearly the entire feasible pool on a full-day-containment-first
+composer without ever getting real signal on which candidates were
+genuinely close to feasible.
+
+**Alternatives Considered**:
+- Make the composer's greedy scheduler call `FeasibilityService.evaluate()`
+  directly for each candidate at its proposed slot, before committing it:
+  more precise (would avoid the retry loop entirely), but requires
+  fetching the full `Experience` ORM row per candidate during scheduling
+  (the composer currently only has the lighter `RankedExperienceItem`
+  API-facing summary, which doesn't carry raw opening-hours rows) — a
+  real, larger change deferred rather than done under live-debugging
+  time pressure. The retry loop is correct and bounded in the meantime;
+  a future pass could add pre-slot verification as a scheduling-quality
+  improvement without changing the overlap/containment fix.
+- Relax `_check_opening_hours`/`_check_availability` to overlap semantics
+  everywhere, including the precise-window case: rejected — this would
+  weaken the standalone single-experience feasibility guarantee that
+  `check_feasibility` (the Gemini tool) and manual booking-request
+  creation both depend on being exact.
+
+**Consequences**:
+- The distinction is keyed purely on `constraints.available_start is
+  not None` — any future caller that wants the strict precise-window
+  semantics must supply a real start/end, not rely on a default.
+- `docs/CHANGELOG.md`'s 2026-09-25 debugging-session entry documents the
+  live symptoms (`candidate_count: 341, feasible_count: 0` →
+  `feasible_count: 17` after the overlap fix → a real composed itinerary
+  after the retry-loop fix) that led to this ADR.
+- A new idempotent script, `scripts/seed_availability.py`, was added
+  alongside this fix to backfill demo `ExperienceAvailability` rows from
+  existing opening-hours data — the seed catalog had zero such rows,
+  which was a separate, compounding gap (see CHANGELOG) rather than a
+  defect in this feasibility logic itself.

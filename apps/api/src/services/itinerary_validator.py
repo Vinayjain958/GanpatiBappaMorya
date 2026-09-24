@@ -211,7 +211,11 @@ class ItineraryValidatorService:
                             code=FeasibilityReasonCode.EXPERIENCE_NOT_FEASIBLE,
                             constraint="feasibility",
                             message=f"Experience {item.experience.id} is no longer feasible ({verdict.status}).",
-                            evidence={"status": verdict.status, "reasons": [r.code.value for r in verdict.reasons]},
+                            evidence={
+                                "experience_id": item.experience.id,
+                                "status": verdict.status,
+                                "reasons": [r.code.value for r in verdict.reasons],
+                            },
                         )
                     )
             elif experience is None:
@@ -220,6 +224,7 @@ class ItineraryValidatorService:
                         code=FeasibilityReasonCode.EXPERIENCE_NOT_FEASIBLE,
                         constraint="feasibility",
                         message=f"Experience {item.experience.id} could not be loaded for re-validation.",
+                        evidence={"experience_id": item.experience.id},
                     )
                 )
 

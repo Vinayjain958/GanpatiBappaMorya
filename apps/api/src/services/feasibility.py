@@ -318,6 +318,16 @@ class FeasibilityService:
         day_of_week = target_date.weekday()  # Monday=0 .. Sunday=6, matches stored convention
         prev_day_of_week = (day_of_week - 1) % 7
 
+        # When the caller gave only a date (no specific start/end — e.g.
+        # the itinerary composer's whole-day candidate gate, before any
+        # per-item slot has been chosen), the question is "is this open at
+        # all that day", not "is this open across the full synthetic
+        # 00:00-23:59 day" — defaulting to a full-day window here would
+        # make full CONTAINMENT require hours no real business has.
+        # Precise-window callers (single-experience verification, and the
+        # post-composition per-item re-check) keep the strict containment
+        # semantics below.
+        precise_window = constraints.available_start is not None
         start_t = constraints.available_start or time(0, 0)
         end_t = constraints.available_end or time(23, 59)
 
@@ -351,15 +361,17 @@ class FeasibilityService:
             )
             return
 
-        def _window_covers(open_m: int, close_m: int, overnight: bool) -> bool:
+        def _satisfies(open_min: int, close_min: int, overnight: bool) -> bool:
+            if precise_window:
+                if overnight:
+                    # today's window: [open_min, 1440)
+                    return req_start_min >= open_min and req_end_min <= 1440
+                return req_start_min >= open_min and req_end_min <= close_min
+            # Overlap only: any part of the day's open hours intersects
+            # any part of the requested day.
             if overnight:
-                # Window crosses midnight: covers [open_m, 1440) union [0, close_m)
-                return (
-                    req_start_min >= open_m
-                    or req_end_min <= close_m
-                    or (req_start_min < close_m and req_end_min <= close_m)
-                )
-            return req_start_min >= open_m and req_end_min <= close_m
+                return True  # spans into tomorrow -> overlaps this day by definition
+            return req_start_min < close_min and req_end_min > open_min
 
         covered = False
         for row in todays_rows:
@@ -369,16 +381,11 @@ class FeasibilityService:
             close_h, close_m_ = (int(x) for x in row.close_time.split(":"))
             open_min, close_min = open_h * 60 + open_m_, close_h * 60 + close_m_
             overnight = close_min <= open_min
-            if overnight:
-                # today's window: [open_min, 1440)
-                if req_start_min >= open_min and req_end_min <= 1440:
-                    covered = True
-                    break
-            elif req_start_min >= open_min and req_end_min <= close_min:
+            if _satisfies(open_min, close_min, overnight):
                 covered = True
                 break
 
-        if not covered:
+        if not covered and precise_window:
             # check yesterday's overnight window spilling into today: [0, close_min)
             for row in prev_rows:
                 if row.is_closed or row.open_time is None or row.close_time is None:
@@ -427,6 +434,14 @@ class FeasibilityService:
         except Exception:
             tz = ZoneInfo(_DEFAULT_TZ)
 
+        # Same precise-window-vs-date-only distinction as
+        # _check_opening_hours: a date-only constraint (the itinerary
+        # composer's whole-day candidate gate) means "is there any active
+        # slot at all that day", not "is there a single slot spanning the
+        # traveler's entire day" — defaulting to 00:00-23:59 containment
+        # here would require an availability slot no venue realistically
+        # has. Precise-window callers keep strict containment.
+        precise_window = constraints.available_start is not None
         target_date = constraints.available_date
         start_t = constraints.available_start or time(0, 0)
         end_t = constraints.available_end or time(23, 59)
@@ -458,12 +473,15 @@ class FeasibilityService:
             # erroring or silently miscomparing against an aware window.
             return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
 
-        def _contains(slot_start: datetime, slot_end: datetime) -> bool:
+        def _matches(slot_start: datetime, slot_end: datetime) -> bool:
             if window_start is None or window_end is None:
                 return True
-            return _as_aware(slot_start) <= window_start and _as_aware(slot_end) >= window_end
+            aware_start, aware_end = _as_aware(slot_start), _as_aware(slot_end)
+            if precise_window:
+                return aware_start <= window_start and aware_end >= window_end
+            return aware_start < window_end and aware_end > window_start
 
-        if not any(_contains(s.starts_at, s.ends_at) for s in active_slots):
+        if not any(_matches(s.starts_at, s.ends_at) for s in active_slots):
             reasons.append(
                 _reason(
                     FeasibilityReasonCode.AVAILABILITY_CONFLICT,

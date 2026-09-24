@@ -141,6 +141,13 @@ class Settings(BaseSettings):
     composer_default_max_experiences: int = 5
     composer_max_candidates: int = 20
     composer_max_optimization_iterations: int = 25
+    # Post-composition validation re-checks each item's real feasibility
+    # at its actual scheduled slot (opening hours/availability data the
+    # earlier candidate-gate pass didn't have the specific time for yet).
+    # A rejected item is excluded from the pool and composition retried,
+    # bounded, rather than failing outright when a feasible replacement
+    # candidate exists.
+    composer_max_validation_retries: int = 5
     composer_min_buffer_minutes: int = 10
     composer_default_travel_mode: str = "driving"
     composer_narrative_model_version: str = "gemini-narrative-v1"

@@ -6,7 +6,48 @@ import { Card, CardBody } from "@/components/ui/Card";
 import { ApiError } from "@/lib/api/client";
 import { composeItinerary } from "@/lib/api/itineraries";
 import { isCompositionFailure } from "@/types/api";
-import type { ApiItinerary, CompositionPace } from "@/types/api";
+import type { ApiItinerary, CompositionPace, CompositionValidationResponse } from "@/types/api";
+
+const REASON_LABELS: Record<string, string> = {
+  OPENING_HOURS_CONFLICT: "isn't open during your chosen time window",
+  OPENING_HOURS_UNAVAILABLE: "has no recorded opening hours to verify",
+  AVAILABILITY_CONFLICT: "has no bookable slot in your chosen time window",
+  AVAILABILITY_UNAVAILABLE: "has no availability data on record",
+  BUDGET_EXCEEDED: "costs more than your budget allows",
+  PRICE_UNAVAILABLE: "has no listed price to verify against your budget",
+  DURATION_EXCEEDED: "takes longer than your available time",
+  TRAVEL_TIME_EXCEEDED: "is too far to reach in time",
+  GROUP_SIZE_EXCEEDS_CAPACITY: "can't accommodate your group size",
+  CAPACITY_UNAVAILABLE: "has no capacity data on record",
+};
+
+/** Builds a genuinely explanatory message from the real backend reason
+ * codes rather than showing the generic "failed validation" string —
+ * every claim here traces back to data actually in the response, never
+ * guessed. */
+function describeCompositionFailure(result: CompositionValidationResponse): string {
+  if (result.candidate_count === 0) {
+    return "No experiences matched your search. Try a broader interest or a different date.";
+  }
+  if (result.feasible_count === 0) {
+    return `Found ${result.candidate_count} matching experiences, but none fit your constraints — try an earlier/later time window, a higher budget, or fewer experiences.`;
+  }
+
+  const reasonCounts = new Map<string, number>();
+  for (const issue of result.issues) {
+    const reasons = (issue.evidence.reasons as string[] | undefined) ?? [issue.code];
+    for (const reason of reasons) {
+      reasonCounts.set(reason, (reasonCounts.get(reason) ?? 0) + 1);
+    }
+  }
+  const topReason = [...reasonCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+  const explanation = topReason ? REASON_LABELS[topReason] : undefined;
+
+  if (explanation) {
+    return `Found ${result.feasible_count} matching experiences, but the best available option ${explanation}. Try a different time window or budget.`;
+  }
+  return `Found ${result.feasible_count} matching experiences, but couldn't fit them into a valid plan for the given constraints.`;
+}
 
 /**
  * Composer form: date / time window / budget / max experiences /
@@ -51,7 +92,7 @@ export function ItineraryComposerForm({
         pace,
       });
       if (isCompositionFailure(result)) {
-        setValidationMessage(result.message);
+        setValidationMessage(describeCompositionFailure(result));
         return;
       }
       onComposed(result);

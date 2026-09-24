@@ -6,7 +6,6 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -42,12 +41,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [traveler, setTraveler] = useState<TravelerProfile | null>(null);
   const [provider, setProvider] = useState<ProviderProfileSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const bootstrapped = useRef(false);
 
   useEffect(() => {
-    if (bootstrapped.current) return;
-    bootstrapped.current = true;
-
+    // React Strict Mode (dev only) runs this effect mount -> cleanup ->
+    // mount again. A `cancelled` flag set by the first cleanup must not
+    // suppress the *second* run's own completion — each effect
+    // invocation needs its own independent cancellation flag, not one
+    // shared via a `bootstrapped` ref that made the second invocation a
+    // no-op while the first invocation's in-flight request was the only
+    // one that could ever set isLoading, and that one always saw
+    // cancelled=true by the time it resolved. Net effect: isLoading got
+    // stuck true forever on every fresh full-page load in dev.
     let cancelled = false;
 
     async function bootstrap() {

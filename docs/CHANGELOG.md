@@ -6,6 +6,169 @@
 
 ---
 
+## [Unreleased] 2026-09-25 — Live Debugging Session: Deployment Fixes + Composer Correctness
+
+Fixes found and corrected while running the deployed app end-to-end for the first time — the
+first real browser/traveler-flow exercise since Phase 8/9 were built. None of these were caught
+by the automated test suite because they only manifest against a genuinely running dev server,
+seeded data, and a real browser (hydration, browser extensions, Windows networking, DevTools
+inspection). All fixes verified: backend 360/360 tests still passing throughout, frontend
+tsc/eslint/vitest clean.
+
+### Fixed — Environment / configuration
+
+- `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` set to an *empty string* (not unset) in `.env` —
+  pydantic-settings treats an explicit empty string as a real value, overriding the working
+  dev-only default secrets, so every login/register call failed with
+  `jwt.exceptions.InvalidKeyError: HMAC key must not be empty.`. Same root cause as an earlier
+  `COOKIE_SECURE=` fix — omit the var entirely rather than leaving it blank.
+- `GEMINI_MODEL_TEXT=gemini-3.8-flash` returned a persistent `503 RESOURCE_EXHAUSTED`/"high
+  demand" from Google's API (likely limited preview-tier capacity on this account) — switched to
+  `gemini-2.5-flash`, verified working immediately.
+- `NEXT_PUBLIC_API_BASE_URL` in the root `.env` was never actually read by the Next.js dev
+  server — Next.js only loads `.env`/`.env.local` from its own package directory
+  (`apps/web/`), not a monorepo root. Documented; a local `apps/web/.env.local` override was used
+  during debugging.
+
+### Fixed — Gemini structured output
+
+- `TravelerContext`'s `response_schema` (passed directly to Gemini's structured-output API) used
+  Pydantic `gt=0` (emits `exclusiveMinimum`) on three fields and `extra="forbid"` (emits
+  `additionalProperties: false`, including on the nested `CommittedTimeBlock` list) — both are
+  JSON Schema keywords Gemini's schema endpoint rejects outright
+  (`400 INVALID_ARGUMENT: Unknown name "additional_properties"`), so every real conversational
+  turn failed and silently fell back to keyword-only discovery. Fixed by relaxing the three
+  fields to `ge=0` and adding `_gemini_safe_schema()` in `src/adapters/ai.py`, which recursively
+  strips `additionalProperties` from any schema before sending it to Gemini, then validates the
+  raw response text against the real Pydantic model directly (`response.text` +
+  `model_validate_json`, rather than relying on the SDK's own auto-parse of the class, which
+  requires passing the class unmodified).
+
+### Fixed — Frontend
+
+- `MapLibre` (v6) never painted tiles — controls rendered, but zero real tile network requests
+  ever fired. Root cause (two-part): (1) MapLibre's render worker is loaded via
+  `import.meta.url`-relative resolution, which Turbopack's dev server 404s; fixed by copying the
+  worker bundle into `public/maplibre/` and calling `setWorkerUrl()`. (2) That worker bundle
+  itself `import`s a sibling `maplibre-gl-shared.mjs` from the same `node_modules` directory —
+  only the worker file was copied initially, so the worker died silently on its own internal
+  import the moment it started (no error surfaced anywhere; the main thread kept firing
+  optimistic `dataloading` events forever). Fixed by copying both files; documented the
+  dependency in code so a future `maplibre-gl` version bump doesn't silently reintroduce this.
+- Voice transcript panel showed only the last few words of a longer Gemini reply — Gemini Live
+  streams `inputTranscription`/`outputTranscription` as incremental delta chunks, not cumulative
+  text, and the merge logic in `useVoiceAgent.ts` replaced the previous line with each new chunk
+  instead of concatenating. Fixed to append; panel also now wraps long lines instead of clipping.
+- `AuthContext.tsx`'s bootstrap effect used a `bootstrapped` ref to guard against a duplicate
+  `/auth/refresh` call, which interacted badly with React Strict Mode's dev-only
+  mount→cleanup→mount cycle: the *first* invocation's cleanup set its own `cancelled` flag to
+  `true`, then the ref made the *second* invocation a no-op — so the only bootstrap call that
+  ever actually ran was guaranteed to see `cancelled === true` by the time its (successful)
+  network request resolved, permanently skipping `setIsLoading(false)`. Every fresh full-page
+  load of a `RequireRole`-gated page (Trips/Saved/Provider) hung on the loading skeleton forever,
+  even though the request itself succeeded. Fixed by removing the ref so each Strict Mode
+  invocation gets its own independent cancellation flag (Strict Mode is dev-only; the tradeoff is
+  one harmless duplicate refresh call in development).
+- `client.ts` surfaced FastAPI 422 validation errors as the generic `"Validation failed"` string
+  instead of the real per-field reason already present in the response `detail` array (e.g. a
+  password under 8 characters). Added `describeValidationError()` to build a readable message
+  from the actual `detail` entries; also added client-side password-length/business-name checks
+  to the register form so the same mistake fails fast without a round-trip.
+- `ItineraryComposerForm.tsx` showed the generic backend `"The composed itinerary failed
+  validation."` message on any composition failure, discarding the real `candidate_count` /
+  `feasible_count` / per-issue `reasons` the API already returns. Added
+  `describeCompositionFailure()` to build an explanatory message from that real data (e.g. "Found
+  7 matching experiences, but the best available option isn't open during your chosen time
+  window.") — every claim traces back to actual response data, nothing invented.
+- `ItineraryNarratorService`'s fact prompt included `booking_status=not_requested` for every
+  single item regardless of whether anything had happened, so Gemini (correctly, per its
+  instructions to narrate only supplied facts) wrote a repetitive "booking is currently not
+  requested" line on every item narration. Fixed to omit the `booking_status` fact entirely when
+  there is no actual request, and instructed Gemini accordingly — booking is now only mentioned
+  when there's something real to say.
+
+### Fixed — Demo data completeness (not a code bug, but blocked every real feature test)
+
+- Zero `ExperienceEmbedding` rows existed in the dev database — nobody had ever run
+  `scripts/index_embeddings.py` against it, so semantic search/composition had nothing to
+  retrieve against. Ran it (341/353 embedded; 12 hit the Gemini free-tier rate limit and were
+  correctly left un-embedded rather than faked).
+- Zero `ExperienceAvailability` rows existed anywhere in the catalog — the itinerary composer
+  always supplies a date/time window, which makes availability a hard blocking constraint per
+  Phase 6's "never assume bookable without evidence" policy, so composition could never succeed
+  against this seed data. Added `scripts/seed_availability.py` (new, idempotent) to derive
+  realistic bookable slots from each experience's real recorded opening hours (810 slots across
+  65 experiences with real hours; the other 288 experiences have no opening-hours data at all and
+  honestly stay UNKNOWN — never fabricated). Labeled as synthetic demo data throughout, never
+  presented as real provider-supplied availability.
+
+### Fixed — Feasibility / composer correctness (real logic bugs, not just missing data)
+
+- `FeasibilityService._check_opening_hours` / `_check_availability` required an experience's
+  opening hours/availability slot to fully *contain* whatever time window was supplied. Correct
+  for verifying one specific visit, but the itinerary composer's whole-day candidate gate passed
+  the traveler's entire requested window (e.g. 9am–6pm) into the same check, which then required
+  every candidate to be open for the *entire* day — a bar almost no real venue with partial-day
+  hours can clear, blocking composition against nearly the whole catalog. Added a
+  `precise_window` distinction: a date-only constraint (no specific start/end — the composer's
+  gate, before any slot is chosen) now checks for *any overlap* that day; a precise start/end
+  (single-experience verification, and the mandatory post-composition per-item re-check) keeps
+  the original strict containment semantics unchanged.
+- `scripts/seed_availability.py`'s first version stored local wall-clock datetimes without
+  converting to UTC first; SQLite drops tzinfo on write regardless, and
+  `FeasibilityService._as_aware` treats a naive stored value as UTC per the model's documented
+  convention — so every seeded slot was silently offset by the timezone difference (+5:30).
+  Fixed to convert to UTC before storage; re-seeded.
+- The Phase 8 composer's post-composition validator correctly re-checks each item's precise
+  feasibility at its actual scheduled slot and correctly rejects a bad assignment, but nothing
+  ever retried — composition failed outright on the very first per-item rejection even when other
+  feasible candidates existed, despite the originally-specced "bounded deterministic
+  alternatives" behavior never having been implemented. Added a bounded retry loop in
+  `compose_itinerary.py` (`Settings.composer_max_validation_retries`, default 5): on a specific
+  `EXPERIENCE_NOT_FEASIBLE` rejection, that one experience is excluded from the candidate pool and
+  composition is retried from scratch, converging on a valid plan when one exists among the
+  remaining feasible candidates.
+- Verified end to end: a real compose request now returns a complete, valid, Gemini-narrated
+  multi-stop Mumbai itinerary with correct chronological scheduling, real OSRM travel times, and
+  budget compliance.
+
+### Note on Phase 9 documentation
+
+The Phase 9 commit updated `docs/AI_CONTEXT.md`, `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`,
+`docs/PROJECT_STATE.md`, and `docs/TASKS.md`, but this `CHANGELOG.md` entry for Phase 9 itself
+was missed — see the entry immediately below, added retroactively.
+
+---
+
+## [Phase 9] 2026-09-24 — Real-Time Context + Events + Dynamic Replanning
+
+Real-time weather/event context, deterministic impact detection, dynamic itinerary replanning,
+and live SSE update delivery — built entirely on top of the existing Phase 6/7/8 pipeline, never
+duplicating retrieval, feasibility, ranking, or composition. See `docs/PROJECT_STATE.md`'s Phase 9
+section for the full implementation detail (adapters, models, API surface, test counts); summary:
+
+- Real `OpenWeatherAdapter` and `TicketmasterEventAdapter` implementations (replacing the Phase 0
+  placeholder stubs), each with a mock/seed fallback, TTL caching, and rate limiting matching the
+  existing OSRM/Nominatim adapter pattern.
+- `WeatherImpactService` / `ContextImpactService` — deterministic-only (no LLM) verdicts on
+  whether a context change materially affects an itinerary, with hysteresis to prevent
+  GOOD→CAUTION→GOOD oscillation.
+- `ReplanningService` — re-runs the existing Phase 6 retrieval+feasibility, Phase 7 ranking, and
+  Phase 8 composition/validation against only the remaining, unlocked, incomplete portion of an
+  itinerary; completed and explicitly-locked items are never rewritten.
+- Itinerary versioning/revisions with optimistic-locking conflict detection
+  (`ITINERARY_VERSION_CONFLICT`) and idempotency-key support.
+- `GET /api/v1/itineraries/{id}/updates` — SSE live plan updates, ownership-checked.
+- `replan_experience` — the fourth and final Gemini tool; requests backend replanning only, never
+  mutates the itinerary or supplies traveler_id itself.
+- Backend: 360/360 tests passing (298 pre-Phase-9 baseline + 62 new). Frontend: 56/56 tests
+  passing, clean `tsc`/ESLint/`next build`.
+- **NOT VERIFIED**: live OpenWeather/Ticketmaster API calls (no keys in the isolated build
+  environment) and PostgreSQL (no instance available) — same honesty convention used by every
+  prior phase in this project for its own unverifiable pieces.
+
+---
+
 ## [Phase 8] 2026-09-24 — Deterministic Itinerary Composition with Gemini Narrative Generation
 
 ### Phase 7 preflight fixes (found and fixed before Phase 8 work began)

@@ -460,6 +460,54 @@ live SSE update delivery, built on top of the Phase 6/7/8 pipeline without dupli
 
 ---
 
+### Live Debugging Session — 2026-09-25
+
+The first real end-to-end run of the deployed app (register/login, Discover map, voice, itinerary
+composition) in a real browser, surfacing several bugs the automated test suite couldn't catch —
+each required a genuinely running server, seeded data, or browser inspection to find. Full detail
+in `docs/CHANGELOG.md`'s 2026-09-25 entry; `docs/DECISIONS.md` ADR-054 covers the feasibility/
+composer correctness fix specifically. Summary:
+
+- **Config**: blank (not unset) `JWT_ACCESS_SECRET`/`JWT_REFRESH_SECRET` broke all
+  login/register; `GEMINI_MODEL_TEXT` switched from a persistently-503ing `gemini-3.8-flash` to
+  `gemini-2.5-flash`.
+- **Gemini structured output**: `TravelerContext`'s `response_schema` used Pydantic keywords
+  (`exclusiveMinimum`, `additionalProperties`) Gemini's API rejects outright — every real
+  conversational turn was silently falling back to keyword-only discovery. Fixed via a new
+  `_gemini_safe_schema()` helper in `src/adapters/ai.py`.
+- **Map**: MapLibre never painted tiles — its worker bundle's own internal import of a sibling
+  file was missing from the `public/maplibre/` copy used to work around a Turbopack dev-server
+  gap, so the worker died silently with zero real tile requests ever firing.
+- **Voice transcript**: showed only the last few words of a reply (Gemini Live streams deltas,
+  not cumulative text; the merge logic was replacing instead of appending).
+- **Auth loading hang**: `RequireRole`-gated pages (Trips/Saved/Provider) hung on the loading
+  skeleton forever on every fresh page load — a `bootstrapped` ref in `AuthContext.tsx` interacted
+  badly with React Strict Mode's dev-only double-effect-invocation, guaranteeing the one bootstrap
+  call that ran always saw its own cancellation flag already set by the time its (successful)
+  network request resolved.
+- **Error messaging**: generic "Validation failed"/"composed itinerary failed validation" strings
+  replaced with messages built from the real per-field/per-reason data the API already returns
+  (register form, itinerary composer form).
+- **Narrative copy**: the Gemini narrator was told a `booking_status=not_requested` fact for
+  every single itinerary item, so it dutifully (and correctly, per its own instructions) narrated
+  a repetitive "booking is currently not requested" line on every item. Fixed to omit the fact
+  when there's nothing to report.
+- **Demo data completeness** (not code bugs, but blocked every real feature test): zero
+  `ExperienceEmbedding` rows (ran `scripts/index_embeddings.py`: 341/353 embedded) and zero
+  `ExperienceAvailability` rows anywhere in the catalog (new idempotent
+  `scripts/seed_availability.py`: 810 slots derived from real opening hours across 65
+  experiences).
+- **Feasibility/composer correctness** (real logic bugs — see ADR-054): the composer's whole-day
+  candidate gate was reusing single-visit-verification opening-hours/availability logic that
+  required full-day containment, which almost no real venue can satisfy; and the mandatory
+  post-composition validator's rejections were never retried against an alternative candidate
+  even when one existed. Both fixed; verified end to end with a real Gemini-narrated multi-stop
+  itinerary.
+- All fixes verified against the full test suite throughout: backend 360/360, frontend 56/56,
+  `tsc`/ESLint clean.
+
+---
+
 ## Planned
 
 ### Phase 10 — Provider Intelligence & Two-Sided Marketplace

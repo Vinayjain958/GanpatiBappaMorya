@@ -39,7 +39,12 @@ NARRATOR_SYSTEM_INSTRUCTION = (
     "must be described as requested/pending, never as confirmed or "
     "guaranteed. If a travel gap is marked unknown, say the travel time "
     "is not available rather than guessing a number. Do not add "
-    "experiences, stops, or time slots that were not given to you."
+    "experiences, stops, or time slots that were not given to you. Only "
+    "mention booking status for an item when a booking_status fact is "
+    "actually present for it — most items will have none, meaning no "
+    "booking has been requested, and in that case you must not mention "
+    "booking at all for that item (never write a filler line like "
+    "\"booking is not requested\")."
 )
 
 
@@ -85,7 +90,13 @@ def _facts_prompt(
         "Items in fixed chronological order:",
     ]
     for item in items:
-        booking_status = booking_statuses.get(item.experience.id, "not_requested")
+        # Only surface a booking_status fact when something has actually
+        # happened (REQUESTED/ACCEPTED/DECLINED/...) — omitting it for the
+        # (overwhelmingly common) "nothing requested yet" case means
+        # there's no fact for Gemini to narrate into a repetitive filler
+        # line on every single item.
+        booking_status = booking_statuses.get(item.experience.id)
+        booking_fact = f" booking_status={booking_status}" if booking_status else ""
         lines.append(
             f"- id={item.experience.id} title=\"{item.experience.title}\" "
             f"category={item.experience.category.name} "
@@ -93,8 +104,8 @@ def _facts_prompt(
             f"duration_minutes={item.duration_minutes} "
             f"price={item.estimated_cost if item.estimated_cost is not None else 'unknown'} {currency} "
             f"travel_from_previous_minutes="
-            f"{item.travel_from_previous_minutes if item.travel_from_previous_minutes is not None else 'unknown'} "
-            f"booking_status={booking_status}"
+            f"{item.travel_from_previous_minutes if item.travel_from_previous_minutes is not None else 'unknown'}"
+            f"{booking_fact}"
         )
     lines.append(
         "Respond with the requested structured fields only, referencing "

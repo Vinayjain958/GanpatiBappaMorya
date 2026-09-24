@@ -61,12 +61,21 @@ async def _get_ranked_feasible_candidates(
     from src.schemas.feasibility import TravelerConstraints
 
     pipeline = DiscoveryPipelineService(session, settings, embedding_adapter, routing_adapter)
+    # available_date is passed (filters out day-of-week closures), but
+    # available_start/available_end are NOT: FeasibilityService's
+    # opening-hours/availability checks require full CONTAINMENT of
+    # whatever window is supplied (correct for verifying one specific
+    # visit), and default an omitted start/end to the full 00:00-23:59
+    # day — which would wrongly require every candidate to be open/
+    # bookable across the traveler's *entire* day, when only whatever
+    # specific slot the composer eventually schedules it into matters.
+    # ItineraryValidatorService re-runs the full precise check against
+    # each item's actual planned start/end after composition — that is
+    # the mandatory, authoritative gate for per-slot time fit.
     constraints = TravelerConstraints(
         budget_max=request.max_budget,
         party_size=request.party_size,
         available_date=request.itinerary_date,
-        available_start=request.start_time,
-        available_end=request.end_time,
         origin_lat=request.origin_lat,
         origin_lng=request.origin_lng,
         travel_mode=request.travel_mode,
@@ -121,19 +130,83 @@ async def compose_and_persist_itinerary(
         )
 
     composer = ExperienceComposerService(settings, routing_adapter)
-    composition = await composer.compose(
-        candidates=ranked_candidates,
-        itinerary_date=request.itinerary_date,
-        start_time_of_day=request.start_time,
-        end_time_of_day=request.end_time,
-        max_experiences=request.max_experiences,
-        max_budget=request.max_budget,
-        travel_mode=request.travel_mode,
-        origin_lat=request.origin_lat,
-        origin_lng=request.origin_lng,
-    )
+    exp_repo = ExperienceRepository(session)
+    validator = ItineraryValidatorService(routing_adapter)
+    from zoneinfo import ZoneInfo
 
-    if not composition.items:
+    tz = ZoneInfo(_DEFAULT_TZ)
+    requested_start = datetime.combine(request.itinerary_date, request.start_time, tzinfo=tz)
+    requested_end = datetime.combine(request.itinerary_date, request.end_time, tzinfo=tz)
+
+    # The composer's greedy/local-improvement stages check time window,
+    # travel time, and budget, but not a candidate's precise opening-hours
+    # /availability fit at its specific proposed slot (that data isn't on
+    # the flat RankedExperienceItem candidates it works from). The
+    # mandatory post-composition validator re-checks each item against
+    # real Experience data at its actual planned start/end and is the
+    # authoritative, precise gate. When it rejects a specific item as no
+    # longer feasible at its assigned slot, exclude that one experience
+    # and recompose from the remaining pool — bounded, deterministic,
+    # never silently accepting an invalid plan (docs Section 20 step 20).
+    excluded_ids: set[str] = set()
+    composition = None
+    validation = None
+    attempts = 0
+    max_attempts = max(1, settings.composer_max_validation_retries)
+
+    while attempts < max_attempts:
+        attempts += 1
+        pool = [c for c in ranked_candidates if c.id not in excluded_ids]
+        if not pool:
+            break
+
+        composition = await composer.compose(
+            candidates=pool,
+            itinerary_date=request.itinerary_date,
+            start_time_of_day=request.start_time,
+            end_time_of_day=request.end_time,
+            max_experiences=request.max_experiences,
+            max_budget=request.max_budget,
+            travel_mode=request.travel_mode,
+            origin_lat=request.origin_lat,
+            origin_lng=request.origin_lng,
+        )
+
+        if not composition.items:
+            break
+
+        experiences_by_id = {}
+        for item in composition.items:
+            exp = await exp_repo.get_by_id(item.experience.id)
+            if exp is not None:
+                experiences_by_id[item.experience.id] = exp
+
+        validation = await validator.validate(
+            items=composition.items,
+            experiences_by_id=experiences_by_id,
+            requested_start=requested_start,
+            requested_end=requested_end,
+            max_budget=request.max_budget,
+            max_experiences=request.max_experiences,
+            party_size=request.party_size,
+            travel_mode=request.travel_mode,
+        )
+
+        if validation.valid:
+            break
+
+        newly_excluded = {
+            str(issue.evidence["experience_id"])
+            for issue in validation.issues
+            if issue.code == FeasibilityReasonCode.EXPERIENCE_NOT_FEASIBLE and "experience_id" in issue.evidence
+        }
+        if not newly_excluded or newly_excluded <= excluded_ids:
+            # Nothing new to exclude (a non-per-item issue, e.g. budget/
+            # count) — retrying with the same pool would repeat forever.
+            break
+        excluded_ids |= newly_excluded
+
+    if composition is None or not composition.items:
         return ComposeOutcome(
             valid=False,
             reason_code="COMPOSITION_NO_VALID_PLAN",
@@ -142,37 +215,12 @@ async def compose_and_persist_itinerary(
             feasible_count=feasible_count,
         )
 
-    exp_repo = ExperienceRepository(session)
-    experiences_by_id = {}
-    for item in composition.items:
-        exp = await exp_repo.get_by_id(item.experience.id)
-        if exp is not None:
-            experiences_by_id[item.experience.id] = exp
-
-    validator = ItineraryValidatorService(routing_adapter)
-    from zoneinfo import ZoneInfo
-
-    tz = ZoneInfo(_DEFAULT_TZ)
-    requested_start = datetime.combine(request.itinerary_date, request.start_time, tzinfo=tz)
-    requested_end = datetime.combine(request.itinerary_date, request.end_time, tzinfo=tz)
-
-    validation = await validator.validate(
-        items=composition.items,
-        experiences_by_id=experiences_by_id,
-        requested_start=requested_start,
-        requested_end=requested_end,
-        max_budget=request.max_budget,
-        max_experiences=request.max_experiences,
-        party_size=request.party_size,
-        travel_mode=request.travel_mode,
-    )
-
-    if not validation.valid:
+    if validation is None or not validation.valid:
         return ComposeOutcome(
             valid=False,
             reason_code="COMPOSITION_NO_VALID_PLAN",
             message="The composed itinerary failed validation.",
-            issues=validation.issues,
+            issues=validation.issues if validation else [],
             candidate_count=candidate_count,
             feasible_count=feasible_count,
         )

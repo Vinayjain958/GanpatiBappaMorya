@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
+
 
 class UpdatePreferenceRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")

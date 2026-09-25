@@ -28,7 +28,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -65,7 +65,7 @@ class ContextMonitor:
         self._clock = clock
         self._impact = ContextImpactService(settings)
         self._last_weather_by_location: dict[str, WeatherContext] = {}
-        self._task: asyncio.Task | None = None
+        self._task: asyncio.Task[None] | None = None
         self._started = False
 
     def start(self) -> None:

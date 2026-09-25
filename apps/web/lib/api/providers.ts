@@ -22,3 +22,29 @@ function toSearchParams(filters: ExperienceListFilters): string {
 export function getMyExperiences(filters: ExperienceListFilters = {}) {
   return apiClient.get<ApiExperienceListResponse>(`/api/v1/providers/me/experiences${toSearchParams(filters)}`);
 }
+
+// -- Phase 10: Provider Intelligence --
+import type { 
+  ProviderInsightResponse, 
+  ProviderNotificationListResponse,
+  ProviderNotificationResponse
+} from "@/types/provider-intelligence";
+
+export function getProviderInsights(window: string = "30d", granularity: string = "auto") {
+  const params = new URLSearchParams({ window, granularity });
+  return apiClient.get<ProviderInsightResponse>(`/api/v1/provider/insights?${params.toString()}`);
+}
+
+export function getProviderNotifications(unread_only: boolean = false, limit: number = 50, offset: number = 0) {
+  const params = new URLSearchParams();
+  if (unread_only) params.append("unread_only", "true");
+  if (limit !== 50) params.append("limit", String(limit));
+  if (offset !== 0) params.append("offset", String(offset));
+  
+  const query = params.toString();
+  return apiClient.get<ProviderNotificationListResponse>(`/api/v1/provider/notifications${query ? "?" + query : ""}`);
+}
+
+export function markNotificationRead(notificationId: string) {
+  return apiClient.post<void>(`/api/v1/provider/notifications/${notificationId}/read`, {});
+}

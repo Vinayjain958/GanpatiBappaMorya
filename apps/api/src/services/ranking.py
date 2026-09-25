@@ -61,16 +61,16 @@ class WeightedPersonalizedRanker:
                 if candidate.experience.category.slug in traveler_profile.preference.preferred_category_slugs:
                     preference_match = 1.0
                     
-            # Budget Fit
+            # Budget Fit — TravelerContext carries budget_max as a flat
+            # field (not a nested `constraints` object; that shape exists
+            # only on TravelerConstraints, a different schema used by the
+            # Phase 6 feasibility pipeline). This previously always read
+            # context.constraints, which never exists on TravelerContext,
+            # so the budget penalty below silently never applied.
             budget_fit = 1.0
-            # Assuming context has budget in some form. 
-            # In Phase 6, constraints are in constraints.budget_max
-            # For simplicity we do a binary or soft budget fit based on heuristics
-            if getattr(context, "constraints", None) and getattr(context.constraints, "budget_max", None):
-                b_max = context.constraints.budget_max
-                if getattr(candidate.experience, "price_type", None) == "fixed":
-                    price_min = getattr(candidate.experience, "price_min", 0)
-                    if price_min > b_max:
+            if context.budget_max is not None:
+                if candidate.experience.price_type == "fixed" and candidate.experience.price is not None:
+                    if candidate.experience.price > context.budget_max:
                         budget_fit = 0.0
             
             # Duration Fit

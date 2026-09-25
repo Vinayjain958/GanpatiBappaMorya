@@ -2,7 +2,7 @@
 
 > **READ THIS FIRST before modifying any code in this repository.**
 > This file is the primary orientation document for AI coding agents.
-> Last updated: 2026-09-22 | Current phase: PHASE 5
+> Last updated: 2026-09-25 | Current phase: Phases 0-9 Complete (reconciliation pass) | Phase 10 not started
 
 ---
 
@@ -32,7 +32,7 @@ The core product loop: **understand → retrieve → verify feasibility → pers
 | Migrations | Alembic | latest |
 | Database (dev) | SQLite + aiosqlite | — |
 | Database (prod) | PostgreSQL + asyncpg, Supabase | — |
-| AI | Google Gemini (text + Live voice), `google-genai`/`@google/genai` SDKs | gemini-3.8-flash / gemini-3.8-live |
+| AI | Google Gemini (text + Live voice), `google-genai`/`@google/genai` SDKs | gemini-2.5-flash / gemini-3.8-live |
 | Maps | MapLibre GL JS, OSM, Nominatim, OSRM | — |
 | Weather | OpenWeather (adapter-based) | — |
 | Events | Ticketmaster adapter + seed events | — |
@@ -104,13 +104,13 @@ External adapters (all behind interface boundaries):
 
 | Module | Phase | Status |
 |---|---|---|
-| Context & Intent Engine | 5 | IMPLEMENTED (text: TravelerContext extraction; voice: Gemini Live + search_experiences tool) |
+| Context & Intent Engine | 5 | IMPLEMENTED (text: LIVE VERIFIED; voice: Gemini Live + search_experiences tool, NOT VERIFIED — needs real browser mic session) |
 | Experience Discovery Engine | 4 | IMPLEMENTED (deterministic keyword/filter/radius — not ML) |
-| Constraint & Feasibility Engine | 6 | PLANNED |
-| Personalized Ranking Engine | 7 | PLANNED |
-| AI Experience Composer | 8 | PLANNED (UI shell IMPLEMENTED) |
-| Dynamic Replanning Engine | 9 | PLANNED (UI affordance IMPLEMENTED) |
-| Feedback & Learning Engine | 7 | PLANNED |
+| Constraint & Feasibility Engine | 6 | IMPLEMENTED (SQLite LIVE VERIFIED; PostgreSQL/pgvector NOT VERIFIED) |
+| Personalized Ranking Engine | 7 | IMPLEMENTED (see ADR-055 for a budget-filter bug found and fixed this reconciliation) |
+| AI Experience Composer | 8 | IMPLEMENTED (Gemini narrative LIVE VERIFIED; PostgreSQL migration path NOT VERIFIED) |
+| Dynamic Replanning Engine | 9 | IMPLEMENTED (see ADR-055 for datetime and sequence_order bugs found and fixed this reconciliation) |
+| Feedback & Learning Engine | 7 | IMPLEMENTED |
 | Provider Intelligence | 10 | PLANNED (UI shell IMPLEMENTED) |
 | Safety & Emergency Module | 11 | PLANNED (UI shell IMPLEMENTED) |
 | Authentication & Roles | 3 | IMPLEMENTED |

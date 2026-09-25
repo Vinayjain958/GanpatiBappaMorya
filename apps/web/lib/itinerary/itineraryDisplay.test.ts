@@ -7,6 +7,7 @@ import {
   itinerarySummaryLine,
   itineraryStatusLabel,
   orderedItems,
+  selectCurrentItinerary,
   travelGapLabel,
 } from "@/lib/itinerary/itineraryDisplay";
 import type { ApiItinerary, ApiItineraryItem } from "@/types/api";
@@ -157,5 +158,32 @@ describe("formatItemTimeRange", () => {
     const item = makeItem({ planned_start: "2026-10-12T10:00:00Z", planned_end: "2026-10-12T11:00:00Z" });
     const result = formatItemTimeRange(item);
     expect(result).toContain("–");
+  });
+});
+
+describe("selectCurrentItinerary", () => {
+  it("returns null for an empty list — the caller falls back to the composer, never a fabricated plan", () => {
+    expect(selectCurrentItinerary([])).toBeNull();
+  });
+
+  it("picks the first non-cancelled itinerary, trusting the backend's own ordering", () => {
+    const itineraries = [
+      makeItinerary([makeItem()], { id: "newest", status: "VALIDATED" }),
+      makeItinerary([makeItem()], { id: "older", status: "VALIDATED" }),
+    ];
+    expect(selectCurrentItinerary(itineraries)?.id).toBe("newest");
+  });
+
+  it("never resurrects a CANCELLED itinerary as the current plan", () => {
+    const itineraries = [
+      makeItinerary([makeItem()], { id: "cancelled-one", status: "CANCELLED" }),
+      makeItinerary([makeItem()], { id: "still-active", status: "VALIDATED" }),
+    ];
+    expect(selectCurrentItinerary(itineraries)?.id).toBe("still-active");
+  });
+
+  it("returns null when every itinerary on record is CANCELLED", () => {
+    const itineraries = [makeItinerary([makeItem()], { id: "cancelled-one", status: "CANCELLED" })];
+    expect(selectCurrentItinerary(itineraries)).toBeNull();
   });
 });

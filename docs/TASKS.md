@@ -3,7 +3,7 @@
 > High-signal phase-based task backlog.
 > Tasks are categorized by phase and priority.
 > Low-level implementation details are tracked in GitHub Issues / sprint boards (not here).
-> Last updated: 2026-09-22
+> Last updated: 2026-09-25
 
 ---
 
@@ -257,18 +257,21 @@
 
 ---
 
-## P7 — Real ML Ranking + Feedback Learning
+## P7 — Real ML Ranking + Feedback Learning ✅ Complete
 
 > **Target**: Different traveler profiles produce meaningfully different rankings.
 
-- [ ] `Interaction` model (view, save, complete, skip, rate)
-- [ ] `TravelerPreference` model
-- [ ] `TravelerAffinity` model (per-category/tag affinity scores)
-- [ ] Feedback API (`POST /interactions`)
-- [ ] Personalized ranking algorithm (weighted scoring → later embedding-based)
-- [ ] Affinity update on new feedback
-- [ ] Ranking endpoint integrated into main discovery pipeline
-- [ ] Quality metric: A/B ranking comparison for different profiles
+- [x] `Interaction` model (view, save, complete, skip, rate)
+- [x] `TravelerPreference` model
+- [x] `TravelerAffinity` model (per-category/tag affinity scores)
+- [x] Feedback API (`POST /interactions`)
+- [x] Personalized ranking algorithm (weighted scoring — deterministic, not embedding-based) — a
+      real bug (budget filter reading a nonexistent `context.constraints.budget_max` instead of
+      the flat `context.budget_max`) was found and fixed this reconciliation; see
+      docs/DECISIONS.md ADR-055
+- [x] Affinity update on new feedback
+- [x] Ranking endpoint integrated into main discovery pipeline
+- [x] Quality metric: A/B ranking comparison for different profiles
 
 ---
 
@@ -329,14 +332,14 @@
 
 > **Target**: Provider can see demand intelligence and traveler matches.
 
-- [ ] `DemandSignal` aggregation service
-- [ ] `ProviderInsight` model
-- [ ] Provider analytics API (`GET /providers/me/insights`)
-- [ ] Traveler–provider matching score
-- [ ] Provider notification: qualified traveler match
-- [ ] Provider analytics dashboard UI
-- [ ] Demand trend charts (views, saves, bookings over time)
-- [ ] "Synthetic Data" label enforcement in UI
+- [x] `DemandSignal` aggregation service
+- [x] `ProviderInsight` model
+- [x] Provider analytics API (`GET /providers/me/insights`)
+- [x] Traveler–provider matching score
+- [x] Provider notification: qualified traveler match
+- [x] Provider analytics dashboard UI
+- [x] Demand trend charts (views, saves, bookings over time)
+- [x] "Synthetic Data" label enforcement in UI
 
 ---
 
@@ -344,12 +347,12 @@
 
 > **Target**: Safety features functional independently of recommendation system.
 
-- [ ] Safety module isolation verified (no recommendation imports)
-- [ ] Emergency contact model + CRUD
-- [ ] Nearby safety resources endpoint (hospitals, police, consulates)
-- [ ] Emergency alert mechanism (notification or webhook)
-- [ ] Safety UI component (accessible, always-visible trigger)
-- [ ] Safety API: auth-only, no recommendation dependency
+- [x] Safety module isolation verified (no recommendation imports)
+- [x] Emergency contact model + CRUD
+- [x] Nearby safety resources endpoint (hospitals, police, consulates)
+- [x] Emergency alert mechanism (notification or webhook)
+- [x] Safety UI component (accessible, always-visible trigger)
+- [x] Safety API: auth-only, no recommendation dependency
 
 ---
 
@@ -359,7 +362,7 @@
 
 - [ ] End-to-end integration test suite (Playwright for frontend, pytest for API)
 - [ ] API performance testing (response time < 2s for all demo endpoints)
-- [ ] OWASP top 10 basic security review
+- [x] OWASP top 10 basic security review
 - [ ] Vercel frontend deployment
 - [ ] Docker containerization for FastAPI
 - [ ] Cloud/container deployment for FastAPI (Render/Railway/GCP)

@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, JSON, String
+from sqlalchemy import JSON, DateTime, Enum, String
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.schema import Index
 
@@ -29,7 +29,7 @@ class ContextSnapshot(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     context_type: Mapped[str] = mapped_column(ContextType, nullable=False)
     scope_key: Mapped[str] = mapped_column(String(200), nullable=False)  # e.g. "lat:lng" or "lat:lng:radius"
-    payload: Mapped[dict] = mapped_column(JSON, nullable=False)
+    payload: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False)
     source: Mapped[str] = mapped_column(String(30), nullable=False)  # LIVE | CACHED | MOCK | UNAVAILABLE
     fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     valid_until: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

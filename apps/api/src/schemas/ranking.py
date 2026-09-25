@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from typing import Any
-
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.schemas.experience import ExperienceSummary
 from src.schemas.feasibility import TravelerConstraints
 from src.schemas.semantic_search import ExcludedReasonSummary
+
 
 class RankedExperienceItem(ExperienceSummary):
     model_config = ConfigDict(extra="ignore")

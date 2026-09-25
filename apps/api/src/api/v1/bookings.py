@@ -16,11 +16,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.adapters.routing import RoutingAdapter
+from src.core.config import Settings, get_settings
 from src.core.db import get_session
 from src.core.deps import CurrentProvider, require_traveler
 from src.core.errors import ApiError
-from src.core.location import get_routing_adapter
 from src.models.booking_request import BookingRequest
 from src.models.user import User
 from src.repositories.booking_repository import BookingRequestRepository
@@ -33,6 +32,7 @@ from src.schemas.booking import (
     BookingRequestResponse,
     BookingStatusUpdate,
 )
+from src.services.provider_intelligence.notifications import ProviderNotificationService
 
 router = APIRouter(tags=["bookings"])
 
@@ -50,6 +50,7 @@ async def create_booking_request(
     payload: BookingRequestCreate,
     user: Annotated[User, Depends(require_traveler)],
     session: Annotated[AsyncSession, Depends(get_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> BookingRequestResponse:
     traveler_id = user.traveler.id
     itinerary = await ItineraryRepository(session).get_owned_by_id(itinerary_id, traveler_id)
@@ -81,6 +82,11 @@ async def create_booking_request(
     )
     BookingRequestRepository(session).add(booking)
     itinerary.status = "BOOKING_REQUESTED"
+    
+    # Phase 10: notify provider of booking request
+    notification_svc = ProviderNotificationService(session, settings)
+    await notification_svc.notify_booking_request(booking, experience)
+
     await session.commit()
     await session.refresh(booking)
     return await _to_response(session, booking)

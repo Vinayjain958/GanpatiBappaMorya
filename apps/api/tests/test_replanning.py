@@ -12,6 +12,7 @@ import asyncio
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from src.adapters.ai import MockAIAdapter
 from src.adapters.routing import MockRoutingAdapter
@@ -20,6 +21,17 @@ from src.models.itinerary import Itinerary
 from src.services.context_impact import ContextImpactResult, ImpactSeverity
 from src.services.replanning import ReplanningService, ReplanStatus
 from tests.conftest import auth_header, register_traveler
+
+
+async def _get_itinerary_with_items(session, itinerary_id: str) -> Itinerary:
+    """session.get(Itinerary, id) does not eager-load .items — accessing
+    it afterwards triggers an implicit lazy-load that fails outside the
+    async greenlet bridge with MissingGreenlet. Use the same
+    selectinload ItineraryRepository.get_owned_by_id already uses."""
+    result = await session.execute(
+        select(Itinerary).where(Itinerary.id == itinerary_id).options(selectinload(Itinerary.items))
+    )
+    return result.scalars().unique().one()
 
 
 def _compose_payload(**overrides) -> dict:
@@ -138,7 +150,7 @@ def test_locked_item_affected_requires_user_action(discovery_client, session_fac
 
     async def _run():
         async with session_factory() as session:
-            itinerary = await session.get(Itinerary, itinerary_id)
+            itinerary = await _get_itinerary_with_items(session, itinerary_id)
             for item in itinerary.items:
                 if item.id == first_item_id:
                     item.is_locked = True
@@ -169,7 +181,7 @@ def test_completed_item_never_rewritten(discovery_client, session_factory) -> No
 
     async def _run():
         async with session_factory() as session:
-            itinerary = await session.get(Itinerary, itinerary_id)
+            itinerary = await _get_itinerary_with_items(session, itinerary_id)
             for item in itinerary.items:
                 if item.id == first_item_id:
                     # Move this item entirely into the past — "completed".

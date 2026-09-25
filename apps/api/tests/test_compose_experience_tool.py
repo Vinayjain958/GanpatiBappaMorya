@@ -9,7 +9,6 @@ integration end-to-end, anonymous conversation access blocked.
 
 from __future__ import annotations
 
-from datetime import date, time
 from unittest.mock import patch
 
 from src.services.discovery_pipeline import DiscoveryPipelineService

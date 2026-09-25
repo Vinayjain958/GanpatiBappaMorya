@@ -2,7 +2,7 @@
 
 > 13-phase delivery roadmap for HackCelestial 3.0 — PS-6.
 > Each phase builds on the previous. Phase boundaries are intentional gates.
-> Last updated: 2026-09-22
+> Last updated: 2026-09-25
 
 ---
 
@@ -178,7 +178,9 @@ see docs/PROJECT_STATE.md and docs/DECISIONS.md ADR-022 through ADR-032.
 **Goal**: Enable natural language and voice as the primary traveler interaction mode.
 
 **Deliverables**:
-- `AIAdapter` (`GeminiAIAdapter`, `gemini-3.8-flash`/`gemini-3.8-live`) + `MockAIAdapter` fallback
+- `AIAdapter` (`GeminiAIAdapter`, `gemini-2.5-flash`/`gemini-3.8-live` — text model switched from
+  `gemini-3.8-flash` after persistent 503s, see docs/CHANGELOG.md 2026-09-25) + `MockAIAdapter`
+  fallback
 - `TravelerContext` structured schema, shared by text and voice
 - Intent extraction from natural language → `TravelerContext` (one Gemini call per text turn)
 - Conversational session management (server-side, `ConversationSession`/`ConversationMessage`)
@@ -267,7 +269,9 @@ key / no PostgreSQL instance available in this environment)
 
 ### PHASE 9 — Real-Time Context + Events + Dynamic Replanning
 
-**Status**: ⏳ Not started
+**Status**: ✅ Complete (OpenWeather + Ticketmaster adapters LIVE VERIFIED with real API keys this
+reconciliation; a datetime-comparison replanning crash and a sequence_order UNIQUE constraint
+collision bug were found and fixed — see docs/DECISIONS.md ADR-055)
 
 **Depends on**: Phase 8
 
@@ -288,7 +292,7 @@ key / no PostgreSQL instance available in this environment)
 
 ### PHASE 10 — Provider Intelligence & Two-Sided Marketplace
 
-**Status**: ⏳ Not started
+**Status**: ✅ Complete
 
 **Depends on**: Phase 7, Phase 9
 
@@ -308,7 +312,7 @@ key / no PostgreSQL instance available in this environment)
 
 ### PHASE 11 — Safety & Emergency
 
-**Status**: ⏳ Not started
+**Status**: ✅ Complete
 
 **Depends on**: Phase 3 (auth)
 
@@ -327,7 +331,7 @@ key / no PostgreSQL instance available in this environment)
 
 ### PHASE 12 — Full Integration, Testing, Hardening & Deployment
 
-**Status**: ⏳ Not started
+**Status**: ❌ Blocked (Missing real deployment credentials, Docker daemon, and Postgres)
 
 **Depends on**: All previous phases
 

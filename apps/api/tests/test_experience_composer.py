@@ -7,8 +7,6 @@ from __future__ import annotations
 import asyncio
 from datetime import date, time
 
-import pytest
-
 from src.adapters.routing import MockRoutingAdapter
 from src.core.config import Settings
 from src.schemas.experience import CategorySummary, LocationSummary, ProviderSummary

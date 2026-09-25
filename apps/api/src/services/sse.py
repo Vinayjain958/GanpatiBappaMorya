@@ -49,12 +49,12 @@ async def _get_or_create_bus(itinerary_id: str) -> _ItineraryBus:
         return bus
 
 
-def build_sse_event(event_type: str, event_id: int, data: dict) -> str:
+def build_sse_event(event_type: str, event_id: int, data: dict[str, object]) -> str:
     payload = json.dumps(data, default=str)
     return f"id: {event_id}\nevent: {event_type}\ndata: {payload}\n\n"
 
 
-async def publish_itinerary_event(itinerary_id: str, event_type: str, data: dict) -> None:
+async def publish_itinerary_event(itinerary_id: str, event_type: str, data: dict[str, object]) -> None:
     """Publishes a normalized event to every current subscriber of this
     itinerary's SSE stream. Called by ReplanningService/ContextMonitor —
     never receives or forwards raw provider payloads."""
@@ -81,7 +81,7 @@ async def sse_updates_stream(itinerary_id: str) -> AsyncIterator[str]:
             try:
                 message = await asyncio.wait_for(queue.get(), timeout=_HEARTBEAT_INTERVAL_SECONDS)
                 yield message
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 heartbeat_id = next(bus.event_id_counter)
                 yield build_sse_event(
                     "heartbeat", heartbeat_id, {"at": datetime.now(UTC).isoformat()}

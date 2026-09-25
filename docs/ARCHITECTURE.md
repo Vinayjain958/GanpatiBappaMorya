@@ -1,7 +1,7 @@
 # LocaLens — Architecture
 
-> **Current Phase: PHASE 5 — Conversational AI + Gemini Live Voice Agent**
-> Last updated: 2026-09-23
+> **Current Phase: Phases 0-9 Complete (reconciliation pass) — Phase 10 not started**
+> Last updated: 2026-09-25
 
 ---
 
@@ -116,32 +116,35 @@ LocaLens is a two-sided platform connecting travelers and local experience provi
 - Scores experiences against traveler affinity model
 - Initially rule-based weighted scoring
 - Eventually ML-based (traveler embedding × experience embedding)
-- **Phase**: 7 — NOT STARTED
+- **Phase**: 7 — IMPLEMENTED (deterministic weighted scoring with behavioral feedback learning —
+  not a trained ML model; see docs/DECISIONS.md ADR-055 for a budget-filter bug found and fixed
+  this reconciliation)
 
 ### E. AI Experience Composer
 - Combines ranked, feasible experiences into a coherent time-ordered plan
 - Uses Gemini LLM for narrative description, transition language, timing suggestions
 - The LLM does NOT decide feasibility during composition
 - Composition is validated again by the feasibility engine post-assembly
-- **Phase**: 8
+- **Phase**: 8 — IMPLEMENTED (Gemini narrative LIVE VERIFIED)
 
 ### F. Personalized Experience Output
 - Produces final structured + narrative output (itinerary object)
 - Includes: time slots, travel directions, estimated costs, explanations
-- **Phase**: 8
+- **Phase**: 8 — IMPLEMENTED
 
 ### G. Dynamic Replanning Engine
 - Triggered by: time change, budget change, experience unavailability, weather change, location change, preference change
 - Re-evaluates feasibility of existing plan items
 - Retrieves alternatives if needed
 - Re-composes a revised plan
-- **Phase**: 9
+- **Phase**: 9 — IMPLEMENTED (see docs/DECISIONS.md ADR-055 for bugs found and fixed this
+  reconciliation)
 
 ### H. Feedback & Learning Engine
 - Captures: views, saves, bookings, completions, ratings, reviews, skip signals
 - Trains/updates traveler affinity model
 - Feeds demand signals to provider intelligence
-- **Phase**: 7
+- **Phase**: 7 — IMPLEMENTED
 
 ### I. Provider Intelligence
 - Aggregates: views, saves, bookings, reviews per experience

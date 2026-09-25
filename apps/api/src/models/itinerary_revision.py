@@ -18,8 +18,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, JSON, String, Text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import JSON, DateTime, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.schema import Index, UniqueConstraint
 
 from src.core.db import Base
@@ -53,7 +53,7 @@ class ItineraryRevision(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     # Normalized change set: {"added_items": [...], "removed_items": [...],
     # "moved_items": [...], "unchanged_items": [...], "affected_items": [...]}
-    changes: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    changes: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
     context_snapshot_reference: Mapped[str | None] = mapped_column(String(36), nullable=True)
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     idempotency_key: Mapped[str | None] = mapped_column(String(100), nullable=True)

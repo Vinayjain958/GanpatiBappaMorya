@@ -20,7 +20,9 @@ neither ever decides feasibility or itinerary validity.
 
 from __future__ import annotations
 
-from datetime import date as date_, datetime, time as time_
+from datetime import date as date_
+from datetime import datetime
+from datetime import time as time_
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Date, DateTime, Enum, Float, ForeignKey, Integer, String, Text, Time

@@ -121,21 +121,21 @@ Status labels: `IMPLEMENTED` | `PARTIAL` | `PLANNED` | `NOT IMPLEMENTED`
 | Capability | Status |
 |---|---|
 | Natural language traveler input | `IMPLEMENTED` (Phase 5 — text conversational discovery) |
-| Voice interaction via Gemini Live | `IMPLEMENTED` (Phase 5 — real mic capture/playback/tool-calling; pending user's manual live-key verification, see docs/DECISIONS.md ADR-035) |
+| Voice interaction via Gemini Live | `IMPLEMENTED` (Phase 5 — real mic capture/playback/tool-calling; WebSocket voice path NOT VERIFIED, needs a real browser mic session, see docs/DECISIONS.md ADR-035) |
 | Conversational context maintenance | `IMPLEMENTED` (Phase 5 — bounded recent-history window) |
 | Structured intent/context extraction | `IMPLEMENTED` (Phase 5 — `TravelerContext`, understand + retrieve only, not feasibility) |
 | Experience catalog (open-data + synthetic, read API) | `IMPLEMENTED` (Phase 4 — full keyword/category/price/duration/radius/sort search) |
 | OSM/Nominatim/Overpass/OSRM location layer + MapLibre map | `IMPLEMENTED` (Phase 4 — geocoding, nearby-POI, routing/travel-time, real map rendering) |
 | Deterministic feasibility engine | `IMPLEMENTED` (Phase 6 — tri-state FEASIBLE/INFEASIBLE/UNKNOWN verdict, zero LLM calls, 11 constraint checks, verified on SQLite) |
-| Semantic retrieval (pgvector) | `PARTIAL` (Phase 6 — SQLite Python cosine similarity + keyword fallback IMPLEMENTED and verified; pgvector production path IMPLEMENTED but NOT VERIFIED live, no PostgreSQL instance available) |
-| Personalized ML ranking | `PLANNED` (Phase 7) |
-| Traveler affinity model | `PLANNED` (Phase 7) |
-| Feedback & learning | `PLANNED` (Phase 7) |
-| AI experience composer | `PLANNED` (Phase 8) |
-| Itinerary planning | `PLANNED` (Phase 8) |
-| Booking request flow | `PLANNED` (Phase 8) |
-| Real-time context (weather, traffic, events) | `PLANNED` (Phase 9) |
-| Dynamic replanning | `PLANNED` (Phase 9) |
+| Semantic retrieval (pgvector) | `PARTIAL` (Phase 6 — SQLite Python cosine similarity + keyword fallback IMPLEMENTED and LIVE VERIFIED; pgvector production path IMPLEMENTED but NOT VERIFIED, no PostgreSQL instance available) |
+| Personalized ML ranking | `IMPLEMENTED` (Phase 7 — deterministic weighted ranking; a budget-filter bug was found and fixed this reconciliation, see docs/DECISIONS.md ADR-055) |
+| Traveler affinity model | `IMPLEMENTED` (Phase 7) |
+| Feedback & learning | `IMPLEMENTED` (Phase 7) |
+| AI experience composer | `IMPLEMENTED` (Phase 8 — Gemini narrative LIVE VERIFIED) |
+| Itinerary planning | `IMPLEMENTED` (Phase 8) |
+| Booking request flow | `IMPLEMENTED` (Phase 8 — request intent only, REQUESTED/ACCEPTED/DECLINED, no payment) |
+| Real-time context (weather, traffic, events) | `IMPLEMENTED` (Phase 9 — OpenWeather + Ticketmaster adapters LIVE VERIFIED with real API keys this reconciliation) |
+| Dynamic replanning | `IMPLEMENTED` (Phase 9 — see docs/DECISIONS.md ADR-055 for bugs found and fixed this reconciliation) |
 | Provider profiles & listings | `IMPLEMENTED` (Phase 3 — profile + owner-scoped experience/availability CRUD) |
 | Provider intelligence & analytics | `PLANNED` (Phase 10) |
 | Two-sided marketplace matching | `PLANNED` (Phase 10) |

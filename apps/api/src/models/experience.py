@@ -22,10 +22,10 @@ if TYPE_CHECKING:
     from src.models.availability import ExperienceAvailability
     from src.models.category import ExperienceCategory
     from src.models.embedding import ExperienceEmbedding
+    from src.models.interaction import TravelerInteraction
     from src.models.location import Location
     from src.models.opening_hour import ExperienceOpeningHour
     from src.models.provider import Provider
-    from src.models.interaction import TravelerInteraction
 
 ExperienceStatus = Enum(
     "active", "draft", "inactive", name="experience_status", native_enum=False
@@ -149,6 +149,6 @@ class Experience(UUIDPrimaryKeyMixin, TimestampMixin, ProvenanceMixin, Base):
     embedding: Mapped[ExperienceEmbedding | None] = relationship(
         back_populates="experience", cascade="all, delete-orphan", uselist=False
     )
-    interactions: Mapped[list["TravelerInteraction"]] = relationship(
+    interactions: Mapped[list[TravelerInteraction]] = relationship(
         back_populates="experience", cascade="all, delete-orphan"
     )

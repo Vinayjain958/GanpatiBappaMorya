@@ -87,10 +87,6 @@ class ContextImpactService:
         reason_codes: list[str] = []
         max_severity = ImpactSeverity.NONE
 
-        prev_verdict_status = None
-        if previous_weather is not None and previous_weather.source != WeatherSource.UNAVAILABLE:
-            prev_verdict_status = "computed_per_item"  # computed per-item below
-
         for item in items:
             experience = experiences_by_id.get(item.experience_id)
             if experience is None:

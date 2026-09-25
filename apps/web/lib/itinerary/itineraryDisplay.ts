@@ -90,3 +90,17 @@ const ITINERARY_STATUS_LABELS: Record<string, string> = {
 export function itineraryStatusLabel(status: string): string {
   return ITINERARY_STATUS_LABELS[status] ?? status;
 }
+
+/**
+ * Picks "the current itinerary" to hydrate the Trip page with, from the
+ * traveler's full GET /api/v1/itineraries list. A CANCELLED itinerary is
+ * never resurrected as the active plan — the caller falls back to the
+ * empty (compose-form) state instead. The backend already returns the
+ * list ordered most-recent-first (itinerary_date desc, created_at desc —
+ * see ItineraryRepository.list_by_traveler); this never re-sorts, only
+ * selects the first non-cancelled entry, so it can never disagree with
+ * the backend's own ordering rule.
+ */
+export function selectCurrentItinerary(itineraries: ApiItinerary[]): ApiItinerary | null {
+  return itineraries.find((itinerary) => itinerary.status !== "CANCELLED") ?? null;
+}

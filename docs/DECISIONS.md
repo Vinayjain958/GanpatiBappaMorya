@@ -2042,3 +2042,162 @@ genuinely close to feasible.
   existing opening-hours data — the seed catalog had zero such rows,
   which was a separate, compounding gap (see CHANGELOG) rather than a
   defect in this feasibility logic itself.
+
+## ADR-055: Phase 0-9 Reconciliation — Real Bugs Found via mypy/ruff and Live Verification, a Vacuous-Test-Coverage Fixture Gap, and an SSE Test-Harness Limitation
+
+**Status**: Accepted
+
+**Context**: A full reconciliation pass (static analysis with `mypy
+--strict`/`ruff`, plus live smoke tests against real Gemini/OpenWeather/
+Ticketmaster credentials) was run across the whole backend after Phase
+9 to establish the actually-verified state of the codebase, independent
+of what earlier phase docs claimed. This surfaced several real,
+previously-undetected defects, none reachable from the existing test
+suite because the suite itself had a silent coverage gap (below).
+
+**Decision / Findings**:
+
+1. **Ranking budget filter never applied** (`src/services/ranking.py`).
+   `WeightedPersonalizedRanker` read `context.constraints.budget_max`,
+   a nested shape that only exists on the separate `TravelerConstraints`
+   schema used by the Phase 6 feasibility pipeline — `TravelerContext`
+   (what ranking actually receives) carries `budget_max` as a flat
+   field. The attribute access silently returned an `AttributeError`-free
+   *wrong* value in the untyped path, or would have crashed under
+   `TravelerContext.model_validate`-enforced typing; either way the
+   budget penalty never fired. Fixed to read `context.budget_max`
+   directly. Found by `mypy --strict`, not by any existing test.
+
+2. **API keys leaking into plaintext logs** (`src/core/logging.py`).
+   `httpx`'s request-logging uses a `%s`-style template with the actual
+   URL stored in `record.args`, not `record.msg` — a filter that only
+   inspected `record.msg` missed the real querystring, including
+   OpenWeather's `appid=` and Ticketmaster's `apikey=`. Fixed with a
+   `_RedactSecretsFilter` that calls `record.getMessage()` (the
+   already-substituted string) and attaches directly to
+   `logging.getLogger("httpx")` rather than only to a root handler,
+   because `configure_logging()`'s existing `if root.handlers: return`
+   guard was skipping filter attachment whenever uvicorn had already
+   configured root handlers before app startup ran. Verified live: a
+   real OpenWeather and Ticketmaster call each logged with
+   `appid=***REDACTED***` / `apikey=***REDACTED***` instead of the raw
+   key.
+
+3. **Replanning offset-naive/aware datetime crash and a double
+   sequence_order collision** (`src/services/replanning.py`). SQLite
+   silently strips tzinfo from `DateTime(timezone=True)` columns on
+   round-trip, and the codebase has two different unwritten conventions
+   for what a naive value read back from the DB means (UTC, for
+   `ExperienceAvailability`/`feasibility.py`; local Asia/Kolkata, for
+   `ItineraryItem`/`ExperienceComposerService`). `ReplanningService`
+   compared `item.planned_start`/`planned_end` directly against
+   timezone-aware `now`, crashing with `TypeError: can't compare
+   offset-naive and offset-aware datetimes` the moment any real
+   itinerary item was evaluated. Fixed with local
+   `_planned_start`/`_planned_end` closures (and an equivalent inline
+   conversion in the module-level `_item_to_composed`) that attach the
+   local-Kolkata tzinfo only for comparison purposes, deliberately
+   without mutating the ORM objects (to avoid spurious dirty-tracking
+   UPDATEs). Separately, re-numbering `sequence_order` on kept items
+   after a replan collided with newly-inserted composer items (both
+   numbered from 1), and — because SQLite checks UNIQUE constraints
+   immediately per statement rather than deferring them like PostgreSQL
+   — even a same-batch renumber of kept items alone could transiently
+   collide depending on UPDATE execution order. Fixed via offsetting
+   new items past the kept count, and via a two-phase
+   negative-placeholder-then-final renumber for the kept items.
+
+4. **Unvalidated stored conversation context crashes tool-call ranking**
+   (`src/api/v1/conversation.py`). `conversation.latest_traveler_context`
+   is a raw JSON `dict` persisted from an earlier turn; it was passed
+   directly as `context=` into the ranking pipeline, which assumes a
+   `TravelerContext` object (see finding 1) — reproduced live as
+   `AttributeError: 'dict' object has no attribute 'budget_max'` at
+   `ranking.py:71` whenever a prior turn had stored a budget constraint.
+   Fixed by validating with `TravelerContext.model_validate(...)` before
+   use. A regression test,
+   `test_tool_call_search_experiences_with_stored_budget_context_does_not_crash`
+   in `tests/test_conversation_api.py`, was added and confirmed to fail
+   against a temporarily-reverted fix before confirming it passes
+   against the real one.
+
+5. **Vacuous test coverage from an empty availability fixture**
+   (`tests/conftest.py`). The `discovery_dataset` fixture seeded
+   experiences with zero `ExperienceOpeningHour`/`ExperienceAvailability`
+   rows, so every `/itineraries/compose` call in the test suite returned
+   `feasible_count: 0` and composition always failed. Roughly 15+ tests
+   across `test_replanning.py`, `test_itinerary_sse.py`, and others had
+   `if "items" not in body: return` early-return guards intended for
+   genuinely-infeasible edge cases, which instead silently no-op'd on
+   every run, never executing their real assertions. This was not
+   caught by CI passing, because the suite never failed — it just
+   quietly skipped its own logic. Fixed by seeding real opening-hours
+   (all experiences open all week) and a two-year-wide
+   `ExperienceAvailability` window in the fixture, so composition
+   actually succeeds and the guarded assertions genuinely run. Chosen
+   deliberately over the lighter alternative of just documenting the
+   gap, per explicit instruction to fix the fixture rather than leave
+   the hole in place.
+
+6. **SSE `TestClient` streaming hangs on the endpoint's infinite
+   `while True` generator** (`tests/test_itinerary_sse.py`). The
+   `/itineraries/{id}/updates` route streams indefinitely by design
+   (heartbeats every 15s until the client disconnects — see
+   `src/services/sse.py`), and is confirmed working correctly against a
+   real running uvicorn process via manual `curl` verification. Reading
+   its body through Starlette's in-process ASGI `TestClient` transport,
+   however, reliably hung the test process — even bounded by a line
+   count, even from a background thread with a join timeout, even
+   without reading the body at all past opening the stream context
+   manager. This looks like an ASGI-transport/anyio interaction the
+   harness doesn't handle cleanly for a never-closing generator, not an
+   application defect. `test_sse_owner_connects_and_gets_connected_event`
+   was rewritten to call the route's real ownership-check and
+   `StreamingResponse` construction directly (the same code the actual
+   endpoint runs before handing off to the infinite generator) without
+   ever opening a `TestClient` stream — the specific thing that hangs.
+   The other four SSE tests were already hang-free (they use finite
+   `.get()` calls or drive `sse_updates_stream()`/
+   `publish_itinerary_event()` directly via `asyncio.run()`, with no
+   HTTP involved) and were left unmodified.
+
+**Why**: All six were found through genuine verification work (static
+typing, live credentialed API calls, and root-causing a real process
+hang), not hypothesized — consistent with this reconciliation's
+no-fabrication requirement. Items 1-4 are real production bugs that
+would have shipped silently; item 5 explains why the test suite didn't
+catch them sooner; item 6 is a test-infrastructure limitation worth
+recording so nobody re-attempts the same hung approach later.
+
+**Alternatives Considered**:
+- For item 6, keep debugging `TestClient.stream()` (thread+queue
+  timeout wrapper, `httpx`-level `timeout=`, reading zero bytes):
+  rejected after repeated confirmed hangs — reasonable engineering time
+  was spent and the direct-invocation approach fully exercises the same
+  route logic without the transport's failure mode.
+- For item 5, leave the fixture as-is and just document the gap in
+  CHANGELOG: rejected — the whole point of ~15 of those tests is to
+  exercise composition-dependent behavior; documenting instead of
+  fixing would leave that coverage permanently vacuous.
+
+**Consequences**:
+- Full backend suite: 361 passed, 0 failed, 0 hangs, 65.06s
+  (`python -m pytest -q`), confirmed clean on 2026-09-25.
+- `docs/CHANGELOG.md`'s reconciliation entry cross-references this ADR
+  for the same six findings.
+- The two conflicting naive-datetime conventions (item 3) remain
+  unresolved by design — this ADR only fixes the crash at the
+  comparison sites it touches; a future pass could standardize on one
+  convention (e.g. always store/compare UTC) but that is a larger,
+  out-of-scope migration under this reconciliation's minimal-fix rule.
+- mypy --strict still reports two known, verified-safe-at-runtime gaps
+  left intentionally unfixed: a dict-unpacking variance warning at
+  `ranking.py:140` constructing `RankedExperienceItem(**exp_dict, ...)`,
+  and ~18 "Item None of Traveler | None" warnings across
+  `bookings.py`/`feedback.py`/`itineraries.py`/`recommendations.py`
+  wherever `user.traveler.id` is read — safe because
+  `UserRepository._base_query()` always eager-loads `User.traveler` via
+  `selectinload` for a traveler-role user, so it is never actually
+  `None` at those call sites at runtime. Both are annotation-precision
+  gaps, not behavior bugs, and were left as-is per the "minimal fix,
+  don't rewrite working subsystems" rule.

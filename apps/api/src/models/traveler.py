@@ -9,10 +9,10 @@ from src.core.db import Base
 from src.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
-    from src.models.user import User
-    from src.models.preference import TravelerPreference
     from src.models.affinity import TravelerAffinity
     from src.models.interaction import TravelerInteraction
+    from src.models.preference import TravelerPreference
+    from src.models.user import User
 
 
 class Traveler(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -29,6 +29,6 @@ class Traveler(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     accessibility_requirements: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
     user: Mapped[User] = relationship(back_populates="traveler")
-    preference: Mapped["TravelerPreference | None"] = relationship(back_populates="traveler", uselist=False, cascade="all, delete-orphan")
-    affinities: Mapped[list["TravelerAffinity"]] = relationship(back_populates="traveler", cascade="all, delete-orphan")
-    interactions: Mapped[list["TravelerInteraction"]] = relationship(back_populates="traveler", cascade="all, delete-orphan")
+    preference: Mapped[TravelerPreference | None] = relationship(back_populates="traveler", uselist=False, cascade="all, delete-orphan")
+    affinities: Mapped[list[TravelerAffinity]] = relationship(back_populates="traveler", cascade="all, delete-orphan")
+    interactions: Mapped[list[TravelerInteraction]] = relationship(back_populates="traveler", cascade="all, delete-orphan")

@@ -32,7 +32,8 @@ never accepted from Gemini or the request body.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import date, datetime, time
+from typing import Literal, cast
 from zoneinfo import ZoneInfo
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,6 +42,7 @@ from src.adapters.ai import AIAdapter
 from src.adapters.embedding import EmbeddingAdapter
 from src.adapters.routing import RoutingAdapter
 from src.core.config import Settings
+from src.models.experience import Experience
 from src.models.itinerary import Itinerary
 from src.models.itinerary_item import ItineraryItem
 from src.models.itinerary_revision import ItineraryRevision
@@ -48,7 +50,7 @@ from src.repositories.experience_repository import ExperienceRepository
 from src.repositories.itinerary_repository import ItineraryRepository
 from src.schemas.feasibility import TravelerConstraints
 from src.schemas.ranking import RankedExperienceItem
-from src.services.context_impact import ContextImpactResult, ImpactSeverity
+from src.services.context_impact import ContextImpactResult
 from src.services.discovery_pipeline import DiscoveryPipelineService
 from src.services.experience_composer import ComposedItem, ExperienceComposerService
 from src.services.itinerary_narrator import ItineraryNarratorService
@@ -58,12 +60,15 @@ from src.services.sse import publish_itinerary_event
 _DEFAULT_TZ = "Asia/Kolkata"
 
 
+ReplanStatusLiteral = Literal["NO_CHANGE", "REPLANNED", "REPLAN_FAILED", "REQUIRES_USER_ACTION", "CONFLICT"]
+
+
 class ReplanStatus:
-    NO_CHANGE = "NO_CHANGE"
-    REPLANNED = "REPLANNED"
-    REPLAN_FAILED = "REPLAN_FAILED"
-    REQUIRES_USER_ACTION = "REQUIRES_USER_ACTION"
-    CONFLICT = "CONFLICT"
+    NO_CHANGE: ReplanStatusLiteral = "NO_CHANGE"
+    REPLANNED: ReplanStatusLiteral = "REPLANNED"
+    REPLAN_FAILED: ReplanStatusLiteral = "REPLAN_FAILED"
+    REQUIRES_USER_ACTION: ReplanStatusLiteral = "REQUIRES_USER_ACTION"
+    CONFLICT: ReplanStatusLiteral = "CONFLICT"
 
 
 @dataclass
@@ -77,7 +82,7 @@ class ReplanChangeSet:
 
 @dataclass
 class ReplanOutcome:
-    status: str
+    status: ReplanStatusLiteral
     itinerary: Itinerary | None = None
     previous_version: int | None = None
     new_version: int | None = None
@@ -138,10 +143,33 @@ class ReplanningService:
             )
 
         tz = ZoneInfo(_DEFAULT_TZ)
-        now = now or datetime.now(tz)
+        if now is None:
+            now = datetime.now(tz)
+
+        # ItineraryItem.planned_start/planned_end are DateTime(timezone=True)
+        # columns, but SQLite drops tzinfo on write regardless of what was
+        # originally stored — the composer writes them as local-Kolkata
+        # wall-clock values (see ExperienceComposerService), so what
+        # actually round-trips from the DB is a naive datetime that
+        # represents local time (NOT UTC — unlike ExperienceAvailability's
+        # documented "naive means UTC" convention; the two models
+        # disagree, a known inconsistency documented in docs/DECISIONS.md).
+        # Compare using local-tz-aware readings of these fields (never
+        # mutate the ORM attributes themselves — that would mark them
+        # dirty and risk an unnecessary UPDATE on the next commit for a
+        # value that round-trips to the same bytes anyway) so every
+        # comparison below, and everything this feeds into
+        # ItineraryValidatorService/ExperienceComposerService (which both
+        # work in aware datetimes), stays consistent.
+        def _planned_start(i: ItineraryItem) -> datetime:
+            return i.planned_start if i.planned_start.tzinfo is not None else i.planned_start.replace(tzinfo=tz)
+
+        def _planned_end(i: ItineraryItem) -> datetime:
+            return i.planned_end if i.planned_end.tzinfo is not None else i.planned_end.replace(tzinfo=tz)
 
         # Step 2/3: partition items.
         items = sorted(itinerary.items, key=lambda i: i.sequence_order)
+
         exp_repo = ExperienceRepository(self._session)
         experiences_by_id = {}
         for item in items:
@@ -152,9 +180,9 @@ class ReplanningService:
         preserved: list[ItineraryItem] = []
         flexible: list[ItineraryItem] = []
         for item in items:
-            if item.planned_end <= now:
+            if _planned_end(item) <= now:
                 preserved.append(item)  # completed/past — immutable
-            elif item.planned_start <= now < item.planned_end:
+            elif _planned_start(item) <= now < _planned_end(item):
                 preserved.append(item)  # in progress — immutable
             elif item.is_locked:
                 preserved.append(item)  # future, locked
@@ -177,7 +205,7 @@ class ReplanningService:
         # action — never silently replaced.
         locked_affected = [
             item for item in preserved
-            if item.is_locked and item.id in impact.affected_itinerary_item_ids and item.planned_start > now
+            if item.is_locked and item.id in impact.affected_itinerary_item_ids and _planned_start(item) > now
         ]
         if locked_affected:
             for item in locked_affected:
@@ -223,7 +251,7 @@ class ReplanningService:
         window_end = tz_combine(itinerary.itinerary_date, itinerary.end_time, tz)
         remaining_start = max(now, tz_combine(itinerary.itinerary_date, itinerary.start_time, tz))
         if kept_flexible or preserved:
-            last_end = max([i.planned_end for i in preserved + kept_flexible] or [remaining_start])
+            last_end = max([_planned_end(i) for i in preserved + kept_flexible] or [remaining_start])
             remaining_start = max(remaining_start, last_end)
         remaining_budget = None
         if itinerary.estimated_total_cost is not None:
@@ -264,7 +292,6 @@ class ReplanningService:
                 origin_lat, origin_lng = last_exp.location.latitude, last_exp.location.longitude
 
         composer = ExperienceComposerService(self._settings, self._routing)
-        remaining_count = max(0, (itinerary.total_duration_minutes and len(items) or len(items)) - len(preserved) - len(kept_flexible))
         max_new = max(1, len(removed_ids))
         composition = await composer.compose(
             candidates=ranked_items,
@@ -370,14 +397,35 @@ class ReplanningService:
         for item in items:
             if item.id in removed_ids:
                 await self._session.delete(item)
-        for i, item in enumerate(preserved + kept_flexible, start=1):
+        # Flush the deletions before renumbering: SQLite checks the
+        # (itinerary_id, sequence_order) UNIQUE constraint immediately per
+        # statement (not deferred like PostgreSQL can), so renumbering
+        # preserved/kept items straight to 1..N while their *old* values
+        # still occupy those same slots in the DB (even transiently,
+        # across a batch of UPDATEs whose execution order SQLAlchemy
+        # doesn't guarantee matches the loop below) can collide. A
+        # two-phase renumber — first to negative placeholders, which can
+        # never collide with a real positive sequence_order, then to
+        # final values — avoids that regardless of flush/statement order.
+        await self._session.flush()
+        kept_count = len(preserved) + len(kept_flexible)
+        kept_items = preserved + kept_flexible
+        for i, item in enumerate(kept_items, start=1):
+            item.sequence_order = -i
+        await self._session.flush()
+        for i, item in enumerate(kept_items, start=1):
             item.sequence_order = i
+        # composition.items is independently numbered starting from 1 by
+        # ExperienceComposerService (it has no knowledge of the preserved/
+        # kept-flexible items already occupying 1..kept_count in this
+        # itinerary) — offset so the merged sequence stays unique per
+        # (itinerary_id, sequence_order), which is a real DB constraint.
         new_db_items: list[ItineraryItem] = []
-        for c in composition.items:
+        for offset, c in enumerate(composition.items, start=1):
             new_item = ItineraryItem(
                 itinerary_id=itinerary.id,
                 experience_id=c.experience.id,
-                sequence_order=c.sequence_order,
+                sequence_order=kept_count + offset,
                 planned_start=c.planned_start,
                 planned_end=c.planned_end,
                 duration_minutes=c.duration_minutes,
@@ -472,29 +520,41 @@ class ReplanningService:
         self, itinerary: Itinerary, revision: ItineraryRevision
     ) -> ReplanOutcome:
         changes = revision.changes or {}
+
+        def _str_list(key: str) -> list[str]:
+            # revision.changes is persisted JSON we wrote ourselves via
+            # ReplanChangeSet -> dict at creation time (see the other
+            # ReplanChangeSet(...) call sites in this file) — always a
+            # list of experience id strings.
+            value = changes.get(key, [])
+            return [str(v) for v in value] if isinstance(value, list) else []
+
         return ReplanOutcome(
-            status=revision.status,
+            # revision.status is a DB-persisted value from RevisionStatus
+            # (models/itinerary_revision.py), always one of the same
+            # literal values ReplanOutcome.status expects.
+            status=cast(ReplanStatusLiteral, revision.status),
             itinerary=itinerary,
             previous_version=revision.version - 1 if revision.version > 1 else revision.version,
             new_version=revision.version,
             trigger=revision.trigger,
             changes=ReplanChangeSet(
-                added_items=changes.get("added_items", []),
-                removed_items=changes.get("removed_items", []),
-                moved_items=changes.get("moved_items", []),
-                unchanged_items=changes.get("unchanged_items", []),
-                affected_items=changes.get("affected_items", []),
+                added_items=_str_list("added_items"),
+                removed_items=_str_list("removed_items"),
+                moved_items=_str_list("moved_items"),
+                unchanged_items=_str_list("unchanged_items"),
+                affected_items=_str_list("affected_items"),
             ),
             context_summary="Idempotent replay of a previous replan request.",
             generated_at=revision.generated_at,
         )
 
 
-def tz_combine(date_, time_, tz) -> datetime:
+def tz_combine(date_: date, time_: time, tz: ZoneInfo) -> datetime:
     return datetime.combine(date_, time_, tzinfo=tz)
 
 
-def _item_to_composed(item: ItineraryItem, experience, sequence_order: int) -> ComposedItem:
+def _item_to_composed(item: ItineraryItem, experience: Experience, sequence_order: int) -> ComposedItem:
     ranked_stub = RankedExperienceItem.model_validate(
         {
             "id": experience.id,
@@ -523,11 +583,19 @@ def _item_to_composed(item: ItineraryItem, experience, sequence_order: int) -> C
         },
         from_attributes=True,
     )
+    # item.planned_start/planned_end are DB-read and therefore naive
+    # local-wall-clock values (see the module-level note in
+    # replan_itinerary); re-attach the local tz so this ComposedItem
+    # compares correctly against the aware requested_start/requested_end
+    # ItineraryValidatorService.validate() uses.
+    local_tz = ZoneInfo(_DEFAULT_TZ)
+    planned_start = item.planned_start if item.planned_start.tzinfo is not None else item.planned_start.replace(tzinfo=local_tz)
+    planned_end = item.planned_end if item.planned_end.tzinfo is not None else item.planned_end.replace(tzinfo=local_tz)
     return ComposedItem(
         experience=ranked_stub,
         sequence_order=sequence_order,
-        planned_start=item.planned_start,
-        planned_end=item.planned_end,
+        planned_start=planned_start,
+        planned_end=planned_end,
         duration_minutes=item.duration_minutes,
         travel_from_previous_minutes=item.travel_from_previous_minutes,
         travel_from_previous_distance_km=item.travel_from_previous_distance_km,

@@ -120,3 +120,29 @@ def test_tool_call_happy_path_returns_capped_results_and_persists_message(discov
     detail = discovery_client.get(f"/api/v1/conversations/{conversation_id}", headers=auth_header(user)).json()
     assert len(detail["messages"]) == 1
     assert detail["messages"][0]["role"] == "assistant"
+
+
+def test_tool_call_search_experiences_with_stored_budget_context_does_not_crash(discovery_client) -> None:
+    """Regression test: conversation.latest_traveler_context is stored as
+    a raw JSON dict, and was previously passed unvalidated into the
+    ranking pipeline, which attribute-accesses context.budget_max —
+    raising AttributeError the moment a conversation had a budget-bearing
+    context on record. A prior text turn sets latest_traveler_context
+    with a real budget; the tool call must not crash."""
+    user = register_traveler(discovery_client, "tool-budget-context@example.com")
+    created = discovery_client.post("/api/v1/conversations", headers=auth_header(user)).json()
+    conversation_id = created["id"]
+
+    text_response = discovery_client.post(
+        f"/api/v1/conversations/{conversation_id}/messages",
+        json={"message": "I want food under 1000 rupees"},
+        headers=auth_header(user),
+    )
+    assert text_response.status_code == 200
+
+    tool_response = discovery_client.post(
+        f"/api/v1/conversations/{conversation_id}/tool-calls",
+        json={"name": "search_experiences", "args": {"q": "food", "limit": 2}},
+        headers=auth_header(user),
+    )
+    assert tool_response.status_code == 200

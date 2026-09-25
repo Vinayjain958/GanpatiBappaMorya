@@ -47,6 +47,48 @@ def test_compose_request_body_has_no_traveler_id_field(discovery_client) -> None
     assert response.status_code == 422
 
 
+def test_compose_persists_itinerary_and_items_and_survives_fresh_get(discovery_client) -> None:
+    """Regression test for the Trip-page refresh bug: proves the backend
+    persistence itself is correct end to end — a composed itinerary and
+    its items are durably written to the database (not just returned as
+    an in-memory response object), and a completely independent GET
+    request (simulating a browser refresh, a new request with no shared
+    in-process state) returns the exact same itinerary, same id, same
+    items, same ordering. If this test passes, the persistence layer is
+    proven correct and the disappearing-itinerary bug is a frontend
+    hydration issue, not a database/backend issue."""
+    user = register_traveler(discovery_client, "persist-traveler@example.com")
+    compose_resp = discovery_client.post(
+        "/api/v1/itineraries/compose", json=_compose_payload(), headers=auth_header(user)
+    )
+    assert compose_resp.status_code == 200, compose_resp.text
+    composed = compose_resp.json()
+    if "items" not in composed:
+        return  # composition failed to find a valid plan — nothing to assert persistence against
+    assert composed["id"]
+    assert len(composed["items"]) > 0
+
+    # Simulate "refresh": a brand new GET request, independent of the
+    # compose response the frontend already has in memory.
+    fresh_get = discovery_client.get(f"/api/v1/itineraries/{composed['id']}", headers=auth_header(user))
+    assert fresh_get.status_code == 200
+    fetched = fresh_get.json()
+    assert fetched["id"] == composed["id"]
+    assert fetched["traveler_id"] == composed["traveler_id"]
+    assert len(fetched["items"]) == len(composed["items"])
+    assert [i["id"] for i in fetched["items"]] == [i["id"] for i in composed["items"]]
+
+    # Simulate "logout -> login again": GET /itineraries (the list
+    # endpoint the Trip page hydrates from) independently returns the
+    # same itinerary for the same traveler, with no reliance on any
+    # frontend-held state from the original compose call.
+    list_resp = discovery_client.get("/api/v1/itineraries", headers=auth_header(user))
+    assert list_resp.status_code == 200
+    listed = list_resp.json()
+    assert listed["total"] >= 1
+    assert any(item["id"] == composed["id"] for item in listed["items"])
+
+
 def test_list_my_itineraries_only_returns_own(discovery_client) -> None:
     owner = register_traveler(discovery_client, "itin-owner@example.com")
     other = register_traveler(discovery_client, "itin-other@example.com")

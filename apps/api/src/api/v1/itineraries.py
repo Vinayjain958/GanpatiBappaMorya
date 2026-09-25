@@ -12,14 +12,11 @@ enforced on every read/write via ItineraryRepository.get_owned_by_id
 
 from __future__ import annotations
 
-import asyncio
-import json
-import uuid
 from datetime import datetime
-from typing import Annotated, AsyncIterator
+from typing import Annotated
 
 from fastapi import APIRouter, Depends
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.adapters.ai import AIAdapter
@@ -48,8 +45,8 @@ from src.schemas.itinerary import (
 )
 from src.schemas.replanning import ReplanChangeSetResponse, ReplanRequest, ReplanResponse
 from src.services.compose_itinerary import ComposeOutcome, compose_and_persist_itinerary
-from src.services.replanning import ReplanningService
-from src.services.sse import build_sse_event, sse_updates_stream
+from src.services.replanning import ReplanningService, ReplanOutcome
+from src.services.sse import sse_updates_stream
 
 router = APIRouter(tags=["itineraries"])
 
@@ -190,7 +187,7 @@ async def add_itinerary_item(
     return await _to_itinerary_response(outcome.itinerary, session)
 
 
-@router.delete("/itineraries/{itinerary_id}", status_code=204)
+@router.delete("/itineraries/{itinerary_id}", status_code=204, response_class=Response)
 async def cancel_itinerary(
     itinerary_id: str,
     user: Annotated[User, Depends(require_traveler)],
@@ -204,7 +201,7 @@ async def cancel_itinerary(
 # ─── Phase 9: manual replan + SSE live updates ──────────────────────────
 
 
-def _outcome_to_response(outcome, itinerary_id: str) -> ReplanResponse:
+def _outcome_to_response(outcome: ReplanOutcome, itinerary_id: str) -> ReplanResponse:
     return ReplanResponse(
         status=outcome.status,
         itinerary_id=itinerary_id,

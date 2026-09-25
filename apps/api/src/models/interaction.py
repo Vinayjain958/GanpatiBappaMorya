@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
 from datetime import datetime
+from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import JSON, ForeignKey, String, Integer, Float, DateTime
+from sqlalchemy import JSON, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.schema import Index, UniqueConstraint
 
@@ -11,8 +11,8 @@ from src.core.db import Base
 from src.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
-    from src.models.traveler import Traveler
     from src.models.experience import Experience
+    from src.models.traveler import Traveler
 
 class TravelerInteraction(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Behavioral interaction event for a traveler (e.g. SAVE, COMPLETE)."""

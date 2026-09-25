@@ -100,26 +100,21 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full architectural co
 
 ## Current Phase
 
-**PHASE 6 — Semantic Retrieval + Constraint / Feasibility Engine** ✅ (real Gemini embedding
-verification and live pgvector verification both pending — no API key / no PostgreSQL instance
-available in this environment)
+**Phases 0-9 Complete** ✅ (reconciliation pass, 2026-09-25) — **Phase 10 not started**
 
-LocaLens now retrieves candidates semantically and verifies every one deterministically before
-it can ever reach a traveler, on top of the Phase 5 conversational understanding layer and the
-Phase 4 location-aware discovery engine (353 experiences — 288 Overture-derived + 65 labelled
-synthetic — across 20 categories, 311 providers). A traveler's request is embedded and matched
-against the catalog (real `pgvector` on PostgreSQL — not yet verified live; a portable Python
-cosine-similarity path on SQLite — verified), then every candidate is run through a 100%
-deterministic `FeasibilityService` (budget, duration, travel time/distance, opening hours,
-availability, capacity, accessibility, itinerary conflicts) that returns a tri-state
-FEASIBLE/INFEASIBLE/UNKNOWN verdict — the LLM is never the feasibility authority, and only
-FEASIBLE candidates are ever returned to the traveler. Gemini gained a second tool,
-`check_feasibility`, whose argument schema has no field for price/hours/capacity/availability,
-so it cannot supply an invented fact even if it tried. `GEMINI_API_KEY` still never reaches the
-browser — only a short-lived, server-locked ephemeral token. See `docs/DECISIONS.md`
-ADR-040–ADR-044 for the architecture and `docs/PROJECT_STATE.md` for full status labels.
-Personalized ML ranking, the AI experience composer, itinerary generation, and booking are not
-implemented yet.
+LocaLens now runs the full understand → retrieve → verify feasibility → personalize → compose →
+adapt loop end to end: conversational text/voice understanding (Phase 5), semantic retrieval +
+deterministic feasibility checking (Phase 6), personalized ranking with behavioral feedback
+learning (Phase 7), Gemini-narrated itinerary composition and booking requests (Phase 8), and
+real-time weather/event-aware dynamic replanning (Phase 9). This reconciliation pass live-verified
+Gemini text generation, SQLite semantic retrieval + feasibility, Gemini narrative generation, and
+the OpenWeather/Ticketmaster adapters with real API keys; it also found and fixed real bugs — a
+ranking budget-filter that never applied, a replanning datetime-comparison crash, and a
+sequence_order constraint collision — see `docs/DECISIONS.md` ADR-055 and the 2026-09-25 entry in
+`docs/CHANGELOG.md` for full detail. PostgreSQL/pgvector and the Gemini Live voice WebSocket path
+remain NOT VERIFIED — no PostgreSQL instance or real browser mic session has been available in
+this environment. Provider intelligence (Phase 10), safety & emergency (Phase 11), and full
+hardening/deployment (Phase 12) are planned but not started.
 
 To try voice locally, set a real `GEMINI_API_KEY` in `.env` (see `.env.example`) — without one,
 text discovery still works via a deterministic mock, and the microphone clearly shows

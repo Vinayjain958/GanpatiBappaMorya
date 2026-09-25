@@ -134,7 +134,7 @@ _KNOWN_TOOLS = {"search_experiences", "check_feasibility", "compose_experience",
 
 @router.post(
     "/{conversation_id}/tool-calls",
-    response_model=SearchExperiencesResult | FeasibilityVerdict | ItineraryResponse | dict,
+    response_model=SearchExperiencesResult | FeasibilityVerdict | ItineraryResponse | dict[str, object],
 )
 async def execute_tool_call(
     conversation_id: str,
@@ -145,7 +145,7 @@ async def execute_tool_call(
     routing: Annotated[RoutingAdapter, Depends(get_routing_adapter)],
     embedding_adapter: Annotated[EmbeddingAdapter, Depends(get_embedding_adapter)],
     ai: Annotated[AIAdapter, Depends(get_ai_adapter)],
-) -> SearchExperiencesResult | FeasibilityVerdict | ItineraryResponse | dict:
+) -> SearchExperiencesResult | FeasibilityVerdict | ItineraryResponse | dict[str, object]:
     """Voice-path bridge: the browser forwards Gemini Live's tool_call
     here verbatim and forwards this response back to Gemini via
     session.send_tool_response(...). This endpoint — not the browser —
@@ -172,12 +172,26 @@ async def execute_tool_call(
         except Exception as exc:  # noqa: BLE001 — never trust raw model tool arguments
             raise ApiError(f"Invalid tool arguments: {exc}", status_code=422) from exc
 
+        # latest_traveler_context is stored as a raw JSON dict (see
+        # models/conversation_session.py) — must be validated into a real
+        # TravelerContext before use. Passing the raw dict through
+        # unvalidated previously worked only because nothing downstream
+        # happened to attribute-access it in the paths existing tests
+        # covered; WeightedPersonalizedRanker.rank() does read
+        # context.budget_max, which would raise AttributeError on a plain
+        # dict the moment this conversation's context carried a budget.
+        traveler_context = (
+            TravelerContext.model_validate(conversation.latest_traveler_context)
+            if conversation.latest_traveler_context is not None
+            else None
+        )
+
         result, ranked_items = await ai_tools.execute_search_experiences_with_candidates(
             session=session,
             settings=settings,
             args=args,
             traveler_id=traveler_id,
-            context=conversation.latest_traveler_context,
+            context=traveler_context,
             routing_adapter=routing,
             embedding_adapter=embedding_adapter,
         )
@@ -246,7 +260,7 @@ async def execute_tool_call(
         if traveler_id is None:
             raise ApiError("Not authenticated", status_code=401)
 
-        result = await ai_tools.execute_replan_experience(
+        replan_result = await ai_tools.execute_replan_experience(
             session=session,
             settings=settings,
             routing_adapter=routing,
@@ -260,16 +274,16 @@ async def execute_tool_call(
             ConversationMessage(
                 session_id=conversation.id,
                 role="assistant",
-                text=f"[voice tool call] replan_experience -> {result.get('status')}",
+                text=f"[voice tool call] replan_experience -> {replan_result.get('status')}",
                 tool_call_metadata={
                     "tool": "replan_experience",
                     "args": replan_args.model_dump(mode="json", exclude_none=True),
-                    "status": result.get("status"),
+                    "status": replan_result.get("status"),
                 },
             )
         )
         await session.commit()
-        return result
+        return replan_result
 
     # check_feasibility
     try:

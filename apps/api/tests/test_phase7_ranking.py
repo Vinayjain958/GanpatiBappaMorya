@@ -1,10 +1,10 @@
-import pytest
-from src.services.ranking import WeightedPersonalizedRanker, TravelerRankingProfile
-from src.schemas.conversation import TravelerContext
 from src.core.config import Settings
-from src.schemas.experience import ExperienceSummary, CategorySummary, LocationSummary, ProviderSummary
+from src.schemas.conversation import TravelerContext
+from src.schemas.experience import CategorySummary, ExperienceSummary, LocationSummary, ProviderSummary
 from src.schemas.feasibility import FeasibilityVerdict
 from src.services.discovery_pipeline import PipelineItem
+from src.services.ranking import TravelerRankingProfile, WeightedPersonalizedRanker
+
 
 def test_weighted_personalized_ranker():
     ranker = WeightedPersonalizedRanker()

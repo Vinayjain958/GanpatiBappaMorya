@@ -135,6 +135,7 @@ async def execute_search_experiences_with_candidates(
         constraints.available_duration_minutes = args.max_duration_minutes
 
     ranked_items: list[RankedExperienceItem] | None = None
+    summaries: list[ExperienceSummary]
     if traveler_id:
         result, ranked_items = await pipeline.run_with_ranking(
             traveler_id=traveler_id,
@@ -146,7 +147,7 @@ async def execute_search_experiences_with_candidates(
             limit=args.limit,
             context=context,
         )
-        summaries = [item for item in ranked_items]
+        summaries = list(ranked_items)
         total = result.candidate_count
     else:
         result = await pipeline.run(

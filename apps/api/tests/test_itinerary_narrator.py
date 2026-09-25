@@ -11,8 +11,6 @@ from __future__ import annotations
 import asyncio
 from datetime import UTC, datetime, timedelta
 
-import pytest
-
 from src.core.config import Settings
 from src.schemas.experience import CategorySummary, LocationSummary, ProviderSummary
 from src.schemas.ranking import RankedExperienceItem

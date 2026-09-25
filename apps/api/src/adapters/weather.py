@@ -25,7 +25,6 @@ mocked-response pattern as test_geocoding_adapter.py/test_routing_adapter.py.
 
 from __future__ import annotations
 
-import math
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime

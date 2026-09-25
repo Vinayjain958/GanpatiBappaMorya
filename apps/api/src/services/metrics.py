@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.interaction import TravelerInteraction
@@ -27,8 +27,7 @@ class RecommendationMetricsService:
         saves = counts.get("SAVE", 0)
         completes = counts.get("COMPLETE", 0)
         skips = counts.get("SKIP", 0)
-        ratings = counts.get("RATING", 0)
-        
+
         total_interactions = sum(counts.values())
         
         # Guard against zero division

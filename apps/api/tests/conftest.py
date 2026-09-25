@@ -17,7 +17,15 @@ from src.core.app import create_app
 from src.core.db import Base, get_session
 from src.core.embedding import get_embedding_adapter
 from src.core.location import get_geocoding_adapter, get_poi_adapter, get_routing_adapter
-from src.models import Experience, ExperienceCategory, ExperienceEmbedding, Location, Provider
+from src.models import (
+    Experience,
+    ExperienceAvailability,
+    ExperienceCategory,
+    ExperienceEmbedding,
+    ExperienceOpeningHour,
+    Location,
+    Provider,
+)
 from src.services.embedding_text import build_experience_document_text
 
 # Tests never hit real Nominatim/OSRM/Overpass/Gemini — dependency-override
@@ -221,6 +229,40 @@ def discovery_dataset(session_factory) -> dict[str, str]:
                 ),
             ]
             session.add_all(experiences)
+            await session.flush()
+
+            # Real opening-hours + availability data — without this, every
+            # experience is opening_hours_status="unavailable" with zero
+            # ExperienceOpeningHour/ExperienceAvailability rows, so any
+            # compose/feasibility test that supplies a date/time window
+            # (the normal case) always gets UNKNOWN/infeasible for every
+            # candidate and silently produces 0 feasible results. Wide-open
+            # hours (every day, effectively all-day) + a generous multi-day
+            # availability window keep this fixture from being the
+            # constraint under test in tests that are about something else
+            # (replanning, versioning, etc.) — tests that specifically want
+            # to exercise opening-hours/availability edge cases seed their
+            # own narrower rows.
+            from datetime import UTC as _UTC
+            from datetime import datetime as _datetime
+            from datetime import timedelta as _timedelta
+
+            for exp in experiences:
+                for day in range(7):
+                    session.add(
+                        ExperienceOpeningHour(
+                            experience_id=exp.id, day_of_week=day,
+                            open_time="00:00", close_time="23:59", is_closed=False,
+                        )
+                    )
+                session.add(
+                    ExperienceAvailability(
+                        experience_id=exp.id,
+                        starts_at=_datetime(2026, 1, 1, tzinfo=_UTC),
+                        ends_at=_datetime(2026, 1, 1, tzinfo=_UTC) + _timedelta(days=730),
+                        capacity=50, available_slots=50, status="active",
+                    )
+                )
             await session.flush()
 
             # Phase 6 semantic retrieval requires an ExperienceEmbedding row

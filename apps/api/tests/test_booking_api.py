@@ -7,10 +7,6 @@ from __future__ import annotations
 import asyncio
 from datetime import UTC, datetime
 
-import pytest
-
-from src.core.db import get_session
-from src.models.booking_request import BookingRequest
 from src.models.itinerary import Itinerary
 from src.models.itinerary_item import ItineraryItem
 from tests.conftest import auth_header, register_provider, register_traveler
@@ -237,8 +233,9 @@ def test_no_payment_fields_in_schema() -> None:
 
 
 def test_requested_status_never_equals_confirmed() -> None:
-    from src.schemas.booking import BookingStatusLiteral
     import typing
+
+    from src.schemas.booking import BookingStatusLiteral
 
     allowed = typing.get_args(BookingStatusLiteral)
     assert "CONFIRMED" not in allowed

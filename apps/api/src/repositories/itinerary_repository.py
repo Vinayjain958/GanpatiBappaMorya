@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import func, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -11,7 +11,7 @@ class ItineraryRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    def _base_query(self):
+    def _base_query(self) -> Select[tuple[Itinerary]]:
         return select(Itinerary).options(selectinload(Itinerary.items))
 
     def add(self, itinerary: Itinerary) -> None:

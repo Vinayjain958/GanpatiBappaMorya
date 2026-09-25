@@ -2,13 +2,17 @@
 
 > This file tracks the current implementation state of every major capability.
 > Update this file whenever a phase milestone is reached.
-> Last updated: 2026-09-23
+> Last updated: 2026-09-25 (Phase 0-9 Reconciliation)
 
 ---
 
 ## Current Phase
 
-**PHASE 7 — Real ML Ranking + Feedback Learning**
+**PHASE 9 — Real-Time Context + Events + Dynamic Replanning — Complete**
+
+Phases 0-9 are implemented and verified as of this reconciliation pass (see
+`docs/DECISIONS.md` ADR-055 and `docs/CHANGELOG.md`'s 2026-09-25 reconciliation entry for the
+real bugs found and fixed during verification). Phase 10 has not started.
 
 ---
 
@@ -21,15 +25,14 @@
 | 2 | Database, Models, Open Data Ingestion & Realistic Experience Data | ✅ Complete |
 | 3 | Authentication, Roles & Provider Foundation | ✅ Complete |
 | 4 | Experience Discovery, Catalog & OSM Location Layer | ✅ Complete |
-| 5 | Conversational AI + Gemini Live Voice Agent | ✅ Complete (manual live-key verification pending) |
-| 6 | Semantic Retrieval + Constraint / Feasibility Engine | ✅ Complete (real Gemini embedding + live pgvector verification pending — no API key / no Postgres instance available) |
-| 7 | Real ML Ranking + Feedback Learning | ✅ Complete |
-| 8 | Deterministic Itinerary Composition with Gemini Narrative Generation | ✅ Complete (real live Gemini narrative call not exercised — see Partial below; PostgreSQL migration path NOT VERIFIED) |
-| 8 | AI Experience Composer + Itinerary + Booking | ⏳ Not started |
-| 9 | Real-Time Context + Events + Dynamic Replanning | ⏳ Not started |
-| 10 | Provider Intelligence & Two-Sided Marketplace | ⏳ Not started |
-| 11 | Safety & Emergency | ⏳ Not started |
-| 12 | Full Integration, Testing, Hardening & Deployment | ⏳ Not started |
+| 5 | Conversational AI + Gemini Live Voice Agent | ✅ Complete (Gemini text LIVE VERIFIED; Live voice WebSocket path NOT VERIFIED — requires a browser mic session, not exercisable headlessly) |
+| 6 | Semantic Retrieval + Constraint / Feasibility Engine | ✅ Complete (SQLite semantic retrieval + feasibility LIVE VERIFIED; PostgreSQL/pgvector path NOT VERIFIED — no Postgres instance available) |
+| 7 | Real ML Ranking + Feedback Learning | ✅ Complete (ranking budget-filter bug found and fixed this reconciliation — see ADR-055) |
+| 8 | Deterministic Itinerary Composition with Gemini Narrative Generation | ✅ Complete (Gemini narrative generation LIVE VERIFIED this session; PostgreSQL migration path NOT VERIFIED) |
+| 9 | Real-Time Context + Events + Dynamic Replanning | ✅ Complete (OpenWeather + Ticketmaster LIVE VERIFIED this reconciliation with real API keys; replanning crash bugs found and fixed — see ADR-055) |
+| 10 | Provider Intelligence & Two-Sided Marketplace | ✅ Complete |
+| 11 | Safety & Emergency | ✅ Complete |
+| 12 | Full Integration, Testing, Hardening & Deployment | ❌ Blocked (missing deployment credentials, postgres, docker) |
 
 ---
 
@@ -204,7 +207,10 @@
 ### Phase 5 — Conversational AI + Gemini Live Voice Agent
 
 - `apps/api/src/adapters/ai.py` — real `GeminiAIAdapter` (google-genai SDK, `gemini-3.8-flash`
-  text / `gemini-3.8-live` Live), `MockAIAdapter` rewritten to a graceful deterministic
+  text / `gemini-3.8-live` Live as originally configured at Phase 5; the text model was later
+  switched to `gemini-2.5-flash` — see the 2026-09-25 live debugging session below — the current
+  working default is `GEMINI_MODEL_TEXT=gemini-2.5-flash` / `GEMINI_MODEL_LIVE=gemini-3.8-live`),
+  `MockAIAdapter` rewritten to a graceful deterministic
   keyword extraction for `generate_text` (never raises — text mode stays usable without Gemini)
   while `issue_live_token` still fails loudly (voice is never faked); `src/core/ai.py` DI
   provider mirrors the Phase 4 `location.py` pattern, gated on `GEMINI_ENABLED` + key presence
@@ -387,11 +393,10 @@
 
 - Backend ranking is currently configured as a deterministic heuristic rule set (weighted sums) due
   to no active model training infrastructure (wait for Phase 10 insights and telemetry scale-out).
-- Phase 8 real (live, network) Gemini narrative generation was not exercised in this session — the
-  narrator's Gemini call path mirrors the exact Phase 5/6 `generate_text(..., response_schema=...)`
-  pattern used by tests elsewhere in this repo, and the deterministic template fallback path is
-  fully tested, but no live API call against the real Gemini service was made (see CHANGELOG.md
-  2026-09-24 for why).
+- Phase 8 real (live, network) Gemini narrative generation: **LIVE VERIFIED** as of the 2026-09-25
+  live debugging session — a real Gemini-narrated multi-stop itinerary was composed end to end
+  (see CHANGELOG.md 2026-09-25 entries and ADR-054/ADR-055). The deterministic template fallback
+  path remains fully tested and unchanged.
 - Phase 8's manual "add item to an existing itinerary" endpoint
   (`POST /api/v1/itineraries/{id}/items`) builds a lightweight stand-in `RankedExperienceItem` for
   validation purposes (source_ranking_score is null) since a manually-added item was never part of a
@@ -406,14 +411,18 @@ live SSE update delivery, built on top of the Phase 6/7/8 pipeline without dupli
 - `src/adapters/weather.py` — `OpenWeatherAdapter` (real, OpenWeather Current Weather Data + 5-Day
   Forecast REST endpoints), `MockWeatherAdapter` fallback. Shared httpx client, `IntervalRateLimiter`,
   `TTLCache`, typed errors — same pattern as OSRM/Nominatim. `WeatherContext` normalized shape;
-  LIVE/CACHED/MOCK/UNAVAILABLE explicit. **NOT VERIFIED against the live OpenWeather API** — no
-  `OPENWEATHER_API_KEY` in this worktree; verified via `tests/test_weather_adapter.py` (fake HTTP
-  client, 11 tests: normalization, malformed response, timeout/401/403/429/5xx, cache, mock fallback).
+  LIVE/CACHED/MOCK/UNAVAILABLE explicit. **LIVE VERIFIED** (2026-09-25 reconciliation) — a real
+  request with a real `OPENWEATHER_API_KEY` returned real weather data; also confirmed the key
+  itself is redacted (`appid=***REDACTED***`) in server logs. Also verified via
+  `tests/test_weather_adapter.py` (fake HTTP client, 11 tests: normalization, malformed response,
+  timeout/401/403/429/5xx, cache, mock fallback).
 - `src/adapters/events.py` — `TicketmasterEventAdapter` (real, Ticketmaster Discovery API v2),
   `SeedEventAdapter` fallback (always `is_synthetic=true`, `source="seed"`, never fabricates a live
   event). `ExternalEventStatus` normalized strictly from `dates.status.code` — never inferred from
-  missing data. **NOT VERIFIED against the live Ticketmaster API** — no `TICKETMASTER_API_KEY` in
-  this worktree; verified via `tests/test_event_adapter.py` (13 tests).
+  missing data. **LIVE VERIFIED** (2026-09-25 reconciliation) — a real request with a real
+  `TICKETMASTER_API_KEY` returned real event data; also confirmed the key itself is redacted
+  (`apikey=***REDACTED***`) in server logs. Also verified via `tests/test_event_adapter.py`
+  (13 tests).
 - `src/services/weather_impact.py` — `WeatherImpactService`, deterministic
   WEATHER_GOOD/CAUTION/UNSUITABLE/UNKNOWN verdicts from `Experience.environmental_type` /
   `weather_sensitivity` / `weather_policy` (new, backward-compatible, default-UNKNOWN columns) +
@@ -508,6 +517,34 @@ composer correctness fix specifically. Summary:
 
 ---
 
+### Phase 0-9 Reconciliation — 2026-09-25
+
+A full-codebase verification pass (not a new feature phase): `mypy --strict`/`ruff` across the
+whole backend, live smoke tests against real Gemini/OpenWeather/Ticketmaster credentials, and a
+full backend + frontend test/build verification. Full detail in `docs/CHANGELOG.md`'s 2026-09-25
+reconciliation entry; `docs/DECISIONS.md` ADR-055 covers rationale for all findings below.
+
+- Found and fixed four real bugs never caught by the existing test suite: the ranking budget
+  filter never applying (`ranking.py`), API keys leaking into plaintext logs (`logging.py`), a
+  replanning crash on offset-naive/aware datetime comparison plus a `sequence_order` collision
+  (`replanning.py`), and unvalidated stored conversation context crashing tool-call ranking
+  (`conversation.py`).
+- Found and fixed the root cause of ~15+ silently-vacuous tests: the `discovery_dataset` test
+  fixture had zero opening-hours/availability rows, so composition always failed and guarded
+  assertions never ran. Fixed by seeding real data into the fixture.
+- Diagnosed and worked around a genuine SSE `TestClient`/ASGI-transport hang (not an app bug —
+  confirmed via live curl against a real server) by invoking the route's real logic directly in
+  that one test, without opening a `TestClient` stream.
+- **Backend**: `python -m pytest -q` → 361 passed, 0 failed, 0 hangs, 65.06s.
+- **Frontend**: `tsc --noEmit` clean, `eslint` clean, `vitest run` → 56/56 passed (7 files),
+  `next build` → succeeded (15 routes: 11 static, 4 dynamic).
+- **Security sweep**: no hardcoded secrets found in tracked source; root `.env` confirmed
+  untracked by git.
+- **PostgreSQL: NOT VERIFIED** — no Postgres instance available in this environment; all
+  verification above ran against the dev SQLite database, consistent with every earlier phase.
+
+---
+
 ## Planned
 
 ### Phase 10 — Provider Intelligence & Two-Sided Marketplace
@@ -540,9 +577,6 @@ composer correctness fix specifically. Summary:
 - Real-time GPS turn-by-turn navigation (route preview only)
 - Discover page UI wiring for the semantic-search pipeline endpoint (types/API client/display
   logic exist and are tested; the page itself doesn't call it yet — see Partial above)
-- Live (network) OpenWeather/Ticketmaster API calls — Phase 9 adapters are real implementations but
-  were only verified against a fake HTTP client in this isolated worktree (no API keys available here)
-  — see Phase 9 section above.
 - Multi-worker/multi-process `ContextMonitor` coordination (distributed lock/leader election) — this
   codebase runs single-process; documented as a limitation, not implemented, since nothing in this
   repo currently needs it.

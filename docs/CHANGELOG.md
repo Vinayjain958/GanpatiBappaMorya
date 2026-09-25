@@ -6,6 +6,84 @@
 
 ---
 
+## [Unreleased] 2026-09-25 — Phase 12 Final Verification Attempt
+
+Attempted full Phase 12 production integration, testing, hardening, and deployment.
+- **Completed locally**: `apps/api/Dockerfile`, `render.yaml`, and `vercel.json` configurations created. All backend tests (`368/368`), frontend lint/tsc/vitest/build passed. Architectural isolation confirmed.
+- **Blocked**: Production deployment (Docker missing locally, Postgres missing, no real cloud credentials for Supabase/Vercel/Render, no Playwright setup).
+- Phase 12 is marked as **BLOCKED** and not claimed as Complete.
+
+## [Unreleased] 2026-09-25 — Phase 0-9 Reconciliation: Static Analysis, Live API Smoke Tests, Test-Coverage Gap Fix
+
+A full-codebase reconciliation pass — not a new feature phase. Ran `mypy --strict`/`ruff` across
+the backend, live smoke tests against real Gemini/OpenWeather/Ticketmaster credentials, and a
+full pytest + frontend (`tsc`/`eslint`/`vitest`/`next build`) verification pass, to establish the
+actually-verified state of the app independent of what earlier phase docs claimed. Full findings
+and rationale: `docs/DECISIONS.md` ADR-055.
+
+### Fixed — real bugs found via static analysis / live verification
+
+- **Ranking budget filter never applied** (`src/services/ranking.py`) — read
+  `context.constraints.budget_max` (a shape that doesn't exist on `TravelerContext`) instead of
+  the flat `context.budget_max` field; the budget penalty silently never fired. Found by mypy.
+- **API keys leaking into plaintext server logs** (`src/core/logging.py`) — httpx's `%s`-template
+  logging stores the real URL in `record.args`, not `record.msg`; a filter that only inspected
+  `record.msg` missed OpenWeather's `appid=`/Ticketmaster's `apikey=` querystring values. Fixed
+  with a `_RedactSecretsFilter` using `record.getMessage()`, attached directly to
+  `logging.getLogger("httpx")`. Verified live against real API calls: keys now redacted in logs.
+- **Replanning crash on offset-naive/aware datetime comparison, plus a sequence_order collision**
+  (`src/services/replanning.py`) — SQLite strips tzinfo on round-trip; `ReplanningService`
+  compared naive DB values directly against aware `now`, crashing with `TypeError`. Fixed via
+  local aware-conversion closures. A second, independent bug: kept items and newly-composed items
+  both numbered `sequence_order` from 1, causing `IntegrityError: UNIQUE constraint failed`; fixed
+  via offsetting new items past the kept count and a two-phase renumber for kept items (SQLite
+  checks UNIQUE constraints immediately, unlike Postgres's deferrable constraints).
+- **Unvalidated stored conversation context crashes tool-call ranking** (`src/api/v1/conversation.py`)
+  — `conversation.latest_traveler_context` (a raw dict) was passed unvalidated into the ranking
+  pipeline; reproduced live as `AttributeError: 'dict' object has no attribute 'budget_max'`.
+  Fixed with `TravelerContext.model_validate(...)`. New regression test added and confirmed to
+  fail against a temporary revert before confirming the fix.
+
+### Fixed — test infrastructure
+
+- **Vacuous test coverage**: `tests/conftest.py`'s `discovery_dataset` fixture seeded zero
+  `ExperienceOpeningHour`/`ExperienceAvailability` rows, so every test-suite compose call returned
+  `feasible_count: 0` and ~15+ tests' `if "items" not in body: return` guards silently no-op'd
+  instead of asserting anything. Fixed by seeding real opening-hours and a two-year availability
+  window in the fixture — those tests now genuinely exercise their intended logic.
+- **SSE TestClient hang**: `tests/test_itinerary_sse.py`'s owner-connects test hung indefinitely
+  reading the endpoint's intentionally-infinite `while True` SSE stream through Starlette's
+  in-process ASGI TestClient transport (confirmed not an app bug — the real endpoint works
+  correctly via live curl). Rewritten to invoke the route's real ownership-check +
+  `StreamingResponse` construction directly, without opening a TestClient stream.
+- `session.get(Itinerary, id)` in `tests/test_replanning.py` doesn't eager-load `.items`, causing
+  `MissingGreenlet` on later access; fixed via an explicit `selectinload` helper.
+
+### Verified (real runs, not assumed)
+
+- Backend: `python -m pytest -q` → **361 passed, 0 failed, 0 hangs, 65.06s**.
+- Frontend: `tsc --noEmit` clean, `eslint` clean, `vitest run` → **56/56 passed (7 files)**,
+  `next build` → succeeded, all 15 routes compiled (11 static, 4 dynamic/server-rendered).
+- Live API calls re-confirmed working post-fix: Gemini structured output, OpenWeather, and
+  Ticketmaster all return real (non-fallback) data, with API keys now redacted in logs.
+- Security sweep: no hardcoded API keys/secrets found in tracked source; root `.env` confirmed
+  untracked by git (not present in `git ls-files`).
+- PostgreSQL: **NOT VERIFIED** — no Postgres instance available in this environment; all
+  verification above ran against the dev SQLite database.
+
+### Deferred (assessed safe, intentionally not fixed — see ADR-055)
+
+- `ranking.py:140` dict-unpacking mypy variance warning constructing `RankedExperienceItem` —
+  safe at runtime, deferred as a larger refactor than this reconciliation's minimal-fix scope.
+- ~18 mypy "Item None of Traveler | None" warnings across `bookings.py`/`feedback.py`/
+  `itineraries.py`/`recommendations.py` at `user.traveler.id` — verified safe because
+  `UserRepository._base_query()` always eager-loads `User.traveler`, so it's never `None` for a
+  traveler-role user at runtime.
+- The two conflicting naive-datetime conventions (UTC-implied vs. local-Kolkata-implied) remain
+  unresolved by design; this pass only fixed the crash sites it touched.
+
+---
+
 ## [Unreleased] 2026-09-25 — Live Debugging Session: Deployment Fixes + Composer Correctness
 
 Fixes found and corrected while running the deployed app end-to-end for the first time — the

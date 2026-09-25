@@ -11,12 +11,14 @@ from src.api.v1 import (
     conversation,
     experiences,
     feasibility,
+    feedback,
     health,
     itineraries,
     location,
     providers,
+    provider_intelligence,
     recommendations,
-    feedback,
+    safety,
 )
 
 api_v1_router = APIRouter(prefix="/api/v1")
@@ -34,3 +36,5 @@ api_v1_router.include_router(feedback.router)
 api_v1_router.include_router(itineraries.router)
 api_v1_router.include_router(bookings.router)
 api_v1_router.include_router(context.router)
+api_v1_router.include_router(provider_intelligence.router)
+api_v1_router.include_router(safety.router)

@@ -40,7 +40,7 @@ class ComposeItineraryRequest(BaseModel):
     locality: str | None = None
 
     @model_validator(mode="after")
-    def _check_window(self) -> "ComposeItineraryRequest":
+    def _check_window(self) -> ComposeItineraryRequest:
         if self.end_time <= self.start_time:
             raise ValueError("end_time must be after start_time")
         return self

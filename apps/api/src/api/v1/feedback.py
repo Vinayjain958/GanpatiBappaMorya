@@ -12,9 +12,15 @@ from src.core.errors import ApiError
 from src.models.user import User
 from src.repositories.experience_repository import ExperienceRepository
 from src.repositories.interaction_repository import InteractionRepository
-from src.schemas.feedback import RecordInteractionRequest, RecordInteractionResponse, AffinityProfileResponse, TravelerAffinitySummary
+from src.schemas.feedback import (
+    AffinityProfileResponse,
+    RecordInteractionRequest,
+    RecordInteractionResponse,
+    TravelerAffinitySummary,
+)
 from src.services.affinity import TravelerAffinityService
 from src.services.metrics import RecommendationMetricsService
+from src.services.provider_intelligence.notifications import ProviderNotificationService
 
 router = APIRouter(prefix="/feedback", tags=["feedback"])
 
@@ -59,6 +65,10 @@ async def record_interaction(
     # Update Affinities
     affinity_service = TravelerAffinityService(session, settings)
     await affinity_service.update_from_interaction(interaction, experience)
+    
+    # Phase 10: behavioral match notification
+    notification_svc = ProviderNotificationService(session, settings)
+    await notification_svc.maybe_notify_provider(interaction, experience)
     
     await session.commit()
     

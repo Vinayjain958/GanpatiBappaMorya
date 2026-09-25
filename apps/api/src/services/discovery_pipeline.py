@@ -12,15 +12,16 @@ lower-quality result through just to have "something" to show.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 from collections import Counter
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 if TYPE_CHECKING:
     from src.models.experience import Experience
     from src.schemas.conversation import TravelerContext
+    from src.schemas.ranking import RankedExperienceItem
 
 from src.adapters.embedding import EmbeddingAdapter
 from src.adapters.routing import RoutingAdapter
@@ -152,7 +153,7 @@ class DiscoveryPipelineService:
         limit: int | None = None,
         travel_profile: str = "driving",
         context: TravelerContext | None = None,
-    ):
+    ) -> tuple[DiscoveryPipelineResult, list[RankedExperienceItem]]:
         result = await self.run(
             raw_query=raw_query,
             interests=interests,

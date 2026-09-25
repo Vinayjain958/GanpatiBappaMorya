@@ -13,7 +13,8 @@ from src.core.deps import require_traveler
 from src.core.embedding import get_embedding_adapter
 from src.core.location import get_routing_adapter
 from src.models.user import User
-from src.schemas.ranking import ExcludedReasonSummary, RecommendationRequest, RecommendationResponse
+from src.schemas.ranking import RecommendationRequest, RecommendationResponse
+from src.schemas.semantic_search import ExcludedReasonSummary
 from src.services.discovery_pipeline import DiscoveryPipelineService
 
 router = APIRouter(prefix="/recommendations", tags=["recommendations"])

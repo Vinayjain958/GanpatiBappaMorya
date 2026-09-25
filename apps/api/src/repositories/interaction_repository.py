@@ -33,7 +33,7 @@ class InteractionRepository:
         experience_id: str,
         event_type: str,
         client_event_id: str,
-        **kwargs,
+        **kwargs: object,
     ) -> TravelerInteraction:
         # Idempotency check first
         existing = await self.get_by_client_event_id(traveler_id, client_event_id)

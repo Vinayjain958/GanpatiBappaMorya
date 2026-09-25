@@ -186,8 +186,38 @@ class Settings(BaseSettings):
     replan_context_stale_after_seconds: int = 1800
     sse_heartbeat_interval_seconds: int = 15
 
+    # ─── Phase 10 — Provider Intelligence ───────────────────────────────────
+    provider_match_model_version: str = "provider-match-v1"
+    provider_match_notification_threshold: float = 0.70
+    provider_insight_min_segment_events: int = 5
+    provider_match_weight_behavioral: float = 0.35
+    provider_match_weight_category: float = 0.25
+    provider_match_weight_preference: float = 0.15
+    provider_match_weight_budget: float = 0.10
+    provider_match_weight_duration: float = 0.10
+    provider_match_weight_recency: float = 0.05
+    provider_notification_cooldown_days: int = 7
+    provider_insight_default_window: str = "30d"
+
     @model_validator(mode="after")
-    def _validate_ranking_weights(self) -> "Settings":
+    def _validate_match_weights(self) -> Settings:
+        total = sum([
+            self.provider_match_weight_behavioral,
+            self.provider_match_weight_category,
+            self.provider_match_weight_preference,
+            self.provider_match_weight_budget,
+            self.provider_match_weight_duration,
+            self.provider_match_weight_recency,
+        ])
+        if abs(total - 1.0) > 0.001:
+            raise ValueError(
+                f"Provider match weights must sum to 1.0 (tolerance ±0.001); "
+                f"got {total:.6f}. Check provider_match_weight_* settings."
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _validate_ranking_weights(self) -> Settings:
         total = sum([
             self.ranking_weight_semantic,
             self.ranking_weight_affinity,

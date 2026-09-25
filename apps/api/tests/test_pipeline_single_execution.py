@@ -16,8 +16,6 @@ from __future__ import annotations
 import asyncio
 from unittest.mock import AsyncMock, patch
 
-import pytest
-
 from src.adapters.embedding import MockEmbeddingAdapter
 from src.adapters.routing import MockRoutingAdapter
 from src.core.config import Settings

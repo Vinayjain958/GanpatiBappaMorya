@@ -40,7 +40,8 @@ take 0 minutes.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date as date_type, datetime, timedelta
+from datetime import date as date_type
+from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from src.adapters.errors import AdapterError
@@ -64,8 +65,11 @@ class ComposedItem:
     buffer_before_minutes: int
     buffer_after_minutes: int
     estimated_cost: float | None
-    source_rank_position: int
-    source_ranking_score: float
+    # None only for a manually-added item outside the composer's own
+    # ranked-candidate flow (see compose_itinerary.py's single-item add
+    # path) — never None for anything the composer itself selected.
+    source_rank_position: int | None
+    source_ranking_score: float | None
 
 
 @dataclass
@@ -95,8 +99,8 @@ class ExperienceComposerService:
         *,
         candidates: list[RankedExperienceItem],
         itinerary_date: date_type,
-        start_time_of_day: "datetime.time",  # noqa: UP037 — kept explicit for readability
-        end_time_of_day: "datetime.time",
+        start_time_of_day: time,
+        end_time_of_day: time,
         max_experiences: int | None,
         max_budget: float | None,
         travel_mode: str,
@@ -263,11 +267,17 @@ class ExperienceComposerService:
             # Find the worst-ranked (highest rank number = lowest quality)
             # currently-selected item with the same approximate duration
             # budget so a straight swap keeps the schedule intact.
+            # source_ranking_score is only None for a manually-added item
+            # (see ComposedItem), which never reaches this local-
+            # improvement pass — _greedy_select always sets it from
+            # RankedExperienceItem.ranking_score, a required float field.
             worst_idx = max(
-                range(len(selected)), key=lambda i: (selected[i].source_ranking_score * -1, selected[i].experience.id)
+                range(len(selected)),
+                key=lambda i: (-(selected[i].source_ranking_score or 0.0), selected[i].experience.id),
             )
             worst = selected[worst_idx]
-            if candidate.ranking_score <= worst.source_ranking_score:
+            worst_score = worst.source_ranking_score or 0.0
+            if candidate.ranking_score <= worst_score:
                 continue  # only ever swap in a strictly higher-value candidate
             if candidate.duration_minutes is None:
                 continue

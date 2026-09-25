@@ -13,7 +13,7 @@ candidate context is already available (see execute_compose_experience).
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date as date_type, datetime, time as time_type
+from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,6 +22,7 @@ from src.adapters.embedding import EmbeddingAdapter
 from src.adapters.routing import RoutingAdapter
 from src.core.config import Settings
 from src.core.feasibility_reasons import FeasibilityReasonCode
+from src.models.experience import Experience
 from src.models.itinerary import Itinerary
 from src.models.itinerary_item import ItineraryItem
 from src.repositories.experience_repository import ExperienceRepository
@@ -258,7 +259,7 @@ async def compose_and_persist_itinerary(
 
     narrative_by_id = {n.experience_id: n.text for n in outcome_narration.narrative.item_narratives}
     for composed in composition.items:
-        item = ItineraryItem(
+        item_row = ItineraryItem(
             itinerary_id=itinerary.id,
             experience_id=composed.experience.id,
             sequence_order=composed.sequence_order,
@@ -275,7 +276,7 @@ async def compose_and_persist_itinerary(
             source_ranking_score=composed.source_ranking_score,
             narrative_text=narrative_by_id.get(composed.experience.id),
         )
-        session.add(item)
+        session.add(item_row)
 
     await session.commit()
     await session.refresh(itinerary, attribute_names=["items"])
@@ -289,7 +290,7 @@ async def compose_and_persist_itinerary(
 
 
 def _ranked_stub_for_validation(
-    *, experience, sequence_order: int, ranking_model_version: str
+    *, experience: Experience, sequence_order: int, ranking_model_version: str
 ) -> RankedExperienceItem:
     """Builds the minimal RankedExperienceItem shape ItineraryValidatorService
     needs (it only reads .id/.title/.category via ComposedItem.experience,

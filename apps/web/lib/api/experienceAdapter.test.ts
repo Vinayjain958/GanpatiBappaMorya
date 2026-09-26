@@ -118,3 +118,103 @@ describe("mapApiExperienceToUi — image resolution", () => {
     expect(ui.image.source).toBeNull();
   });
 });
+
+describe("mapApiExperienceToUi — reviews, ratings, hours, availability", () => {
+  it("maps synthetic reviews, rating distribution, opening hours, and availability slots from detail", () => {
+    const apiDetail = {
+      ...makeApiExperience(),
+      full_description: "Full description of museum",
+      opening_hours_status: "open",
+      opening_hours: [
+        {
+          day_of_week: 0,
+          open_time: "10:00",
+          close_time: "18:00",
+          is_closed: false,
+          is_synthetic: true,
+        },
+        {
+          day_of_week: 1,
+          open_time: null,
+          close_time: null,
+          is_closed: true,
+          is_synthetic: true,
+        },
+      ],
+      availability_slots: [
+        {
+          id: "slot-1",
+          start_time: "2026-09-28T10:00:00Z",
+          end_time: "2026-09-28T12:00:00Z",
+          capacity: 20,
+          booked_count: 5,
+          is_available: true,
+          is_synthetic: true,
+        },
+      ],
+      rating_summary: {
+        average_rating: 4.5,
+        review_count: 2,
+        rating_distribution: { "4": 1, "5": 1 },
+        is_synthetic: true,
+      },
+      reviews: [
+        {
+          id: "rev-1",
+          rating_value: 5,
+          title: "Brilliant visit",
+          body: "Really loved the historic exhibits.",
+          author_display_name: "Traveler 1",
+          reviewed_at: "2026-09-20T10:00:00Z",
+          is_synthetic: true,
+        },
+      ],
+      source_type: "synthetic_enrichment",
+      source_name: null,
+      source_license: null,
+      attribution_required: false,
+      attribution_text: null,
+      created_at: "2026-09-26T12:00:00Z",
+      updated_at: "2026-09-26T12:00:00Z",
+    };
+
+    const ui = mapApiExperienceToUi(apiDetail, null);
+
+    expect(ui.reviews).toHaveLength(1);
+    expect(ui.reviews![0]).toMatchObject({
+      id: "rev-1",
+      rating: 5,
+      title: "Brilliant visit",
+      author: "Traveler 1",
+      isSynthetic: true,
+    });
+
+    expect(ui.ratingSummary).toMatchObject({
+      averageRating: 4.5,
+      reviewCount: 2,
+      distribution: { 4: 1, 5: 1 },
+      isSynthetic: true,
+    });
+
+    expect(ui.openingHoursWeekly).toHaveLength(2);
+    expect(ui.openingHoursWeekly![0]).toMatchObject({
+      day: "Mon",
+      dayIndex: 0,
+      open: "10:00",
+      close: "18:00",
+      isClosed: false,
+      isSynthetic: true,
+    });
+    expect(ui.isOpeningHoursSynthetic).toBe(true);
+
+    expect(ui.availabilitySlots).toHaveLength(1);
+    expect(ui.availabilitySlots![0]).toMatchObject({
+      id: "slot-1",
+      capacity: 20,
+      bookedCount: 5,
+      isAvailable: true,
+      isSynthetic: true,
+    });
+    expect(ui.isAvailabilitySynthetic).toBe(true);
+  });
+});

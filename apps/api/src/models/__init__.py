@@ -24,6 +24,7 @@ from src.models.provider_notification import ProviderNotification
 from src.models.provider_synthetic_demand import ProviderSyntheticDemandSnapshot
 from src.models.traveler import Traveler
 from src.models.user import User
+from src.models.review import ExperienceReview
 from src.models.safety import EmergencyContact, EmergencyAlert
 
 __all__ = [
@@ -37,6 +38,7 @@ __all__ = [
     "ExperienceOpeningHour",
     "AuthSession",
     "ExperienceAvailability",
+    "ExperienceReview",
     "ConversationSession",
     "ConversationMessage",
     "ExperienceEmbedding",

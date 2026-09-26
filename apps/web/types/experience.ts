@@ -28,6 +28,42 @@ export interface ExperienceImage {
   attributionText: string | null;
 }
 
+export interface ReviewItem {
+  id: string;
+  rating: number;
+  title: string | null;
+  body: string | null;
+  author: string;
+  reviewedAt: string;
+  isSynthetic: boolean;
+}
+
+export interface ExperienceRatingSummary {
+  averageRating: number;
+  reviewCount: number;
+  distribution: Record<number, number>;
+  isSynthetic: boolean;
+}
+
+export interface OpeningHourDay {
+  day: string;
+  dayIndex: number;
+  open: string | null;
+  close: string | null;
+  isClosed: boolean;
+  isSynthetic?: boolean;
+}
+
+export interface AvailabilitySlot {
+  id: string;
+  startTime: string;
+  endTime: string;
+  capacity: number;
+  bookedCount: number;
+  isAvailable: boolean;
+  isSynthetic: boolean;
+}
+
 export interface Experience {
   id: string;
   title: string;
@@ -61,6 +97,12 @@ export interface Experience {
   accessibility: AccessibilityInfo;
   availability: "available" | "limited" | "unavailable";
   openingHours: string | null;
+  openingHoursWeekly?: OpeningHourDay[];
+  isOpeningHoursSynthetic?: boolean;
+  availabilitySlots?: AvailabilitySlot[];
+  isAvailabilitySynthetic?: boolean;
+  reviews?: ReviewItem[];
+  ratingSummary?: ExperienceRatingSummary | null;
   highlights: string[];
   isSynthetic: boolean;
   /** Phase 7 — only present when this result came from the personalized

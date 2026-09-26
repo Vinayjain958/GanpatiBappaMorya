@@ -160,6 +160,53 @@ export function mapApiExperienceToUi(
     },
     availability: STATUS_TO_AVAILABILITY[api.status] ?? "available",
     openingHours: detail ? formatOpeningHours(detail.opening_hours) : null,
+    openingHoursWeekly: detail?.opening_hours
+      ? detail.opening_hours.map((w) => ({
+          day: DAY_ABBREVIATIONS[w.day_of_week] ?? `Day ${w.day_of_week}`,
+          dayIndex: w.day_of_week,
+          open: w.open_time,
+          close: w.close_time,
+          isClosed: w.is_closed,
+          isSynthetic: w.is_synthetic,
+        }))
+      : undefined,
+    isOpeningHoursSynthetic: detail?.opening_hours?.some((w) => w.is_synthetic) ?? false,
+    availabilitySlots: detail?.availability_slots
+      ? detail.availability_slots.map((s) => ({
+          id: s.id,
+          startTime: s.start_time,
+          endTime: s.end_time,
+          capacity: s.capacity,
+          bookedCount: s.booked_count,
+          isAvailable: s.is_available,
+          isSynthetic: s.is_synthetic,
+        }))
+      : undefined,
+    isAvailabilitySynthetic: detail?.availability_slots?.some((s) => s.is_synthetic) ?? false,
+    reviews: detail?.reviews
+      ? detail.reviews.map((r) => ({
+          id: r.id,
+          rating: r.rating_value,
+          title: r.title,
+          body: r.body,
+          author: r.author_display_name,
+          reviewedAt: r.reviewed_at,
+          isSynthetic: r.is_synthetic,
+        }))
+      : undefined,
+    ratingSummary: detail?.rating_summary
+      ? {
+          averageRating: detail.rating_summary.average_rating,
+          reviewCount: detail.rating_summary.review_count,
+          distribution: Object.fromEntries(
+            Object.entries(detail.rating_summary.rating_distribution).map(([k, v]) => [
+              parseInt(k, 10),
+              v,
+            ]),
+          ),
+          isSynthetic: detail.rating_summary.is_synthetic,
+        }
+      : null,
     highlights: [],
     isSynthetic: api.is_synthetic,
     matchSignals: ranked?.match_signals,

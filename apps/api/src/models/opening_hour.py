@@ -36,5 +36,7 @@ class ExperienceOpeningHour(UUIDPrimaryKeyMixin, Base):
     open_time: Mapped[str | None] = mapped_column(String(5), nullable=True)  # "HH:MM"
     close_time: Mapped[str | None] = mapped_column(String(5), nullable=True)  # "HH:MM"
     is_closed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    source_type: Mapped[str] = mapped_column(String(40), default="synthetic", nullable=False)
+    is_synthetic: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     experience: Mapped[Experience] = relationship(back_populates="opening_hours")

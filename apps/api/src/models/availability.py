@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.db import Base
@@ -36,5 +36,7 @@ class ExperienceAvailability(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     capacity: Mapped[int] = mapped_column(Integer, nullable=False)
     available_slots: Mapped[int | None] = mapped_column(Integer, nullable=True)
     status: Mapped[str] = mapped_column(AvailabilityStatus, default="active", nullable=False)
+    source_type: Mapped[str] = mapped_column(String(40), default="synthetic", nullable=False)
+    is_synthetic: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     experience: Mapped[Experience] = relationship(back_populates="availability_slots")

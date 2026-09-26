@@ -53,6 +53,38 @@ class OpeningHourWindow(BaseModel):
     open_time: str | None = None
     close_time: str | None = None
     is_closed: bool
+    is_synthetic: bool = False
+
+
+class AvailabilitySlotSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    starts_at: datetime
+    ends_at: datetime
+    capacity: int
+    available_slots: int | None = None
+    status: str
+    is_synthetic: bool = True
+
+
+class ExperienceReviewSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    rating_value: int
+    title: str
+    body: str
+    author_display_name: str
+    reviewed_at: datetime
+    is_synthetic: bool = True
+
+
+class RatingSummary(BaseModel):
+    average_rating: float | None = None
+    review_count: int = 0
+    rating_distribution: dict[int, int] = {}
+    is_synthetic: bool = True
 
 
 class ExperienceImage(BaseModel):
@@ -112,25 +144,27 @@ class ExperienceSummary(BaseModel):
         here rather than duplicating the flat/nested shape in the model."""
         if isinstance(data, dict):
             return data
-        if getattr(data, "image_url", None) is None:
-            return data
-        image = ExperienceImage(
-            url=data.image_url,
-            thumbnail_url=data.image_thumbnail_url,
-            source=data.image_source,
-            source_url=data.image_source_url,
-            license=data.image_license,
-            license_url=data.image_license_url,
-            author=data.image_author,
-            attribution_text=data.image_attribution_text,
-            is_place_specific=data.image_is_place_specific,
-            is_synthetic=data.image_is_synthetic,
-            match_method=data.image_match_method,
-        )
+        image = None
+        if getattr(data, "image_url", None) is not None:
+            image = ExperienceImage(
+                url=data.image_url,
+                thumbnail_url=data.image_thumbnail_url,
+                source=data.image_source,
+                source_url=data.image_source_url,
+                license=data.image_license,
+                license_url=data.image_license_url,
+                author=data.image_author,
+                attribution_text=data.image_attribution_text,
+                is_place_specific=data.image_is_place_specific,
+                is_synthetic=data.image_is_synthetic,
+                match_method=data.image_match_method,
+            )
         values = {
             field: getattr(data, field)
             for field in cls.model_fields
-            if field != "image" and hasattr(data, field)
+            if field != "image"
+            and field not in ("reviews", "rating_summary")
+            and hasattr(data, field)
         }
         values["image"] = image
         return values
@@ -161,6 +195,9 @@ class ExperienceDetail(ExperienceSummary):
     tags: list[str] | None = None
     opening_hours_status: str
     opening_hours: list[OpeningHourWindow] = []
+    availability_slots: list[AvailabilitySlotSummary] = []
+    rating_summary: RatingSummary | None = None
+    reviews: list[ExperienceReviewSummary] = []
     source_type: str
     source_name: str | None = None
     source_license: str | None = None
@@ -172,6 +209,13 @@ class ExperienceDetail(ExperienceSummary):
 
 class ExperienceListResponse(BaseModel):
     items: list[ExperienceSummary]
+    total: int
+    limit: int
+    offset: int
+
+
+class ExperienceReviewListResponse(BaseModel):
+    items: list[ExperienceReviewSummary]
     total: int
     limit: int
     offset: int

@@ -17,7 +17,16 @@ from src.core.location import get_routing_adapter
 from src.models.experience import Experience
 from src.models.provider import Provider
 from src.repositories.experience_repository import ExperienceRepository
-from src.schemas.experience import ExperienceDetail, ExperienceListResponse, ExperienceSummary
+from src.repositories.review_repository import ReviewRepository
+from src.schemas.experience import (
+    AvailabilitySlotSummary,
+    ExperienceDetail,
+    ExperienceListResponse,
+    ExperienceReviewListResponse,
+    ExperienceReviewSummary,
+    ExperienceSummary,
+    RatingSummary,
+)
 from src.schemas.experience_write import ExperienceCreateRequest, ExperienceUpdateRequest
 from src.schemas.semantic_search import (
     ExcludedReasonSummary,
@@ -178,7 +187,48 @@ async def get_experience(
     experience = await repository.get_by_id(experience_id)
     if experience is None:
         raise ApiError("Experience not found", status_code=404)
-    return ExperienceDetail.model_validate(experience)
+
+    detail = ExperienceDetail.model_validate(experience)
+
+    review_repo = ReviewRepository(session)
+    top_reviews, total_reviews = await review_repo.list_for_experience(
+        experience_id, limit=5, sort="newest"
+    )
+    avg_rating, count, distribution = await review_repo.get_distribution_and_avg(experience_id)
+
+    detail.reviews = [ExperienceReviewSummary.model_validate(r) for r in top_reviews]
+    detail.rating_summary = RatingSummary(
+        average_rating=avg_rating,
+        review_count=count,
+        rating_distribution=distribution,
+        is_synthetic=True,
+    )
+    detail.availability_slots = [
+        AvailabilitySlotSummary.model_validate(s) for s in experience.availability_slots
+    ]
+
+    return detail
+
+
+@router.get("/{experience_id}/reviews", response_model=ExperienceReviewListResponse)
+async def list_experience_reviews(
+    experience_id: str,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    limit: Annotated[int, Query(ge=1, le=100)] = 10,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    sort: Annotated[Literal["newest", "highest", "lowest"], Query()] = "newest",
+) -> ExperienceReviewListResponse:
+    repository = ExperienceRepository(session)
+    experience = await repository.get_by_id(experience_id)
+    if experience is None:
+        raise ApiError("Experience not found", status_code=404)
+
+    review_repo = ReviewRepository(session)
+    reviews, total = await review_repo.list_for_experience(
+        experience_id, limit=limit, offset=offset, sort=sort
+    )
+    items = [ExperienceReviewSummary.model_validate(r) for r in reviews]
+    return ExperienceReviewListResponse(items=items, total=total, limit=limit, offset=offset)
 
 
 async def _get_owned_or_404(session: AsyncSession, experience_id: str, provider: Provider) -> Experience:

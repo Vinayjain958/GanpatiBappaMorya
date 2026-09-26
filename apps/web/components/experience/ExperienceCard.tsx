@@ -178,6 +178,14 @@ export function ExperienceCard({
               {experience.reviewCount != null ? (
                 <span>({experience.reviewCount})</span>
               ) : null}
+              {experience.isSynthetic ? (
+                <span
+                  className="ml-0.5 rounded bg-surface px-1.5 py-0.5 text-[9px] font-medium text-ink-subtle ring-1 ring-inset ring-line"
+                  title="Synthetic Demo Rating"
+                >
+                  Demo
+                </span>
+              ) : null}
             </span>
           ) : (
             <span className="text-xs text-ink-subtle">No ratings yet</span>

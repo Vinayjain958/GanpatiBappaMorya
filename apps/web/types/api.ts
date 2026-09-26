@@ -33,6 +33,41 @@ export interface ApiOpeningHourWindow {
   open_time: string | null;
   close_time: string | null;
   is_closed: boolean;
+  is_synthetic?: boolean;
+}
+
+export interface ApiAvailabilitySlotSummary {
+  id: string;
+  start_time: string;
+  end_time: string;
+  capacity: number;
+  booked_count: number;
+  is_available: boolean;
+  is_synthetic: boolean;
+}
+
+export interface ApiExperienceReviewSummary {
+  id: string;
+  rating_value: number;
+  title: string | null;
+  body: string | null;
+  author_display_name: string;
+  reviewed_at: string;
+  is_synthetic: boolean;
+}
+
+export interface ApiRatingSummary {
+  average_rating: number;
+  review_count: number;
+  rating_distribution: Record<string, number>;
+  is_synthetic: boolean;
+}
+
+export interface ApiExperienceReviewListResponse {
+  items: ApiExperienceReviewSummary[];
+  total: number;
+  limit: number;
+  offset: number;
 }
 
 /** Normalized image metadata (see apps/api/src/services/experience_images.py).
@@ -95,6 +130,9 @@ export interface ApiExperienceDetail extends ApiExperienceSummary {
   tags: string[] | null;
   opening_hours_status: string;
   opening_hours: ApiOpeningHourWindow[];
+  availability_slots?: ApiAvailabilitySlotSummary[];
+  rating_summary?: ApiRatingSummary | null;
+  reviews?: ApiExperienceReviewSummary[];
   source_type: string;
   source_name: string | null;
   source_license: string | null;

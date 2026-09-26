@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from src.models.location import Location
     from src.models.opening_hour import ExperienceOpeningHour
     from src.models.provider import Provider
+    from src.models.review import ExperienceReview
 
 ExperienceStatus = Enum(
     "active", "draft", "inactive", name="experience_status", native_enum=False
@@ -182,4 +183,9 @@ class Experience(UUIDPrimaryKeyMixin, TimestampMixin, ProvenanceMixin, Base):
     )
     interactions: Mapped[list[TravelerInteraction]] = relationship(
         back_populates="experience", cascade="all, delete-orphan"
+    )
+    reviews: Mapped[list[ExperienceReview]] = relationship(
+        back_populates="experience",
+        cascade="all, delete-orphan",
+        order_by="ExperienceReview.reviewed_at.desc()",
     )

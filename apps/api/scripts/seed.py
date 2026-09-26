@@ -67,9 +67,11 @@ _RESEEDABLE_SOURCE_TYPES = ("overture_places", "synthetic")
 async def reset_tables(session: AsyncSession) -> None:
     """Deletes only rows this script owns (Overture-derived + synthetic
     demo). Real accounts (source_type="registered"/"provider_submitted",
-    created via /api/v1/auth/register and /api/v1/experiences) are never
-    touched. SQLite does not reliably enforce ON DELETE CASCADE, so
-    dependents are deleted explicitly rather than relied on implicitly.
+    created via /api/v1/auth/register and /api/v1/experiences, plus
+    "traveler_submission" — the direct-publish contribution flow, see
+    docs/DECISIONS.md ADR-058) are never touched. SQLite does not
+    reliably enforce ON DELETE CASCADE, so dependents are deleted
+    explicitly rather than relied on implicitly.
     """
     experience_ids_query = select(Experience.id).where(Experience.source_type.in_(_RESEEDABLE_SOURCE_TYPES))
     experience_ids = (await session.execute(experience_ids_query)).scalars().all()

@@ -63,11 +63,44 @@ def test_reset_tables_preserves_registered_provider_data(session_factory) -> Non
                 is_synthetic=False,
             )
             session.add(registered_experience)
+
+            # ADR-058: a traveler's direct-publish contribution must also
+            # survive reseeding, same as registered/provider_submitted.
+            community_provider = Provider(
+                business_name="LocaLens Community", provider_type="community",
+                verification_status="unverified", source_type="system",
+                is_synthetic=False,
+            )
+            session.add(community_provider)
+            await session.flush()
+
+            traveler_location = Location(
+                latitude=2.0, longitude=2.0, city="Mumbai",
+                source_type="traveler_submission", is_synthetic=False,
+            )
+            session.add(traveler_location)
+            await session.flush()
+
+            traveler_experience = Experience(
+                provider_id=community_provider.id,
+                category_id=category.id,
+                location_id=traveler_location.id,
+                title="Real traveler-contributed experience",
+                short_description="Should survive reseeding.",
+                full_description="Should survive reseeding, at length.",
+                status="active",
+                verification_status="unverified",
+                opening_hours_status="unavailable",
+                source_type="traveler_submission",
+                is_synthetic=False,
+            )
+            session.add(traveler_experience)
             await session.commit()
 
             registered_provider_id = registered_provider.id
             catalog_provider_id = catalog_provider.id
             registered_experience_id = registered_experience.id
+            traveler_experience_id = traveler_experience.id
 
         async with session_factory() as session:
             await reset_tables(session)
@@ -80,12 +113,15 @@ def test_reset_tables_preserves_registered_provider_data(session_factory) -> Non
             surviving_provider = await session.get(Provider, registered_provider_id)
             deleted_catalog_provider = await session.get(Provider, catalog_provider_id)
             surviving_experience = await session.get(Experience, registered_experience_id)
+            surviving_traveler_experience = await session.get(Experience, traveler_experience_id)
             categories = (await session.execute(select(ExperienceCategory))).scalars().all()
 
             assert surviving_provider is not None
             assert surviving_provider.business_name == "Real Registered Business"
             assert deleted_catalog_provider is None
             assert surviving_experience is not None
+            assert surviving_traveler_experience is not None
+            assert surviving_traveler_experience.source_type == "traveler_submission"
             assert len(categories) == len(CATEGORIES)
 
     asyncio.run(_run())

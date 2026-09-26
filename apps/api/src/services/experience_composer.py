@@ -222,10 +222,19 @@ class ExperienceComposerService:
         self, lat: float, lng: float, candidate: RankedExperienceItem, travel_mode: str
     ) -> tuple[float | None, float | None]:
         try:
+            # include_geometry=True: the post-composition route pass
+            # (src/services/itinerary_routes.py) requests the same legs
+            # with geometry, so asking for it here lets OSRMRoutingAdapter's
+            # TTL cache serve the chosen legs without a second provider
+            # call. Geometry itself is NOT carried on ComposedItem — the
+            # route pass persists it for the FINAL sequence only (the
+            # local-improvement swap can change a slot's location after
+            # this call).
             route = await self._routing.get_route(
                 (lat, lng),
                 (candidate.location.latitude, candidate.location.longitude),
                 profile=travel_mode,
+                include_geometry=True,
             )
         except (AdapterError, ValueError):
             return None, None

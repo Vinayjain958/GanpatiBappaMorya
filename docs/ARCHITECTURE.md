@@ -516,6 +516,76 @@ The failure of any recommendation component must never impair safety features.
 
 ---
 
+## 8b. Personalized Planning, Similar Plans & Route Map (ADR-056)
+
+```
+Trip Planner form (pure state: lib/trip/planningForm.ts)
+  -> POST /itineraries/similar  (read-only: ItinerarySimilarityService,
+                                  deterministic, no Gemini/OSRM, no writes)
+  -> user clicks "Create personalized itinerary"
+  -> POST /itineraries/compose  (existing pipeline; planning.group_size
+       -> FeasibilityService capacity check)
+       retrieval -> feasibility -> ranking -> composition -> validation
+       -> ItineraryRouteService (RoutingAdapter, final sequence only)
+       -> narrative -> persist itinerary + items(route legs)
+                        + planning profile + participants
+  -> GET /itineraries/{id}      (persisted snapshot; never re-routes)
+  -> ItineraryDetailView: RealItineraryTimeline | ItineraryRouteMap(MapSurface)
+```
+
+- Itineraries remain single-day; route legs carry an implicit `day_index` 0.
+- Route leg status is truthful: ROUTED (OSRM geometry), ESTIMATED
+  (labelled haversine, never drawn), UNAVAILABLE ("Route unavailable").
+- Privacy: `is_discoverable` (default private) gates similar-plan examples;
+  private plans only count toward the aggregate. Gender is stored as context
+  only and is never a scoring/ranking signal.
+
+---
+
+## 8c. Traveler Direct-Publish Contribution — "Add a Local Experience" (ADR-058)
+
+```
+/contribute/experience (traveler-only page, RequireRole)
+  -> ExperienceContributionForm: photo + name + category + location + phone
+       (+ optional description/website behind "Add more details")
+  -> POST /api/v1/contributions/experiences  (multipart/form-data)
+       require_traveler auth -> SlidingWindowLimiter (per-traveler/hour)
+       -> ContributionCreateForm validation (name/phone/coords/category/URL)
+       -> media_validation.validate_and_process_image
+            (Pillow content-sniff, strip EXIF/GPS, re-encode JPEG,
+             server-generated object key)
+       -> contribution_duplicate.find_duplicate_match
+            (deterministic: name similarity + haversine proximity +
+             phone/website equality — no AI in the decision)
+            strong match  -> 409 DUPLICATE_EXPERIENCE (not published)
+            uncertain     -> 200 POSSIBLE_DUPLICATE (client may override)
+       -> services/contribution.submit_experience_contribution
+            Location(source_type="traveler_submission")
+            -> Experience(provider_id=<singleton community Provider>,
+                           source_type="traveler_submission",
+                           image_source="traveler_upload",
+                           rating=NULL, review_count=NULL, status="active")
+            -> TravelerExperienceContribution (audit row, not a catalog)
+            -> commit
+  -> 201: same ExperienceDetail shape as any other experience
+  -> router.push(/discover/{id})  -- live immediately, no admin approval
+```
+
+- No second Experience/Location/Discovery model — the published row is
+  immediately visible through the existing `GET /api/v1/experiences`,
+  map, and itinerary composition, same as any other catalog entry.
+- `scripts/enrich_experience_metadata.py`'s synthetic enrichment selection
+  query excludes `source_type == "traveler_submission"` — a contribution
+  never receives a fabricated rating, review, or opening hours.
+- Media storage is behind `adapters/media_storage.py::MediaStorageAdapter`
+  (a local-filesystem dev implementation today) so a production object
+  store can be swapped in later without changing the service layer.
+- See docs/DECISIONS.md ADR-058 for the full rationale, including why a
+  singleton "LocaLens Community" Provider row exists and why duplicate
+  detection is deliberately non-AI.
+
+---
+
 ## 8a. Authentication Architecture (Phase 3)
 
 FastAPI is the single authentication authority end to end — no second auth

@@ -153,6 +153,14 @@ class Settings(BaseSettings):
     composer_narrative_model_version: str = "gemini-narrative-v1"
     composer_template_narrative_version: str = "template-fallback-v1"
 
+    # ─── Personalized planning (ADR-056) ────────────────────────────────────
+    # Application-level cap on participants per itinerary. 20 covers
+    # realistic family/friend/small-tour groups while bounding the
+    # per-request participant payload; the older party_size field keeps
+    # its own looser le=50 cap for callers that don't send participants.
+    # Mirrored (for UX only) by NEXT_PUBLIC_MAX_ITINERARY_PARTICIPANTS.
+    itinerary_max_participants: int = 20
+
     # ─── Real-time context: weather (Phase 9) ───────────────────────────────
     # Real adapter requires OPENWEATHER_API_KEY; falls back to
     # MockWeatherAdapter when absent or context_services_enabled=false —
@@ -255,6 +263,29 @@ class Settings(BaseSettings):
     # Below this deterministic match score, no image is selected at all —
     # "no suitable image" beats "wrong image" (see enrichment script).
     wikimedia_min_match_score: float = 20.0
+
+    # ─── Traveler experience contributions (ADR-058) ────────────────────────
+    # Direct-publish path: an authenticated traveler submits a real local
+    # place and it becomes a live Experience after deterministic validation
+    # — no external service call is required to publish (see
+    # docs/DECISIONS.md ADR-058). media_upload_dir is a local dev-grade
+    # filesystem store behind MediaStorageAdapter (src/adapters/media_storage.py);
+    # a production deployment can swap in an object-storage adapter without
+    # changing the service layer.
+    #
+    # api_public_base_url is this API's own externally-reachable origin —
+    # required to build an ABSOLUTE image_url. A relative "/media/..." URL
+    # would resolve against whichever origin renders it (e.g. the Next.js
+    # dev server on :3000), not this API on :8000, so the uploaded photo
+    # would silently 404/never load. Defaults to the local dev API port;
+    # set to the real deployed API origin in production.
+    api_public_base_url: str = "http://localhost:8000"
+    media_upload_dir: str = "./data/uploads"
+    media_public_base_url: str = "/media"
+    media_max_upload_bytes: int = 8 * 1024 * 1024
+    media_max_image_dimension_px: int = 2000
+    contribution_rate_limit_per_hour: int = 5
+    contribution_duplicate_radius_m: float = 150.0
 
     @model_validator(mode="after")
     def _validate_match_weights(self) -> Settings:

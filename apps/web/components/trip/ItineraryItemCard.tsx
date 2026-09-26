@@ -19,11 +19,11 @@ export function ItineraryItemCard({ item }: { item: ItineraryItem }) {
   return (
     <div
       className={cn(
-        "flex gap-3 rounded-2xl border border-line bg-surface-raised p-3 shadow-soft sm:gap-4 sm:p-4",
-        item.status === "at_risk" && "border-danger/40 bg-danger-soft/30",
+        "flex gap-3 rounded-2xl border border-line bg-surface p-3.5 shadow-porcelain sm:gap-4 sm:p-4.5 transition-all duration-200 hover:shadow-porcelain-hover",
+        item.status === "at_risk" && "border-danger/30 bg-danger-soft/20",
       )}
     >
-      <div className="flex w-16 shrink-0 items-center justify-center self-start rounded-xl bg-pastel-lemon px-2 py-3 text-center text-sm font-semibold text-ink">
+      <div className="flex w-16 shrink-0 items-center justify-center self-start rounded-xl border border-pastel-lemon/80 bg-pastel-lemon/40 px-2 py-2.5 text-center text-xs font-semibold tabular-nums text-ink shadow-xs">
         {item.time}
       </div>
 
@@ -40,13 +40,13 @@ export function ItineraryItemCard({ item }: { item: ItineraryItem }) {
 
         <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-ink-muted">
           <span className="inline-flex items-center gap-1">
-            <MapPin className="size-3.5 shrink-0" aria-hidden="true" />
+            <MapPin className="size-3.5 shrink-0 text-accent" aria-hidden="true" />
             {item.location} &middot; {item.provider}
           </span>
 
           <span className="inline-flex items-center gap-1">
             <Clock className="size-3.5 shrink-0" aria-hidden="true" />
-            {item.durationMinutes} min
+            <span className="tabular-nums">{item.durationMinutes}</span> min
             {item.travelMinutesFromPrevious > 0
               ? ` (+${item.travelMinutesFromPrevious} min travel)`
               : ""}
@@ -54,7 +54,9 @@ export function ItineraryItemCard({ item }: { item: ItineraryItem }) {
 
           <span className="inline-flex items-center gap-1">
             <Wallet className="size-3.5 shrink-0" aria-hidden="true" />
-            {item.costInr === 0 ? "Free" : `₹${item.costInr}`}
+            <span className="font-medium tabular-nums text-ink">
+              {item.costInr === 0 ? "Free" : `₹${item.costInr.toLocaleString("en-IN")}`}
+            </span>
           </span>
         </div>
       </div>

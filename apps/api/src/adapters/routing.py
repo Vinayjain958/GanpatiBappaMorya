@@ -147,12 +147,17 @@ class OSRMRoutingAdapter:
             raise AdapterNoResultError("OSRM found no route between the given points")
 
         route = routes[0]
-        result = RouteResult(
-            distance_km=round(route["distance"] / 1000, 3),
-            duration_minutes=round(route["duration"] / 60, 2),
-            geometry=route.get("geometry") if include_geometry else None,
-            source="osrm",
-        )
+        try:
+            result = RouteResult(
+                distance_km=round(route["distance"] / 1000, 3),
+                duration_minutes=round(route["duration"] / 60, 2),
+                geometry=route.get("geometry") if include_geometry else None,
+                source="osrm",
+            )
+        except (KeyError, TypeError, AttributeError) as exc:
+            # A 200 response missing/garbling distance/duration is a
+            # provider failure, not a route — never guess the numbers.
+            raise AdapterUnavailableError("OSRM returned a malformed route payload") from exc
         self._route_cache.set(cache_key, result)
         return result
 

@@ -12,7 +12,11 @@ class ItineraryRepository:
         self._session = session
 
     def _base_query(self) -> Select[tuple[Itinerary]]:
-        return select(Itinerary).options(selectinload(Itinerary.items))
+        return select(Itinerary).options(
+            selectinload(Itinerary.items),
+            selectinload(Itinerary.participants),
+            selectinload(Itinerary.planning_profile),
+        )
 
     def add(self, itinerary: Itinerary) -> None:
         self._session.add(itinerary)

@@ -4,19 +4,39 @@ import { Clock, Lock, MapPin, Radio, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { BookingRequestButton } from "@/components/trip/BookingRequestButton";
 import { useItineraryUpdates } from "@/hooks/useItineraryUpdates";
+import type { ItineraryUpdatesState } from "@/hooks/useItineraryUpdates";
 import {
   formatCost,
   formatItemTimeRange,
   itinerarySummaryLine,
   itineraryStatusLabel,
   orderedItems,
-  travelGapLabel,
 } from "@/lib/itinerary/itineraryDisplay";
+import { stopAccessibleLabel, travelFromPreviousLabel } from "@/lib/itinerary/itineraryMapData";
+import { cn } from "@/lib/utils/cn";
 import type { ApiItinerary } from "@/types/api";
 
-export function RealItineraryTimeline({ itinerary }: { itinerary: ApiItinerary }) {
+export function timelineItemDomId(itemId: string): string {
+  return `itinerary-item-${itemId}`;
+}
+
+export function RealItineraryTimeline({
+  itinerary,
+  updates: sharedUpdates,
+  selectedItemId = null,
+  onSelectItem,
+}: {
+  itinerary: ApiItinerary;
+  /** Pass the parent's SSE state to avoid opening a second stream. */
+  updates?: ItineraryUpdatesState;
+  selectedItemId?: string | null;
+  /** When provided, each stop gets a keyboard-accessible "show on map" control. */
+  onSelectItem?: (itemId: string) => void;
+}) {
   const items = orderedItems(itinerary);
-  const updates = useItineraryUpdates(itinerary.id);
+  // A null id makes the hook idle — only one SSE connection per itinerary.
+  const ownUpdates = useItineraryUpdates(sharedUpdates ? null : itinerary.id);
+  const updates = sharedUpdates ?? ownUpdates;
 
   return (
     <section className="space-y-5">
@@ -104,10 +124,11 @@ export function RealItineraryTimeline({ itinerary }: { itinerary: ApiItinerary }
             aria-label={`Itinerary for ${itinerary.title}`}
           >
             {items.map((item) => {
-              const gap = travelGapLabel(item);
+              const gap = travelFromPreviousLabel(itinerary, item);
+              const selected = item.id === selectedItemId;
 
               return (
-                <li key={item.id}>
+                <li key={item.id} id={timelineItemDomId(item.id)} className="scroll-mt-24">
                   {gap ? (
                     <p
                       className="mb-2 ml-[5.5rem] flex items-center gap-2 text-xs text-ink-subtle"
@@ -119,14 +140,27 @@ export function RealItineraryTimeline({ itinerary }: { itinerary: ApiItinerary }
                   ) : null}
 
                   <article
-                    className={`grid grid-cols-[4.5rem_minmax(0,1fr)] gap-3 rounded-2xl border bg-surface p-3 sm:grid-cols-[5rem_minmax(0,1fr)] sm:gap-4 sm:p-4 ${
-                      item.item_state === "AFFECTED"
-                        ? "border-warning/40"
-                        : "border-line"
-                    }`}
+                    aria-current={selected ? "location" : undefined}
+                    className={cn(
+                      "grid grid-cols-[4.5rem_minmax(0,1fr)] gap-3 rounded-2xl border bg-surface p-3 transition-shadow sm:grid-cols-[5rem_minmax(0,1fr)] sm:gap-4 sm:p-4",
+                      item.item_state === "AFFECTED" ? "border-warning/40" : "border-line",
+                      selected && "border-highlight shadow-soft ring-2 ring-highlight/40",
+                    )}
                   >
-                    <div className="flex min-h-16 flex-col items-center justify-center rounded-xl bg-highlight-soft px-2 py-3 text-center text-sm font-semibold leading-tight text-highlight">
-                      <Clock className="mb-1 size-4" aria-hidden="true" />
+                    <div className="flex min-h-16 flex-col items-center justify-center gap-1.5 rounded-xl bg-highlight-soft px-2 py-3 text-center text-sm font-semibold leading-tight text-highlight">
+                      {onSelectItem ? (
+                        <button
+                          type="button"
+                          onClick={() => onSelectItem(item.id)}
+                          aria-pressed={selected}
+                          aria-label={`${stopAccessibleLabel(item.sequence_order, item.title)} — show on map`}
+                          className="flex size-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                        >
+                          {item.sequence_order}
+                        </button>
+                      ) : (
+                        <Clock className="mb-1 size-4" aria-hidden="true" />
+                      )}
                       {formatItemTimeRange(item)}
                     </div>
 
@@ -167,7 +201,8 @@ export function RealItineraryTimeline({ itinerary }: { itinerary: ApiItinerary }
                         </span>
                         <span className="inline-flex items-center gap-1.5">
                           <Clock className="size-3.5 shrink-0 text-accent" aria-hidden="true" />
-                          {item.duration_minutes} min
+                          {/* Experience duration — distinct from the travel time above. */}
+                          {item.duration_minutes} min visit
                         </span>
                         <span className="inline-flex items-center gap-1.5">
                           <Wallet className="size-3.5 shrink-0 text-accent" aria-hidden="true" />

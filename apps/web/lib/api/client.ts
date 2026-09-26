@@ -51,6 +51,12 @@ interface RequestOptions {
   _isRetry?: boolean;
 }
 
+interface FormRequestOptions {
+  signal?: AbortSignal;
+  headers?: Record<string, string>;
+  _isRetry?: boolean;
+}
+
 // Endpoints that must never trigger the automatic refresh-and-retry
 // dance — refresh itself, and the two endpoints that establish/replace
 // a session from scratch (a 401 there is a real, final answer).
@@ -108,36 +114,18 @@ async function attemptRefresh(): Promise<boolean> {
   }
 }
 
-async function request<TResponse>(
+/** Shared 401-retry/error-parsing tail for both the JSON and multipart
+ * request paths — kept as one function so a future change to that
+ * behavior (retry policy, error shape) never has to be made twice. */
+async function finishResponse<TResponse>(
+  response: Response,
   path: string,
-  { method = "GET", body, signal, headers, _isRetry = false }: RequestOptions = {},
+  retry: () => Promise<TResponse>,
+  isRetry: boolean,
 ): Promise<TResponse> {
-  const url = `${env.apiBaseUrl}${path}`;
-  const token = getAccessToken();
-
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      method,
-      signal,
-      credentials: "include",
-      headers: {
-        Accept: "application/json",
-        ...(body ? { "Content-Type": "application/json" } : {}),
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...headers,
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-  } catch (cause) {
-    throw new ApiError("Network request failed", 0, cause);
-  }
-
-  if (response.status === 401 && !_isRetry && !NO_REFRESH_RETRY_PATHS.some((p) => path.startsWith(p))) {
+  if (response.status === 401 && !isRetry && !NO_REFRESH_RETRY_PATHS.some((p) => path.startsWith(p))) {
     const refreshed = await attemptRefresh();
-    if (refreshed) {
-      return request<TResponse>(path, { method, body, signal, headers, _isRetry: true });
-    }
+    if (refreshed) return retry();
   }
 
   const contentType = response.headers.get("content-type") ?? "";
@@ -164,6 +152,79 @@ async function request<TResponse>(
   return payload as TResponse;
 }
 
+async function request<TResponse>(
+  path: string,
+  { method = "GET", body, signal, headers, _isRetry = false }: RequestOptions = {},
+): Promise<TResponse> {
+  const url = `${env.apiBaseUrl}${path}`;
+  const token = getAccessToken();
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method,
+      signal,
+      credentials: "include",
+      headers: {
+        Accept: "application/json",
+        ...(body ? { "Content-Type": "application/json" } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...headers,
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch (cause) {
+    throw new ApiError("Network request failed", 0, cause);
+  }
+
+  return finishResponse(
+    response,
+    path,
+    () => request<TResponse>(path, { method, body, signal, headers, _isRetry: true }),
+    _isRetry,
+  );
+}
+
+/**
+ * multipart/form-data POST — used only where a file travels alongside
+ * form fields (e.g. the traveler experience contribution upload). Never
+ * sets Content-Type itself: the browser must generate it (with the
+ * multipart boundary) from the FormData body. Shares the same auth
+ * header + 401-refresh-retry + ApiError behavior as `request()`.
+ */
+async function requestForm<TResponse>(
+  path: string,
+  form: FormData,
+  { signal, headers, _isRetry = false }: FormRequestOptions = {},
+): Promise<TResponse> {
+  const url = `${env.apiBaseUrl}${path}`;
+  const token = getAccessToken();
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      signal,
+      credentials: "include",
+      headers: {
+        Accept: "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...headers,
+      },
+      body: form,
+    });
+  } catch (cause) {
+    throw new ApiError("Network request failed", 0, cause);
+  }
+
+  return finishResponse(
+    response,
+    path,
+    () => requestForm<TResponse>(path, form, { signal, headers, _isRetry: true }),
+    _isRetry,
+  );
+}
+
 export const apiClient = {
   get: <T>(path: string, options?: Omit<RequestOptions, "method" | "body">) =>
     request<T>(path, { ...options, method: "GET" }),
@@ -175,4 +236,6 @@ export const apiClient = {
     request<T>(path, { ...options, method: "PATCH", body }),
   delete: <T>(path: string, options?: Omit<RequestOptions, "method" | "body">) =>
     request<T>(path, { ...options, method: "DELETE" }),
+  postForm: <T>(path: string, form: FormData, options?: FormRequestOptions) =>
+    requestForm<T>(path, form, options),
 };

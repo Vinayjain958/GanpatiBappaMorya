@@ -105,9 +105,12 @@ real bugs found and fixed during verification). Phase 10 has not started.
   and writes `data/processed/overture_experiences.json` + an ingestion report
 - `apps/api/scripts/synthetic_data.py` — deterministic, templated synthetic provider/experience
   generator (fictional, clearly labelled `is_synthetic=true`)
-- `apps/api/scripts/seed.py` — full reseed script; last run produced 353 experiences (288
+- `apps/api/scripts/seed.py` — full reseed script; initial run produced 353 experiences (288
   Overture-derived + 65 synthetic), 311 providers, 20 categories, 353 locations, 0 duplicate
   source IDs — see `data/README.md` for the full breakdown
+- `scripts/ingest_real_mumbai_places.py` + `scripts/conflate_real_places.py` — expanded catalog
+  to exactly 15,000 active, unique, geolocated, real-world experiences from Overture Places
+  release `2026-09-23.1` with multi-signal conflation, 149 duplicates merged, and zero synthetic facts (ADR-057)
 - `apps/api/src/repositories/` — `ExperienceRepository`, `ProviderRepository`,
   `CategoryRepository`, `LocationRepository` (thin route handlers, queries live here)
 - `apps/api/src/schemas/experience.py` — Pydantic response schemas (summary + detail); no
@@ -542,6 +545,41 @@ reconciliation entry; `docs/DECISIONS.md` ADR-055 covers rationale for all findi
   untracked by git.
 - **PostgreSQL: NOT VERIFIED** — no Postgres instance available in this environment; all
   verification above ran against the dev SQLite database, consistent with every earlier phase.
+
+---
+
+### Traveler Direct-Publish Contribution — "Add a Local Experience" (ADR-058) — 2026-09-26
+
+A new incremental capability, not a phase: an authenticated traveler can publish a real local
+experience directly into the catalog from a dedicated page, with automated (non-AI) validation
+and duplicate detection, no admin approval step. Full detail in `docs/DECISIONS.md` ADR-058 and
+`docs/CHANGELOG.md`'s matching entry.
+
+- **Backend**: new `POST /api/v1/contributions/experiences` (traveler-only, multipart/form-data),
+  `TravelerExperienceContribution` audit table + migration `996d3e843440` (chained from
+  `d7e2f4a9b301`; upgrade/downgrade/re-upgrade verified, all 15,000 existing experiences and all
+  existing providers preserved), a singleton "LocaLens Community" placeholder `Provider` row,
+  new `source_type="traveler_submission"`/`image_source="traveler_upload"` provenance values,
+  deterministic duplicate detection (`services/contribution_duplicate.py`), a minimal image
+  validation/processing pipeline (`services/media_validation.py`, new `Pillow` dependency — none
+  existed before), a local-filesystem `MediaStorageAdapter`, and a per-traveler in-memory rate
+  limiter. Enrichment (`scripts/enrich_experience_metadata.py`) and the Wikimedia image script
+  (`scripts/enrich_experience_images.py`) both explicitly skip `traveler_submission`/
+  `traveler_upload` rows.
+- **Frontend**: new `/contribute/experience` page, `ExperienceContributionForm` /
+  `ExperiencePhotoUploader` / `ExperienceLocationPicker` components, `useExperienceContribution()`
+  hook, a new `postForm()` method on the shared API client (first multipart upload in the
+  codebase), a traveler-only "+ Add Local Experience" entry point in `SiteHeader`, and a
+  `ExperienceDetail` fix so a brand-new experience with `rating=null` shows "No ratings yet —
+  be the first to review" and a "Community Added" badge instead of crashing or showing a
+  misleading provider-verification badge.
+- **Tests**: 20 new backend tests + 2 regression tests on the existing enrichment/reseed
+  scripts — full backend suite 572/572 passing. 6 new frontend API-client tests — full frontend
+  suite 116/116 passing. `ruff`, `mypy --strict` (new files), `tsc --noEmit`, `next build`, and
+  ESLint all clean.
+- **Not done in this pass** (explicit non-goals, see ADR-058): no admin moderation dashboard, no
+  Playwright/Cypress E2E suite (none exists in this repository), no production object-storage
+  vendor wired in (adapter interface only), and this change has not been committed/pushed/deployed.
 
 ---
 

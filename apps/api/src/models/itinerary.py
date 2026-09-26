@@ -25,7 +25,7 @@ from datetime import datetime
 from datetime import time as time_
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Date, DateTime, Enum, Float, ForeignKey, Integer, String, Text, Time
+from sqlalchemy import Boolean, Date, DateTime, Enum, Float, ForeignKey, Integer, String, Text, Time
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.schema import Index
 
@@ -34,6 +34,8 @@ from src.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
     from src.models.itinerary_item import ItineraryItem
+    from src.models.itinerary_participant import ItineraryParticipant
+    from src.models.itinerary_planning_profile import ItineraryPlanningProfile
     from src.models.traveler import Traveler
 
 ItineraryStatus = Enum(
@@ -87,11 +89,31 @@ class Itinerary(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )  # STABLE | REPLANNING | REQUIRES_USER_ACTION
     context_last_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    # ─── Personalized planning (ADR-056) ───────────────────────────────
+    # Privacy/sharing flag — NOT a data-provenance flag (kept separate
+    # from ProvenanceMixin on purpose). Default private. Only an
+    # itinerary whose owner explicitly opted in can ever be returned as
+    # an *example* by POST /itineraries/similar; a private itinerary may
+    # still contribute to the aggregate similar_count, but none of its
+    # fields (owner, participants, notes, scores) ever leave the owner's
+    # own endpoints.
+    is_discoverable: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
     traveler: Mapped[Traveler] = relationship()
     items: Mapped[list[ItineraryItem]] = relationship(
         back_populates="itinerary",
         cascade="all, delete-orphan",
         order_by="ItineraryItem.sequence_order",
+    )
+    participants: Mapped[list[ItineraryParticipant]] = relationship(
+        back_populates="itinerary",
+        cascade="all, delete-orphan",
+        order_by="ItineraryParticipant.sequence",
+    )
+    planning_profile: Mapped[ItineraryPlanningProfile | None] = relationship(
+        back_populates="itinerary",
+        cascade="all, delete-orphan",
+        uselist=False,
     )
 
     __table_args__ = (

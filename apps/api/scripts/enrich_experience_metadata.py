@@ -15,12 +15,12 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-from pathlib import Path
 import sys
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -72,10 +72,18 @@ async def run_enrichment(
         )
         await session.flush()
 
-    # Load all active experiences with relationships
+    # Load all active experiences with relationships. traveler_submission
+    # experiences (ADR-058) are deliberately excluded — a traveler's
+    # direct-publish contribution must never receive a fabricated
+    # rating/review/hours just because it exists and is active; it starts
+    # with zero real reviews and only gains real ones through the normal
+    # review API (see docs/DECISIONS.md ADR-058, spec §32/§84).
     query = (
         select(Experience)
-        .where(Experience.status == "active")
+        .where(
+            Experience.status == "active",
+            Experience.source_type != "traveler_submission",
+        )
         .options(
             selectinload(Experience.category),
             selectinload(Experience.location),

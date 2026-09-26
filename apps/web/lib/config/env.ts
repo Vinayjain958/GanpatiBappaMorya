@@ -11,4 +11,7 @@ export const env = {
   // this the single place the style URL is read from — see
   // lib/config/map.ts and docs/DECISIONS.md ADR-025.
   mapStyleUrl: process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? "https://tiles.openfreemap.org/styles/liberty",
+  // UX mirror of the backend's authoritative Settings.itinerary_max_participants
+  // (ADR-056). The API still rejects anything above its own configured cap.
+  maxItineraryParticipants: Number(process.env.NEXT_PUBLIC_MAX_ITINERARY_PARTICIPANTS ?? "20") || 20,
 } as const;

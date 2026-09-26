@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from src.api.v1.router import api_v1_router
 from src.core.config import get_settings
@@ -48,5 +50,17 @@ def create_app() -> FastAPI:
 
     register_error_handlers(app)
     app.include_router(api_v1_router)
+
+    # Dev-grade local media store for traveler-uploaded experience photos
+    # (src/adapters/media_storage.py::LocalFilesystemMediaStorage). A
+    # production deployment would front this with real object storage and
+    # drop this mount — see docs/DECISIONS.md ADR-058.
+    media_dir = Path(settings.media_upload_dir)
+    media_dir.mkdir(parents=True, exist_ok=True)
+    app.mount(
+        settings.media_public_base_url,
+        StaticFiles(directory=str(media_dir)),
+        name="experience-media",
+    )
 
     return app

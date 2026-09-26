@@ -42,9 +42,16 @@ from src.schemas.itinerary import (
     ItineraryItemResponse,
     ItineraryListResponse,
     ItineraryResponse,
+    ParticipantResponse,
+    PlanningProfileResponse,
+    RoutePoint,
+    SimilarItinerariesRequest,
+    SimilarItinerariesResponse,
 )
 from src.schemas.replanning import ReplanChangeSetResponse, ReplanRequest, ReplanResponse
 from src.services.compose_itinerary import ComposeOutcome, compose_and_persist_itinerary
+from src.services.itinerary_routes import StopView, build_map_data
+from src.services.itinerary_similarity import ItinerarySimilarityService
 from src.services.replanning import ReplanningService, ReplanOutcome
 from src.services.sse import sse_updates_stream
 
@@ -55,11 +62,41 @@ def _to_item_response(item: ItineraryItem, title_by_id: dict[str, str] | None = 
     return ItineraryItemResponse.model_validate(item)
 
 
+def _planning_profile_response(itinerary: Itinerary) -> PlanningProfileResponse | None:
+    profile = itinerary.planning_profile
+    if profile is None:
+        return None
+    return PlanningProfileResponse(
+        destination_label=profile.destination_label,
+        start_date=itinerary.itinerary_date,
+        end_date=itinerary.itinerary_date,
+        duration_days=1,
+        group_size=profile.group_size,
+        children_count=profile.children_count,
+        teens_count=profile.teens_count,
+        adults_count=profile.adults_count,
+        seniors_count=profile.seniors_count,
+        age_band_distribution=dict(profile.age_band_distribution or {}),
+        interests=list(profile.interests or []),
+        budget_max=profile.budget_max,
+        pace=profile.pace,
+        accessibility_requirements=list(profile.accessibility_requirements or []),
+        travel_mode=profile.travel_mode,
+        start_location_label=profile.start_location_label,
+        start_location_lat=profile.start_location_lat,
+        start_location_lng=profile.start_location_lng,
+    )
+
+
 async def _to_itinerary_response(
-    itinerary: Itinerary, session: AsyncSession
+    itinerary: Itinerary, session: AsyncSession, *, detail: bool = True
 ) -> ItineraryResponse:
+    """Owner-only response. `detail=False` (list endpoint) omits exact
+    participant rows and route geometry — the age-band aggregate in the
+    planning profile and the route totals are enough for a summary card."""
     exp_repo = ExperienceRepository(session)
     item_responses: list[ItineraryItemResponse] = []
+    stop_views: list[StopView] = []
     for item in itinerary.items:
         experience = await exp_repo.get_by_id(item.experience_id)
         resp = ItineraryItemResponse.model_validate(item)
@@ -71,12 +108,46 @@ async def _to_itinerary_response(
             resp.location_latitude = experience.location.latitude
             resp.location_longitude = experience.location.longitude
         item_responses.append(resp)
+        stop_views.append(
+            StopView(
+                item_id=item.id,
+                sequence=item.sequence_order,
+                title=resp.title,
+                lat=resp.location_latitude,
+                lng=resp.location_longitude,
+                route_status=item.route_status,
+                route_source=item.route_source,
+                route_geometry=item.route_geometry if detail else None,
+                distance_km=item.travel_from_previous_distance_km,
+                duration_minutes=item.travel_from_previous_minutes,
+                travel_mode=item.travel_mode,
+                calculated_at=item.route_calculated_at,
+            )
+        )
 
     base = ItineraryResponse.model_validate(itinerary)
     base.items = item_responses
     base.version = itinerary.version
     base.replanning_status = itinerary.replanning_status
     base.context_last_updated_at = itinerary.context_last_updated_at
+    base.is_discoverable = itinerary.is_discoverable
+    base.planning_profile = _planning_profile_response(itinerary)
+    base.participants = (
+        [ParticipantResponse.model_validate(p) for p in itinerary.participants] if detail else []
+    )
+
+    profile = itinerary.planning_profile
+    start_location = (
+        RoutePoint(
+            lat=profile.start_location_lat,
+            lng=profile.start_location_lng,
+            label=profile.start_location_label,
+        )
+        if profile is not None and profile.start_location_lat is not None and profile.start_location_lng is not None
+        else None
+    )
+    # Read-only: built from the persisted snapshot — never calls routing.
+    base.route = build_map_data(stops=stop_views, start_location=start_location)
     return base
 
 
@@ -137,8 +208,25 @@ async def list_my_itineraries(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> ItineraryListResponse:
     rows, total = await ItineraryRepository(session).list_by_traveler(user.traveler.id)
-    items = [await _to_itinerary_response(row, session) for row in rows]
+    items = [await _to_itinerary_response(row, session, detail=False) for row in rows]
     return ItineraryListResponse(items=items, total=total)
+
+
+@router.post("/itineraries/similar", response_model=SimilarItinerariesResponse)
+async def find_similar_itineraries(
+    payload: SimilarItinerariesRequest,
+    user: Annotated[User, Depends(require_traveler)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> SimilarItinerariesResponse:
+    """Counts previously generated, eligible, similar itineraries and
+    returns anonymized DISCOVERABLE examples. Read-only by construction:
+    no itinerary/profile/participant row is created, no composition,
+    routing, or Gemini call happens. The requester's own itineraries are
+    excluded (server-derived from the auth context, never the body)."""
+    return await ItinerarySimilarityService(session).find_similar(
+        requester_traveler_id=user.traveler.id,
+        request=payload,
+    )
 
 
 @router.get("/itineraries/{itinerary_id}", response_model=ItineraryResponse)

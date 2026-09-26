@@ -54,6 +54,7 @@ from src.services.context_impact import ContextImpactResult
 from src.services.discovery_pipeline import DiscoveryPipelineService
 from src.services.experience_composer import ComposedItem, ExperienceComposerService
 from src.services.itinerary_narrator import ItineraryNarratorService
+from src.services.itinerary_routes import ItineraryRouteService
 from src.services.itinerary_validator import ItineraryValidatorService
 from src.services.sse import publish_itinerary_event
 
@@ -268,8 +269,13 @@ class ReplanningService:
 
         # Step 8+9: ONE Phase 6+7 pass for replacement candidates.
         pipeline = DiscoveryPipelineService(self._session, self._settings, self._embedding, self._routing)
+        # The group this itinerary was planned for (ADR-056) keeps feeding
+        # the existing capacity check on replacement candidates; None for
+        # pre-ADR-056 itineraries preserves the previous behavior.
+        group_size = itinerary.planning_profile.group_size if itinerary.planning_profile is not None else None
         constraints = TravelerConstraints(
             budget_max=remaining_budget,
+            party_size=group_size,
             available_date=itinerary.itinerary_date,
             available_start=remaining_start.time(),
             available_end=itinerary.end_time,
@@ -354,7 +360,7 @@ class ReplanningService:
             requested_end=window_end,
             max_budget=itinerary.estimated_total_cost,
             max_experiences=None,
-            party_size=None,
+            party_size=group_size,
             travel_mode=self._settings.composer_default_travel_mode,
         )
 
@@ -442,6 +448,19 @@ class ReplanningService:
             self._session.add(new_item)
             new_db_items.append(new_item)
 
+        # Route legs for the merged sequence (ADR-056): legs whose waypoint
+        # pair is unchanged keep their snapshot; every leg touching a
+        # removed/added/reordered stop is re-routed, so no stale geometry
+        # survives the replan. Failures are recorded as UNAVAILABLE —
+        # never a fabricated line.
+        await self._session.flush()
+        await ItineraryRouteService(self._routing).refresh_persisted_itinerary(
+            itinerary=itinerary,
+            ordered_items=[*kept_items, *new_db_items],
+            experiences_by_id=all_exp_by_id,
+            default_travel_mode=self._settings.composer_default_travel_mode,
+        )
+
         previous_version = itinerary.version
         itinerary.version = previous_version + 1
         itinerary.replanning_status = "STABLE"
@@ -452,7 +471,7 @@ class ReplanningService:
         itinerary.narrative_model_version = narration.model_version
         itinerary.estimated_total_cost = sum(c.estimated_cost or 0.0 for c in merged_composed)
         itinerary.total_duration_minutes = sum(c.duration_minutes for c in merged_composed)
-        itinerary.total_travel_minutes = sum(c.travel_from_previous_minutes or 0.0 for c in merged_composed)
+        # total_travel_minutes was just re-totaled from the refreshed legs.
         itinerary.generated_at = now
 
         revision = ItineraryRevision(

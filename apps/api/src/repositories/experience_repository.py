@@ -6,6 +6,7 @@ from sqlalchemy import Select, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from src.core.geo import bounding_box
 from src.models.category import ExperienceCategory
 from src.models.experience import Experience
 from src.models.location import Location
@@ -57,10 +58,27 @@ class ExperienceRepository:
             query = query.where(Experience.status == filters.status)
         if filters.category_slug:
             query = query.where(ExperienceCategory.slug == filters.category_slug)
-        if filters.city:
-            query = query.where(Location.city == filters.city)
-        if filters.locality:
-            query = query.where(Location.locality == filters.locality)
+        if filters.city and filters.locality:
+            # Both given explicitly (e.g. a saved/normalized profile) —
+            # honor each independently, case-insensitively.
+            query = query.where(func.lower(Location.city) == filters.city.lower())
+            query = query.where(func.lower(Location.locality) == filters.locality.lower())
+        elif filters.city:
+            # The composer UI has a single free-text "destination" field
+            # that callers pass through as `city` — travelers commonly type
+            # a neighborhood/locality name (e.g. "Dadar") rather than the
+            # city itself ("Mumbai"). Match either column, case-insensitive,
+            # so those destinations resolve instead of silently returning
+            # zero candidates.
+            destination = filters.city.lower()
+            query = query.where(
+                or_(
+                    func.lower(Location.city) == destination,
+                    func.lower(Location.locality) == destination,
+                )
+            )
+        elif filters.locality:
+            query = query.where(func.lower(Location.locality) == filters.locality.lower())
         if filters.provider_id:
             query = query.where(Experience.provider_id == filters.provider_id)
         if filters.min_price is not None:
@@ -146,3 +164,27 @@ class ExperienceRepository:
 
     def add(self, experience: Experience) -> None:
         self._session.add(experience)
+
+    async def find_nearby_active(
+        self, *, latitude: float, longitude: float, radius_km: float
+    ) -> list[Experience]:
+        """Active experiences within a bounding box around a point, for
+        deterministic duplicate-candidate lookup (spec §24/§26 — no AI in
+        the match decision). Exact Haversine narrowing and name/phone/
+        website matching happen in the caller
+        (services/contribution_duplicate.py), same split as `search()`'s
+        bounding-box-then-Python pattern."""
+        box = bounding_box(latitude, longitude, radius_km)
+        query = (
+            self._base_query()
+            .join(Experience.location)
+            .where(
+                Experience.status == "active",
+                Location.latitude >= box.min_lat,
+                Location.latitude <= box.max_lat,
+                Location.longitude >= box.min_lng,
+                Location.longitude <= box.max_lng,
+            )
+        )
+        rows = (await self._session.execute(query)).scalars().unique().all()
+        return list(rows)

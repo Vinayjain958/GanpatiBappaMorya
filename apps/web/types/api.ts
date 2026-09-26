@@ -47,7 +47,7 @@ export interface ApiExperienceReviewSummary {
 }
 
 export interface ApiRatingSummary {
-  average_rating: number;
+  average_rating: number | null;
   review_count: number;
   rating_distribution: Record<string, number>;
   is_synthetic: boolean;
@@ -388,6 +388,149 @@ export interface ComposeItineraryRequest {
   accessibility_requirements?: string[];
   city?: string | null;
   locality?: string | null;
+  /** Personalized planning context (ADR-056). Start-location coordinates
+   * travel in origin_lat/origin_lng; only the label lives here. */
+  planning?: ItineraryPlanningContext | null;
+}
+
+/** Personalized planning (ADR-056) — mirrors src/core/itinerary_planning.py
+ * and the planning/similarity/route schemas in src/schemas/itinerary.py. */
+export type ParticipantGender = "female" | "male" | "non_binary" | "self_described" | "prefer_not_to_say";
+export type AgeBand = "0_5" | "6_12" | "13_17" | "18_24" | "25_34" | "35_49" | "50_64" | "65_PLUS";
+
+export interface ParticipantInput {
+  sequence: number;
+  age_years: number;
+  gender: ParticipantGender | null;
+}
+
+export interface ItineraryPlanningContext {
+  group_size: number;
+  participants: ParticipantInput[];
+  start_location_label?: string | null;
+  is_discoverable?: boolean;
+}
+
+export interface SimilarItinerariesRequest {
+  city?: string | null;
+  locality?: string | null;
+  itinerary_date: string;
+  interests?: string[];
+  category_slugs?: string[];
+  query?: string | null;
+  max_budget?: number | null;
+  pace?: CompositionPace;
+  accessibility_requirements?: string[];
+  planning: ItineraryPlanningContext;
+  limit?: number;
+  offset?: number;
+}
+
+export interface SimilarItinerarySummary {
+  example_id: string;
+  destination_label: string | null;
+  duration_days: number;
+  group_size: number;
+  pace: string;
+  interests: string[];
+  category_names: string[];
+  stop_count: number;
+  total_distance_km: number | null;
+  total_travel_minutes: number | null;
+  similarity_score: number;
+  matched_dimensions: string[];
+}
+
+export interface SimilarItinerariesResponse {
+  similar_count: number;
+  examples: SimilarItinerarySummary[];
+  examples_total: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
+}
+
+export interface ApiParticipant {
+  sequence: number;
+  age_years: number;
+  age_band: AgeBand;
+  gender: ParticipantGender | null;
+}
+
+export interface ApiPlanningProfile {
+  destination_label: string | null;
+  start_date: string;
+  end_date: string;
+  duration_days: number;
+  group_size: number;
+  children_count: number;
+  teens_count: number;
+  adults_count: number;
+  seniors_count: number;
+  age_band_distribution: Record<string, number>;
+  interests: string[];
+  budget_max: number | null;
+  pace: string;
+  accessibility_requirements: string[];
+  travel_mode: string;
+  start_location_label: string | null;
+  start_location_lat: number | null;
+  start_location_lng: number | null;
+}
+
+export type RouteLegStatus = "ROUTED" | "ESTIMATED" | "UNAVAILABLE" | "NOT_APPLICABLE";
+export type RouteSummaryStatus = "COMPLETE" | "PARTIAL" | "UNAVAILABLE" | "NO_LEGS";
+
+export interface ApiRoutePoint {
+  lat: number;
+  lng: number;
+  label: string | null;
+}
+
+export interface ApiMapStop {
+  item_id: string;
+  sequence: number;
+  day_index: number;
+  title: string | null;
+  lat: number | null;
+  lng: number | null;
+}
+
+export interface ApiRouteLeg {
+  to_item_id: string;
+  to_sequence: number;
+  from_sequence: number | null;
+  day_index: number;
+  origin: ApiRoutePoint | null;
+  destination: ApiRoutePoint | null;
+  status: RouteLegStatus;
+  distance_meters: number | null;
+  duration_seconds: number | null;
+  geometry: GeoJSON.LineString | null;
+  routing_source: string | null;
+  travel_mode: string | null;
+  calculated_at: string | null;
+}
+
+export interface ApiRouteSummary {
+  status: RouteSummaryStatus;
+  total_distance_meters: number | null;
+  total_duration_seconds: number | null;
+  routing_source: string | null;
+  routing_sources: string[];
+  leg_count: number;
+  routed_leg_count: number;
+  estimated_leg_count: number;
+  unavailable_leg_count: number;
+  stop_count: number;
+  day_count: number;
+}
+
+export interface ApiItineraryMapData {
+  start_location: ApiRoutePoint | null;
+  stops: ApiMapStop[];
+  legs: ApiRouteLeg[];
+  summary: ApiRouteSummary;
 }
 
 export interface ApiItineraryItem {
@@ -416,6 +559,10 @@ export interface ApiItineraryItem {
   is_locked: boolean;
   /** Phase 9 — ACTIVE | AFFECTED | INVALIDATED | CANCELLED. */
   item_state: string;
+  /** ADR-056 — status/source of the route leg arriving at this item.
+   * Optional so older payloads/fixtures stay valid. */
+  route_status?: RouteLegStatus | null;
+  route_source?: string | null;
 }
 
 export interface ApiItinerary {
@@ -446,6 +593,14 @@ export interface ApiItinerary {
   replanning_status: string;
   /** Phase 9 — last time context (weather/events) was checked for this itinerary. */
   context_last_updated_at: string | null;
+  /** ADR-056 — owner opt-in to appear (anonymized) as a similar-plan example. */
+  is_discoverable?: boolean;
+  planning_profile?: ApiPlanningProfile | null;
+  /** Owner-only; empty on the list endpoint. */
+  participants?: ApiParticipant[];
+  /** Persisted route snapshot (never recomputed on read). Geometry is
+   * omitted on the list endpoint. */
+  route?: ApiItineraryMapData | null;
 }
 
 export interface ItineraryListResponse {

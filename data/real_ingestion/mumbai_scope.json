@@ -1,0 +1,27 @@
+{
+  "scope_name": "Mumbai Prototype Geographic Coverage",
+  "geometry_type": "BoundingBox",
+  "bbox": {
+    "min_lon": 72.75,
+    "max_lon": 72.98,
+    "min_lat": 18.87,
+    "max_lat": 19.22
+  },
+  "neighborhood_centroids": {
+    "Fort": [72.8356, 18.9346],
+    "Kala Ghoda": [72.8317, 18.9281],
+    "Colaba": [72.8147, 18.9067],
+    "Churchgate": [72.8267, 18.9354],
+    "Marine Drive": [72.8235, 18.944],
+    "Dadar": [72.8438, 19.0176],
+    "Matunga": [72.857, 19.027],
+    "Bandra": [72.8295, 19.0596],
+    "Juhu": [72.8263, 19.1075],
+    "Andheri": [72.8468, 19.1197],
+    "Lower Parel": [72.83, 18.996],
+    "Powai": [72.906, 19.1176]
+  },
+  "source_of_boundary": "apps/api/scripts/ingest_overture.py and data/README.md (Phase 2 Master Architecture)",
+  "coordinate_reference_system": "EPSG:4326 (WGS 84)",
+  "inclusion_rule": "Points whose longitude falls strictly in [72.75, 72.98] and latitude in [18.87, 19.22]. Human-readable locality is assigned to the nearest neighborhood centroid using Euclidean/Haversine distance for display."
+}

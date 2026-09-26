@@ -88,8 +88,8 @@ export function DiscoverExperience() {
 
   return (
     <PageContainer className="space-y-5 py-6 sm:space-y-6 sm:py-8">
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.9fr)] xl:items-center">
-        <div>
+      <section className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.9fr)] xl:items-center">
+        <div className="min-w-0">
           <h1 className="text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
             Discover
           </h1>
@@ -98,7 +98,7 @@ export function DiscoverExperience() {
           </p>
         </div>
 
-        <div className="rounded-[1.5rem] border border-line bg-pastel-lavender/60 p-2 shadow-soft sm:p-3">
+        <div className="min-w-0 rounded-[1.5rem] border border-line bg-pastel-lavender/60 p-2 shadow-soft sm:p-3">
           <ConversationalDiscoveryInput
             size="compact"
             suggestions={discoveryState.q ? [] : undefined}

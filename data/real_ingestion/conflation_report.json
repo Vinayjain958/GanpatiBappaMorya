@@ -1,0 +1,9 @@
+{
+  "candidates_evaluated": 138601,
+  "unmapped_categories_skipped": 222,
+  "already_in_database_skipped": 122,
+  "internal_duplicates_merged": 0,
+  "ambiguous_pairs_flagged": 0,
+  "accepted_unique_real_places": 1,
+  "duration_seconds": 0.0
+}

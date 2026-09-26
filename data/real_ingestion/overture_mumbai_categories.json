@@ -1,0 +1,2198 @@
+[
+  {
+    "basic_category": "shopping",
+    "total_count": 12056,
+    "conf_gte_30": 7846,
+    "conf_gte_50": 3098,
+    "conf_gte_70": 1042,
+    "closed_count": 0,
+    "avg_conf": 0.4059
+  },
+  {
+    "basic_category": "fashion_and_apparel_store",
+    "total_count": 9040,
+    "conf_gte_30": 7177,
+    "conf_gte_50": 5060,
+    "conf_gte_70": 2934,
+    "closed_count": 0,
+    "avg_conf": 0.5532
+  },
+  {
+    "basic_category": "restaurant",
+    "total_count": 8495,
+    "conf_gte_30": 7630,
+    "conf_gte_50": 5844,
+    "conf_gte_70": 3135,
+    "closed_count": 1,
+    "avg_conf": 0.6167
+  },
+  {
+    "basic_category": "real_estate_service",
+    "total_count": 7291,
+    "conf_gte_30": 5484,
+    "conf_gte_50": 2923,
+    "conf_gte_70": 921,
+    "closed_count": 0,
+    "avg_conf": 0.4626
+  },
+  {
+    "basic_category": "financial_service",
+    "total_count": 6195,
+    "conf_gte_30": 5256,
+    "conf_gte_50": 4462,
+    "conf_gte_70": 3344,
+    "closed_count": 0,
+    "avg_conf": 0.6304
+  },
+  {
+    "basic_category": "event_or_party_service",
+    "total_count": 6088,
+    "conf_gte_30": 4585,
+    "conf_gte_50": 2944,
+    "conf_gte_70": 951,
+    "closed_count": 0,
+    "avg_conf": 0.4863
+  },
+  {
+    "basic_category": null,
+    "total_count": 5771,
+    "conf_gte_30": 3141,
+    "conf_gte_50": 2627,
+    "conf_gte_70": 1850,
+    "closed_count": 0,
+    "avg_conf": 0.4689
+  },
+  {
+    "basic_category": "historic_site",
+    "total_count": 5438,
+    "conf_gte_30": 4904,
+    "conf_gte_50": 2833,
+    "conf_gte_70": 873,
+    "closed_count": 0,
+    "avg_conf": 0.5151
+  },
+  {
+    "basic_category": "professional_service",
+    "total_count": 5183,
+    "conf_gte_30": 3477,
+    "conf_gte_50": 2284,
+    "conf_gte_70": 832,
+    "closed_count": 0,
+    "avg_conf": 0.4532
+  },
+  {
+    "basic_category": "manufacturer",
+    "total_count": 3841,
+    "conf_gte_30": 3248,
+    "conf_gte_50": 2352,
+    "conf_gte_70": 1241,
+    "closed_count": 0,
+    "avg_conf": 0.5719
+  },
+  {
+    "basic_category": "personal_or_beauty_service",
+    "total_count": 3527,
+    "conf_gte_30": 2963,
+    "conf_gte_50": 2349,
+    "conf_gte_70": 1265,
+    "closed_count": 0,
+    "avg_conf": 0.5919
+  },
+  {
+    "basic_category": "bank_or_credit_union",
+    "total_count": 3488,
+    "conf_gte_30": 3445,
+    "conf_gte_50": 3307,
+    "conf_gte_70": 2928,
+    "closed_count": 0,
+    "avg_conf": 0.8203
+  },
+  {
+    "basic_category": "casual_eatery",
+    "total_count": 3190,
+    "conf_gte_30": 2692,
+    "conf_gte_50": 1933,
+    "conf_gte_70": 991,
+    "closed_count": 0,
+    "avg_conf": 0.5634
+  },
+  {
+    "basic_category": "home_service",
+    "total_count": 3052,
+    "conf_gte_30": 2223,
+    "conf_gte_50": 1474,
+    "conf_gte_70": 807,
+    "closed_count": 0,
+    "avg_conf": 0.5072
+  },
+  {
+    "basic_category": "hardware_home_and_garden_store",
+    "total_count": 2731,
+    "conf_gte_30": 2381,
+    "conf_gte_50": 1699,
+    "conf_gte_70": 851,
+    "closed_count": 0,
+    "avg_conf": 0.5764
+  },
+  {
+    "basic_category": "corporate_or_business_office",
+    "total_count": 2699,
+    "conf_gte_30": 2213,
+    "conf_gte_50": 1659,
+    "conf_gte_70": 838,
+    "closed_count": 0,
+    "avg_conf": 0.5582
+  },
+  {
+    "basic_category": "travel_service",
+    "total_count": 2657,
+    "conf_gte_30": 2163,
+    "conf_gte_50": 1395,
+    "conf_gte_70": 565,
+    "closed_count": 0,
+    "avg_conf": 0.5181
+  },
+  {
+    "basic_category": "hotel",
+    "total_count": 2545,
+    "conf_gte_30": 2486,
+    "conf_gte_50": 2213,
+    "conf_gte_70": 1273,
+    "closed_count": 0,
+    "avg_conf": 0.6988
+  },
+  {
+    "basic_category": "food_and_beverage_store",
+    "total_count": 2524,
+    "conf_gte_30": 2072,
+    "conf_gte_50": 1435,
+    "conf_gte_70": 652,
+    "closed_count": 0,
+    "avg_conf": 0.5473
+  },
+  {
+    "basic_category": "electronics_store",
+    "total_count": 2461,
+    "conf_gte_30": 2187,
+    "conf_gte_50": 1710,
+    "conf_gte_70": 995,
+    "closed_count": 0,
+    "avg_conf": 0.6191
+  },
+  {
+    "basic_category": "hospital",
+    "total_count": 2398,
+    "conf_gte_30": 2286,
+    "conf_gte_50": 1896,
+    "conf_gte_70": 945,
+    "closed_count": 0,
+    "avg_conf": 0.6474
+  },
+  {
+    "basic_category": "hindu_place_of_worship",
+    "total_count": 2036,
+    "conf_gte_30": 1997,
+    "conf_gte_50": 1793,
+    "conf_gte_70": 798,
+    "closed_count": 0,
+    "avg_conf": 0.6566
+  },
+  {
+    "basic_category": "specialty_school",
+    "total_count": 1880,
+    "conf_gte_30": 1664,
+    "conf_gte_50": 1275,
+    "conf_gte_70": 673,
+    "closed_count": 0,
+    "avg_conf": 0.6043
+  },
+  {
+    "basic_category": "media_service",
+    "total_count": 1807,
+    "conf_gte_30": 1338,
+    "conf_gte_50": 940,
+    "conf_gte_70": 421,
+    "closed_count": 0,
+    "avg_conf": 0.5033
+  },
+  {
+    "basic_category": "dental_clinic",
+    "total_count": 1780,
+    "conf_gte_30": 1677,
+    "conf_gte_50": 1544,
+    "conf_gte_70": 1127,
+    "closed_count": 0,
+    "avg_conf": 0.7425
+  },
+  {
+    "basic_category": "diagnostics_imaging_or_lab_service",
+    "total_count": 1710,
+    "conf_gte_30": 1613,
+    "conf_gte_50": 1479,
+    "conf_gte_70": 1115,
+    "closed_count": 0,
+    "avg_conf": 0.7361
+  },
+  {
+    "basic_category": "technical_service",
+    "total_count": 1685,
+    "conf_gte_30": 1344,
+    "conf_gte_50": 954,
+    "conf_gte_70": 492,
+    "closed_count": 0,
+    "avg_conf": 0.5462
+  },
+  {
+    "basic_category": "education",
+    "total_count": 1603,
+    "conf_gte_30": 1364,
+    "conf_gte_50": 1107,
+    "conf_gte_70": 398,
+    "closed_count": 0,
+    "avg_conf": 0.5663
+  },
+  {
+    "basic_category": "place_of_learning",
+    "total_count": 1582,
+    "conf_gte_30": 1495,
+    "conf_gte_50": 1339,
+    "conf_gte_70": 678,
+    "closed_count": 0,
+    "avg_conf": 0.6691
+  },
+  {
+    "basic_category": "lodging",
+    "total_count": 1580,
+    "conf_gte_30": 1491,
+    "conf_gte_50": 1094,
+    "conf_gte_70": 377,
+    "closed_count": 0,
+    "avg_conf": 0.5748
+  },
+  {
+    "basic_category": "wellness_service",
+    "total_count": 1452,
+    "conf_gte_30": 929,
+    "conf_gte_50": 678,
+    "conf_gte_70": 351,
+    "closed_count": 0,
+    "avg_conf": 0.4825
+  },
+  {
+    "basic_category": "gym",
+    "total_count": 1373,
+    "conf_gte_30": 1276,
+    "conf_gte_50": 1107,
+    "conf_gte_70": 653,
+    "closed_count": 0,
+    "avg_conf": 0.6723
+  },
+  {
+    "basic_category": "tutoring_service",
+    "total_count": 1321,
+    "conf_gte_30": 1212,
+    "conf_gte_50": 1086,
+    "conf_gte_70": 888,
+    "closed_count": 0,
+    "avg_conf": 0.7139
+  },
+  {
+    "basic_category": "atm",
+    "total_count": 1301,
+    "conf_gte_30": 1287,
+    "conf_gte_50": 1239,
+    "conf_gte_70": 1171,
+    "closed_count": 0,
+    "avg_conf": 0.8559
+  },
+  {
+    "basic_category": "b2b_office_and_professional_service",
+    "total_count": 1254,
+    "conf_gte_30": 1119,
+    "conf_gte_50": 1029,
+    "conf_gte_70": 912,
+    "closed_count": 0,
+    "avg_conf": 0.7348
+  },
+  {
+    "basic_category": "fast_food_restaurant",
+    "total_count": 1192,
+    "conf_gte_30": 1111,
+    "conf_gte_50": 887,
+    "conf_gte_70": 525,
+    "closed_count": 0,
+    "avg_conf": 0.6514
+  },
+  {
+    "basic_category": "automotive_service",
+    "total_count": 1185,
+    "conf_gte_30": 1096,
+    "conf_gte_50": 916,
+    "conf_gte_70": 529,
+    "closed_count": 0,
+    "avg_conf": 0.6505
+  },
+  {
+    "basic_category": "college_university",
+    "total_count": 1124,
+    "conf_gte_30": 1093,
+    "conf_gte_50": 957,
+    "conf_gte_70": 550,
+    "closed_count": 0,
+    "avg_conf": 0.6848
+  },
+  {
+    "basic_category": "social_or_community_service",
+    "total_count": 1108,
+    "conf_gte_30": 936,
+    "conf_gte_50": 686,
+    "conf_gte_70": 237,
+    "closed_count": 0,
+    "avg_conf": 0.5373
+  },
+  {
+    "basic_category": "specialized_health_care",
+    "total_count": 1015,
+    "conf_gte_30": 924,
+    "conf_gte_50": 830,
+    "conf_gte_70": 636,
+    "closed_count": 0,
+    "avg_conf": 0.7167
+  },
+  {
+    "basic_category": "government_office",
+    "total_count": 1010,
+    "conf_gte_30": 908,
+    "conf_gte_50": 714,
+    "conf_gte_70": 245,
+    "closed_count": 0,
+    "avg_conf": 0.5725
+  },
+  {
+    "basic_category": "supplier_or_distributor",
+    "total_count": 993,
+    "conf_gte_30": 877,
+    "conf_gte_50": 660,
+    "conf_gte_70": 407,
+    "closed_count": 0,
+    "avg_conf": 0.6176
+  },
+  {
+    "basic_category": "pharmacy_and_drug_store",
+    "total_count": 974,
+    "conf_gte_30": 895,
+    "conf_gte_50": 701,
+    "conf_gte_70": 256,
+    "closed_count": 0,
+    "avg_conf": 0.5893
+  },
+  {
+    "basic_category": "cafe",
+    "total_count": 934,
+    "conf_gte_30": 858,
+    "conf_gte_50": 732,
+    "conf_gte_70": 434,
+    "closed_count": 0,
+    "avg_conf": 0.6639
+  },
+  {
+    "basic_category": "auto_dealer",
+    "total_count": 927,
+    "conf_gte_30": 811,
+    "conf_gte_50": 648,
+    "conf_gte_70": 363,
+    "closed_count": 0,
+    "avg_conf": 0.6148
+  },
+  {
+    "basic_category": "bar",
+    "total_count": 925,
+    "conf_gte_30": 843,
+    "conf_gte_50": 659,
+    "conf_gte_70": 337,
+    "closed_count": 0,
+    "avg_conf": 0.6182
+  },
+  {
+    "basic_category": "sport_or_fitness_facility",
+    "total_count": 850,
+    "conf_gte_30": 710,
+    "conf_gte_50": 596,
+    "conf_gte_70": 295,
+    "closed_count": 0,
+    "avg_conf": 0.5932
+  },
+  {
+    "basic_category": "b2b_service",
+    "total_count": 840,
+    "conf_gte_30": 774,
+    "conf_gte_50": 645,
+    "conf_gte_70": 337,
+    "closed_count": 0,
+    "avg_conf": 0.6319
+  },
+  {
+    "basic_category": "building_or_construction_service",
+    "total_count": 780,
+    "conf_gte_30": 663,
+    "conf_gte_50": 500,
+    "conf_gte_70": 178,
+    "closed_count": 0,
+    "avg_conf": 0.5486
+  },
+  {
+    "basic_category": "b2b_transportation_and_storage_service",
+    "total_count": 775,
+    "conf_gte_30": 687,
+    "conf_gte_50": 491,
+    "conf_gte_70": 212,
+    "closed_count": 0,
+    "avg_conf": 0.5621
+  },
+  {
+    "basic_category": "design_service",
+    "total_count": 772,
+    "conf_gte_30": 520,
+    "conf_gte_50": 316,
+    "conf_gte_70": 152,
+    "closed_count": 0,
+    "avg_conf": 0.46
+  },
+  {
+    "basic_category": "educational_service",
+    "total_count": 761,
+    "conf_gte_30": 595,
+    "conf_gte_50": 463,
+    "conf_gte_70": 244,
+    "closed_count": 0,
+    "avg_conf": 0.5584
+  },
+  {
+    "basic_category": "complementary_and_alternative_medicine",
+    "total_count": 733,
+    "conf_gte_30": 550,
+    "conf_gte_50": 390,
+    "conf_gte_70": 215,
+    "closed_count": 0,
+    "avg_conf": 0.5291
+  },
+  {
+    "basic_category": "flowers_and_gifts_store",
+    "total_count": 725,
+    "conf_gte_30": 488,
+    "conf_gte_50": 319,
+    "conf_gte_70": 147,
+    "closed_count": 0,
+    "avg_conf": 0.4676
+  },
+  {
+    "basic_category": "specialty_store",
+    "total_count": 708,
+    "conf_gte_30": 560,
+    "conf_gte_50": 361,
+    "conf_gte_70": 191,
+    "closed_count": 0,
+    "avg_conf": 0.5314
+  },
+  {
+    "basic_category": "christian_place_of_worship",
+    "total_count": 706,
+    "conf_gte_30": 671,
+    "conf_gte_50": 574,
+    "conf_gte_70": 277,
+    "closed_count": 0,
+    "avg_conf": 0.6439
+  },
+  {
+    "basic_category": "vehicle_parts_store",
+    "total_count": 702,
+    "conf_gte_30": 570,
+    "conf_gte_50": 304,
+    "conf_gte_70": 111,
+    "closed_count": 0,
+    "avg_conf": 0.4872
+  },
+  {
+    "basic_category": "health_care",
+    "total_count": 696,
+    "conf_gte_30": 564,
+    "conf_gte_50": 468,
+    "conf_gte_70": 262,
+    "closed_count": 0,
+    "avg_conf": 0.5893
+  },
+  {
+    "basic_category": "religious_organization",
+    "total_count": 680,
+    "conf_gte_30": 636,
+    "conf_gte_50": 522,
+    "conf_gte_70": 206,
+    "closed_count": 0,
+    "avg_conf": 0.6043
+  },
+  {
+    "basic_category": "preschool",
+    "total_count": 668,
+    "conf_gte_30": 629,
+    "conf_gte_50": 590,
+    "conf_gte_70": 434,
+    "closed_count": 0,
+    "avg_conf": 0.7482
+  },
+  {
+    "basic_category": "coffee_shop",
+    "total_count": 625,
+    "conf_gte_30": 601,
+    "conf_gte_50": 547,
+    "conf_gte_70": 454,
+    "closed_count": 0,
+    "avg_conf": 0.7462
+  },
+  {
+    "basic_category": "printing_service",
+    "total_count": 612,
+    "conf_gte_30": 505,
+    "conf_gte_50": 341,
+    "conf_gte_70": 144,
+    "closed_count": 0,
+    "avg_conf": 0.5247
+  },
+  {
+    "basic_category": "arts_crafts_and_hobby_store",
+    "total_count": 581,
+    "conf_gte_30": 417,
+    "conf_gte_50": 277,
+    "conf_gte_70": 148,
+    "closed_count": 0,
+    "avg_conf": 0.4938
+  },
+  {
+    "basic_category": "resort",
+    "total_count": 567,
+    "conf_gte_30": 560,
+    "conf_gte_50": 552,
+    "conf_gte_70": 529,
+    "closed_count": 0,
+    "avg_conf": 0.8384
+  },
+  {
+    "basic_category": "park",
+    "total_count": 541,
+    "conf_gte_30": 524,
+    "conf_gte_50": 441,
+    "conf_gte_70": 171,
+    "closed_count": 0,
+    "avg_conf": 0.6167
+  },
+  {
+    "basic_category": "b2b_industrial_and_machine_service",
+    "total_count": 513,
+    "conf_gte_30": 453,
+    "conf_gte_50": 316,
+    "conf_gte_70": 117,
+    "closed_count": 0,
+    "avg_conf": 0.5529
+  },
+  {
+    "basic_category": "travel_and_transportation",
+    "total_count": 512,
+    "conf_gte_30": 372,
+    "conf_gte_50": 232,
+    "conf_gte_70": 72,
+    "closed_count": 0,
+    "avg_conf": 0.4655
+  },
+  {
+    "basic_category": "arts_and_entertainment",
+    "total_count": 499,
+    "conf_gte_30": 395,
+    "conf_gte_50": 305,
+    "conf_gte_70": 92,
+    "closed_count": 0,
+    "avg_conf": 0.5108
+  },
+  {
+    "basic_category": "high_school",
+    "total_count": 488,
+    "conf_gte_30": 480,
+    "conf_gte_50": 455,
+    "conf_gte_70": 281,
+    "closed_count": 0,
+    "avg_conf": 0.7273
+  },
+  {
+    "basic_category": "civic_organization",
+    "total_count": 471,
+    "conf_gte_30": 389,
+    "conf_gte_50": 284,
+    "conf_gte_70": 128,
+    "closed_count": 0,
+    "avg_conf": 0.5452
+  },
+  {
+    "basic_category": "physical_medicine_and_rehabilitation",
+    "total_count": 435,
+    "conf_gte_30": 355,
+    "conf_gte_50": 263,
+    "conf_gte_70": 145,
+    "closed_count": 0,
+    "avg_conf": 0.5691
+  },
+  {
+    "basic_category": "community_and_government",
+    "total_count": 431,
+    "conf_gte_30": 370,
+    "conf_gte_50": 259,
+    "conf_gte_70": 71,
+    "closed_count": 0,
+    "avg_conf": 0.515
+  },
+  {
+    "basic_category": "personal_care_and_beauty_store",
+    "total_count": 392,
+    "conf_gte_30": 290,
+    "conf_gte_50": 185,
+    "conf_gte_70": 115,
+    "closed_count": 0,
+    "avg_conf": 0.5082
+  },
+  {
+    "basic_category": "vision_or_eye_care_clinic",
+    "total_count": 389,
+    "conf_gte_30": 367,
+    "conf_gte_50": 315,
+    "conf_gte_70": 229,
+    "closed_count": 0,
+    "avg_conf": 0.7175
+  },
+  {
+    "basic_category": "sporting_goods_store",
+    "total_count": 378,
+    "conf_gte_30": 339,
+    "conf_gte_50": 275,
+    "conf_gte_70": 152,
+    "closed_count": 0,
+    "avg_conf": 0.6312
+  },
+  {
+    "basic_category": "attorney_or_law_firm",
+    "total_count": 377,
+    "conf_gte_30": 320,
+    "conf_gte_50": 232,
+    "conf_gte_70": 55,
+    "closed_count": 0,
+    "avg_conf": 0.5276
+  },
+  {
+    "basic_category": "warehouse_club_store",
+    "total_count": 373,
+    "conf_gte_30": 276,
+    "conf_gte_50": 153,
+    "conf_gte_70": 43,
+    "closed_count": 0,
+    "avg_conf": 0.4583
+  },
+  {
+    "basic_category": "movie_theater",
+    "total_count": 369,
+    "conf_gte_30": 338,
+    "conf_gte_50": 297,
+    "conf_gte_70": 146,
+    "closed_count": 0,
+    "avg_conf": 0.6316
+  },
+  {
+    "basic_category": "outpatient_care_facility",
+    "total_count": 369,
+    "conf_gte_30": 339,
+    "conf_gte_50": 284,
+    "conf_gte_70": 206,
+    "closed_count": 0,
+    "avg_conf": 0.6749
+  },
+  {
+    "basic_category": "books_music_and_video_store",
+    "total_count": 359,
+    "conf_gte_30": 311,
+    "conf_gte_50": 229,
+    "conf_gte_70": 116,
+    "closed_count": 0,
+    "avg_conf": 0.5798
+  },
+  {
+    "basic_category": "muslim_place_of_worship",
+    "total_count": 358,
+    "conf_gte_30": 347,
+    "conf_gte_50": 290,
+    "conf_gte_70": 112,
+    "closed_count": 0,
+    "avg_conf": 0.6207
+  },
+  {
+    "basic_category": "shopping_mall",
+    "total_count": 334,
+    "conf_gte_30": 302,
+    "conf_gte_50": 264,
+    "conf_gte_70": 151,
+    "closed_count": 0,
+    "avg_conf": 0.6447
+  },
+  {
+    "basic_category": "surgery",
+    "total_count": 333,
+    "conf_gte_30": 308,
+    "conf_gte_50": 284,
+    "conf_gte_70": 222,
+    "closed_count": 0,
+    "avg_conf": 0.7245
+  },
+  {
+    "basic_category": "vehicle_dealer",
+    "total_count": 328,
+    "conf_gte_30": 313,
+    "conf_gte_50": 285,
+    "conf_gte_70": 196,
+    "closed_count": 0,
+    "avg_conf": 0.7281
+  },
+  {
+    "basic_category": "family_service",
+    "total_count": 309,
+    "conf_gte_30": 283,
+    "conf_gte_50": 203,
+    "conf_gte_70": 92,
+    "closed_count": 0,
+    "avg_conf": 0.5911
+  },
+  {
+    "basic_category": "fitness_studio",
+    "total_count": 308,
+    "conf_gte_30": 230,
+    "conf_gte_50": 171,
+    "conf_gte_70": 83,
+    "closed_count": 0,
+    "avg_conf": 0.5243
+  },
+  {
+    "basic_category": "gas_station",
+    "total_count": 289,
+    "conf_gte_30": 282,
+    "conf_gte_50": 254,
+    "conf_gte_70": 189,
+    "closed_count": 0,
+    "avg_conf": 0.7923
+  },
+  {
+    "basic_category": "shipping_or_delivery_service",
+    "total_count": 284,
+    "conf_gte_30": 249,
+    "conf_gte_50": 195,
+    "conf_gte_70": 77,
+    "closed_count": 0,
+    "avg_conf": 0.5735
+  },
+  {
+    "basic_category": "reproductive_perinatal_and_womens_care",
+    "total_count": 283,
+    "conf_gte_30": 255,
+    "conf_gte_50": 241,
+    "conf_gte_70": 189,
+    "closed_count": 0,
+    "avg_conf": 0.7254
+  },
+  {
+    "basic_category": "telecommunications_service",
+    "total_count": 268,
+    "conf_gte_30": 268,
+    "conf_gte_50": 268,
+    "conf_gte_70": 268,
+    "closed_count": 0,
+    "avg_conf": 0.8796
+  },
+  {
+    "basic_category": "police_station",
+    "total_count": 266,
+    "conf_gte_30": 262,
+    "conf_gte_50": 237,
+    "conf_gte_70": 111,
+    "closed_count": 0,
+    "avg_conf": 0.67
+  },
+  {
+    "basic_category": "animal_or_pet_service",
+    "total_count": 264,
+    "conf_gte_30": 208,
+    "conf_gte_50": 165,
+    "conf_gte_70": 94,
+    "closed_count": 0,
+    "avg_conf": 0.5723
+  },
+  {
+    "basic_category": "medical_service",
+    "total_count": 257,
+    "conf_gte_30": 198,
+    "conf_gte_50": 150,
+    "conf_gte_70": 85,
+    "closed_count": 0,
+    "avg_conf": 0.5506
+  },
+  {
+    "basic_category": "laundry_service",
+    "total_count": 250,
+    "conf_gte_30": 214,
+    "conf_gte_50": 161,
+    "conf_gte_70": 97,
+    "closed_count": 0,
+    "avg_conf": 0.5952
+  },
+  {
+    "basic_category": "music_venue",
+    "total_count": 249,
+    "conf_gte_30": 221,
+    "conf_gte_50": 182,
+    "conf_gte_70": 81,
+    "closed_count": 0,
+    "avg_conf": 0.5906
+  },
+  {
+    "basic_category": "behavioral_or_mental_health_clinic",
+    "total_count": 248,
+    "conf_gte_30": 164,
+    "conf_gte_50": 119,
+    "conf_gte_70": 61,
+    "closed_count": 0,
+    "avg_conf": 0.4808
+  },
+  {
+    "basic_category": "lounge",
+    "total_count": 243,
+    "conf_gte_30": 227,
+    "conf_gte_50": 191,
+    "conf_gte_70": 119,
+    "closed_count": 0,
+    "avg_conf": 0.6699
+  },
+  {
+    "basic_category": "art_gallery",
+    "total_count": 241,
+    "conf_gte_30": 200,
+    "conf_gte_50": 158,
+    "conf_gte_70": 86,
+    "closed_count": 0,
+    "avg_conf": 0.5878
+  },
+  {
+    "basic_category": "train_station",
+    "total_count": 235,
+    "conf_gte_30": 234,
+    "conf_gte_50": 229,
+    "conf_gte_70": 157,
+    "closed_count": 0,
+    "avg_conf": 0.7281
+  },
+  {
+    "basic_category": "public_transit_facility_or_service",
+    "total_count": 233,
+    "conf_gte_30": 232,
+    "conf_gte_50": 225,
+    "conf_gte_70": 96,
+    "closed_count": 0,
+    "avg_conf": 0.6807
+  },
+  {
+    "basic_category": "convenience_store",
+    "total_count": 228,
+    "conf_gte_30": 211,
+    "conf_gte_50": 151,
+    "conf_gte_70": 98,
+    "closed_count": 0,
+    "avg_conf": 0.6314
+  },
+  {
+    "basic_category": "rental_service",
+    "total_count": 226,
+    "conf_gte_30": 170,
+    "conf_gte_50": 120,
+    "conf_gte_70": 57,
+    "closed_count": 0,
+    "avg_conf": 0.5185
+  },
+  {
+    "basic_category": "animal_and_pet_store",
+    "total_count": 214,
+    "conf_gte_30": 184,
+    "conf_gte_50": 141,
+    "conf_gte_70": 80,
+    "closed_count": 0,
+    "avg_conf": 0.6019
+  },
+  {
+    "basic_category": "sport_league",
+    "total_count": 212,
+    "conf_gte_30": 185,
+    "conf_gte_50": 157,
+    "conf_gte_70": 67,
+    "closed_count": 0,
+    "avg_conf": 0.5972
+  },
+  {
+    "basic_category": "campus_building",
+    "total_count": 210,
+    "conf_gte_30": 209,
+    "conf_gte_50": 193,
+    "conf_gte_70": 90,
+    "closed_count": 0,
+    "avg_conf": 0.6695
+  },
+  {
+    "basic_category": "non_alcoholic_beverage_venue",
+    "total_count": 204,
+    "conf_gte_30": 189,
+    "conf_gte_50": 145,
+    "conf_gte_70": 69,
+    "closed_count": 0,
+    "avg_conf": 0.5982
+  },
+  {
+    "basic_category": "research_institute",
+    "total_count": 191,
+    "conf_gte_30": 160,
+    "conf_gte_50": 121,
+    "conf_gte_70": 63,
+    "closed_count": 0,
+    "avg_conf": 0.5765
+  },
+  {
+    "basic_category": "stadium_arena",
+    "total_count": 185,
+    "conf_gte_30": 175,
+    "conf_gte_50": 141,
+    "conf_gte_70": 69,
+    "closed_count": 0,
+    "avg_conf": 0.6272
+  },
+  {
+    "basic_category": "community_center",
+    "total_count": 180,
+    "conf_gte_30": 173,
+    "conf_gte_50": 152,
+    "conf_gte_70": 32,
+    "closed_count": 0,
+    "avg_conf": 0.5948
+  },
+  {
+    "basic_category": "legal_service",
+    "total_count": 173,
+    "conf_gte_30": 134,
+    "conf_gte_50": 92,
+    "conf_gte_70": 42,
+    "closed_count": 0,
+    "avg_conf": 0.5231
+  },
+  {
+    "basic_category": "food_service",
+    "total_count": 170,
+    "conf_gte_30": 98,
+    "conf_gte_50": 65,
+    "conf_gte_70": 23,
+    "closed_count": 0,
+    "avg_conf": 0.4114
+  },
+  {
+    "basic_category": "elementary_school",
+    "total_count": 161,
+    "conf_gte_30": 156,
+    "conf_gte_50": 144,
+    "conf_gte_70": 75,
+    "closed_count": 0,
+    "avg_conf": 0.6923
+  },
+  {
+    "basic_category": "wholesaler",
+    "total_count": 160,
+    "conf_gte_30": 155,
+    "conf_gte_50": 143,
+    "conf_gte_70": 127,
+    "closed_count": 0,
+    "avg_conf": 0.7818
+  },
+  {
+    "basic_category": "storage_facility",
+    "total_count": 159,
+    "conf_gte_30": 122,
+    "conf_gte_50": 66,
+    "conf_gte_70": 15,
+    "closed_count": 0,
+    "avg_conf": 0.4527
+  },
+  {
+    "basic_category": "airport",
+    "total_count": 155,
+    "conf_gte_30": 150,
+    "conf_gte_50": 146,
+    "conf_gte_70": 108,
+    "closed_count": 0,
+    "avg_conf": 0.7207
+  },
+  {
+    "basic_category": "senior_living_facility",
+    "total_count": 153,
+    "conf_gte_30": 148,
+    "conf_gte_50": 123,
+    "conf_gte_70": 48,
+    "closed_count": 0,
+    "avg_conf": 0.6292
+  },
+  {
+    "basic_category": "beach",
+    "total_count": 153,
+    "conf_gte_30": 152,
+    "conf_gte_50": 146,
+    "conf_gte_70": 100,
+    "closed_count": 0,
+    "avg_conf": 0.7104
+  },
+  {
+    "basic_category": "library",
+    "total_count": 144,
+    "conf_gte_30": 140,
+    "conf_gte_50": 127,
+    "conf_gte_70": 70,
+    "closed_count": 0,
+    "avg_conf": 0.6859
+  },
+  {
+    "basic_category": "b2b_energy_and_utility_service",
+    "total_count": 143,
+    "conf_gte_30": 124,
+    "conf_gte_50": 107,
+    "conf_gte_70": 69,
+    "closed_count": 0,
+    "avg_conf": 0.6487
+  },
+  {
+    "basic_category": "food_and_drink",
+    "total_count": 137,
+    "conf_gte_30": 105,
+    "conf_gte_50": 62,
+    "conf_gte_70": 18,
+    "closed_count": 0,
+    "avg_conf": 0.4666
+  },
+  {
+    "basic_category": "office_supply_store",
+    "total_count": 136,
+    "conf_gte_30": 118,
+    "conf_gte_50": 78,
+    "conf_gte_70": 44,
+    "closed_count": 0,
+    "avg_conf": 0.566
+  },
+  {
+    "basic_category": "astrological_advising",
+    "total_count": 135,
+    "conf_gte_30": 50,
+    "conf_gte_50": 29,
+    "conf_gte_70": 14,
+    "closed_count": 0,
+    "avg_conf": 0.3364
+  },
+  {
+    "basic_category": "toys_and_games_store",
+    "total_count": 127,
+    "conf_gte_30": 88,
+    "conf_gte_50": 52,
+    "conf_gte_70": 26,
+    "closed_count": 0,
+    "avg_conf": 0.4765
+  },
+  {
+    "basic_category": "vehicle_service",
+    "total_count": 126,
+    "conf_gte_30": 112,
+    "conf_gte_50": 88,
+    "conf_gte_70": 25,
+    "closed_count": 0,
+    "avg_conf": 0.5565
+  },
+  {
+    "basic_category": "smoothie_juice_bar",
+    "total_count": 126,
+    "conf_gte_30": 118,
+    "conf_gte_50": 80,
+    "conf_gte_70": 35,
+    "closed_count": 0,
+    "avg_conf": 0.5797
+  },
+  {
+    "basic_category": "psychic_advising",
+    "total_count": 120,
+    "conf_gte_30": 36,
+    "conf_gte_50": 11,
+    "conf_gte_70": 7,
+    "closed_count": 0,
+    "avg_conf": 0.291
+  },
+  {
+    "basic_category": "event_venue",
+    "total_count": 118,
+    "conf_gte_30": 116,
+    "conf_gte_50": 112,
+    "conf_gte_70": 95,
+    "closed_count": 0,
+    "avg_conf": 0.7901
+  },
+  {
+    "basic_category": "sports_and_recreation",
+    "total_count": 116,
+    "conf_gte_30": 93,
+    "conf_gte_50": 80,
+    "conf_gte_70": 33,
+    "closed_count": 0,
+    "avg_conf": 0.559
+  },
+  {
+    "basic_category": "farm",
+    "total_count": 114,
+    "conf_gte_30": 103,
+    "conf_gte_50": 62,
+    "conf_gte_70": 19,
+    "closed_count": 0,
+    "avg_conf": 0.5183
+  },
+  {
+    "basic_category": "sport_or_recreation_club",
+    "total_count": 113,
+    "conf_gte_30": 104,
+    "conf_gte_50": 97,
+    "conf_gte_70": 63,
+    "closed_count": 0,
+    "avg_conf": 0.697
+  },
+  {
+    "basic_category": "parking",
+    "total_count": 112,
+    "conf_gte_30": 91,
+    "conf_gte_50": 58,
+    "conf_gte_70": 15,
+    "closed_count": 0,
+    "avg_conf": 0.4889
+  },
+  {
+    "basic_category": "dance_club",
+    "total_count": 112,
+    "conf_gte_30": 96,
+    "conf_gte_50": 68,
+    "conf_gte_70": 30,
+    "closed_count": 0,
+    "avg_conf": 0.5496
+  },
+  {
+    "basic_category": "department_store",
+    "total_count": 105,
+    "conf_gte_30": 91,
+    "conf_gte_50": 72,
+    "conf_gte_70": 41,
+    "closed_count": 0,
+    "avg_conf": 0.6118
+  },
+  {
+    "basic_category": "pediatric_clinic",
+    "total_count": 102,
+    "conf_gte_30": 93,
+    "conf_gte_50": 81,
+    "conf_gte_70": 71,
+    "closed_count": 0,
+    "avg_conf": 0.7302
+  },
+  {
+    "basic_category": "specialized_medical_facility",
+    "total_count": 88,
+    "conf_gte_30": 79,
+    "conf_gte_50": 67,
+    "conf_gte_70": 48,
+    "closed_count": 0,
+    "avg_conf": 0.6837
+  },
+  {
+    "basic_category": "second_hand_store",
+    "total_count": 88,
+    "conf_gte_30": 71,
+    "conf_gte_50": 50,
+    "conf_gte_70": 31,
+    "closed_count": 0,
+    "avg_conf": 0.5568
+  },
+  {
+    "basic_category": "air_transport_facility_or_service",
+    "total_count": 85,
+    "conf_gte_30": 80,
+    "conf_gte_50": 60,
+    "conf_gte_70": 38,
+    "closed_count": 0,
+    "avg_conf": 0.6355
+  },
+  {
+    "basic_category": "performing_arts_venue",
+    "total_count": 84,
+    "conf_gte_30": 79,
+    "conf_gte_50": 71,
+    "conf_gte_70": 39,
+    "closed_count": 0,
+    "avg_conf": 0.6586
+  },
+  {
+    "basic_category": "apartment",
+    "total_count": 83,
+    "conf_gte_30": 83,
+    "conf_gte_50": 83,
+    "conf_gte_70": 83,
+    "closed_count": 0,
+    "avg_conf": 0.8785
+  },
+  {
+    "basic_category": "primary_care_or_general_clinic",
+    "total_count": 83,
+    "conf_gte_30": 77,
+    "conf_gte_50": 57,
+    "conf_gte_70": 23,
+    "closed_count": 0,
+    "avg_conf": 0.5883
+  },
+  {
+    "basic_category": "embassy",
+    "total_count": 80,
+    "conf_gte_30": 79,
+    "conf_gte_50": 75,
+    "conf_gte_70": 37,
+    "closed_count": 0,
+    "avg_conf": 0.6939
+  },
+  {
+    "basic_category": "theatre_venue",
+    "total_count": 78,
+    "conf_gte_30": 66,
+    "conf_gte_50": 62,
+    "conf_gte_70": 30,
+    "closed_count": 0,
+    "avg_conf": 0.6158
+  },
+  {
+    "basic_category": "private_lodging",
+    "total_count": 77,
+    "conf_gte_30": 68,
+    "conf_gte_50": 62,
+    "conf_gte_70": 38,
+    "closed_count": 0,
+    "avg_conf": 0.6687
+  },
+  {
+    "basic_category": "political_organization",
+    "total_count": 76,
+    "conf_gte_30": 52,
+    "conf_gte_50": 31,
+    "conf_gte_70": 14,
+    "closed_count": 0,
+    "avg_conf": 0.4559
+  },
+  {
+    "basic_category": "agricultural_service",
+    "total_count": 74,
+    "conf_gte_30": 59,
+    "conf_gte_50": 49,
+    "conf_gte_70": 13,
+    "closed_count": 0,
+    "avg_conf": 0.5279
+  },
+  {
+    "basic_category": "environmental_or_ecological_service",
+    "total_count": 71,
+    "conf_gte_30": 65,
+    "conf_gte_50": 46,
+    "conf_gte_70": 19,
+    "closed_count": 0,
+    "avg_conf": 0.5763
+  },
+  {
+    "basic_category": "playground",
+    "total_count": 70,
+    "conf_gte_30": 67,
+    "conf_gte_50": 53,
+    "conf_gte_70": 16,
+    "closed_count": 0,
+    "avg_conf": 0.5853
+  },
+  {
+    "basic_category": "musical_instrument_and_pro_audio_store",
+    "total_count": 70,
+    "conf_gte_30": 63,
+    "conf_gte_50": 47,
+    "conf_gte_70": 25,
+    "closed_count": 0,
+    "avg_conf": 0.607
+  },
+  {
+    "basic_category": "place_of_worship",
+    "total_count": 70,
+    "conf_gte_30": 70,
+    "conf_gte_50": 60,
+    "conf_gte_70": 30,
+    "closed_count": 0,
+    "avg_conf": 0.6786
+  },
+  {
+    "basic_category": "food_truck_stand",
+    "total_count": 68,
+    "conf_gte_30": 60,
+    "conf_gte_50": 40,
+    "conf_gte_70": 15,
+    "closed_count": 0,
+    "avg_conf": 0.5498
+  },
+  {
+    "basic_category": "museum",
+    "total_count": 68,
+    "conf_gte_30": 62,
+    "conf_gte_50": 57,
+    "conf_gte_70": 39,
+    "closed_count": 0,
+    "avg_conf": 0.6894
+  },
+  {
+    "basic_category": "taxi_or_ride_share_service",
+    "total_count": 55,
+    "conf_gte_30": 36,
+    "conf_gte_50": 25,
+    "conf_gte_70": 10,
+    "closed_count": 0,
+    "avg_conf": 0.458
+  },
+  {
+    "basic_category": "buddhist_place_of_worship",
+    "total_count": 55,
+    "conf_gte_30": 54,
+    "conf_gte_50": 43,
+    "conf_gte_70": 9,
+    "closed_count": 0,
+    "avg_conf": 0.5823
+  },
+  {
+    "basic_category": "b2b_science_and_technology_service",
+    "total_count": 54,
+    "conf_gte_30": 44,
+    "conf_gte_50": 37,
+    "conf_gte_70": 18,
+    "closed_count": 0,
+    "avg_conf": 0.5653
+  },
+  {
+    "basic_category": "lake",
+    "total_count": 54,
+    "conf_gte_30": 52,
+    "conf_gte_50": 51,
+    "conf_gte_70": 37,
+    "closed_count": 0,
+    "avg_conf": 0.7251
+  },
+  {
+    "basic_category": "public_utility",
+    "total_count": 52,
+    "conf_gte_30": 40,
+    "conf_gte_50": 29,
+    "conf_gte_70": 11,
+    "closed_count": 0,
+    "avg_conf": 0.5012
+  },
+  {
+    "basic_category": "fire_station",
+    "total_count": 44,
+    "conf_gte_30": 43,
+    "conf_gte_50": 39,
+    "conf_gte_70": 14,
+    "closed_count": 0,
+    "avg_conf": 0.6431
+  },
+  {
+    "basic_category": "swimming_pool",
+    "total_count": 43,
+    "conf_gte_30": 37,
+    "conf_gte_50": 30,
+    "conf_gte_70": 11,
+    "closed_count": 0,
+    "avg_conf": 0.5698
+  },
+  {
+    "basic_category": "courthouse",
+    "total_count": 42,
+    "conf_gte_30": 42,
+    "conf_gte_50": 40,
+    "conf_gte_70": 25,
+    "closed_count": 0,
+    "avg_conf": 0.7473
+  },
+  {
+    "basic_category": "bridge",
+    "total_count": 42,
+    "conf_gte_30": 41,
+    "conf_gte_50": 39,
+    "conf_gte_70": 24,
+    "closed_count": 0,
+    "avg_conf": 0.7107
+  },
+  {
+    "basic_category": "monument",
+    "total_count": 42,
+    "conf_gte_30": 41,
+    "conf_gte_50": 39,
+    "conf_gte_70": 12,
+    "closed_count": 0,
+    "avg_conf": 0.6288
+  },
+  {
+    "basic_category": "youth_organization",
+    "total_count": 40,
+    "conf_gte_30": 31,
+    "conf_gte_50": 22,
+    "conf_gte_70": 6,
+    "closed_count": 0,
+    "avg_conf": 0.4981
+  },
+  {
+    "basic_category": "cultural_center",
+    "total_count": 40,
+    "conf_gte_30": 37,
+    "conf_gte_50": 32,
+    "conf_gte_70": 12,
+    "closed_count": 0,
+    "avg_conf": 0.6504
+  },
+  {
+    "basic_category": "recreational_equipment_rental",
+    "total_count": 39,
+    "conf_gte_30": 35,
+    "conf_gte_50": 30,
+    "conf_gte_70": 13,
+    "closed_count": 0,
+    "avg_conf": 0.6135
+  },
+  {
+    "basic_category": "bed_and_breakfast",
+    "total_count": 35,
+    "conf_gte_30": 33,
+    "conf_gte_50": 28,
+    "conf_gte_70": 22,
+    "closed_count": 0,
+    "avg_conf": 0.7132
+  },
+  {
+    "basic_category": "security_service",
+    "total_count": 34,
+    "conf_gte_30": 34,
+    "conf_gte_50": 34,
+    "conf_gte_70": 34,
+    "closed_count": 0,
+    "avg_conf": 0.9025
+  },
+  {
+    "basic_category": "emergency_or_urgent_care_facility",
+    "total_count": 34,
+    "conf_gte_30": 27,
+    "conf_gte_50": 18,
+    "conf_gte_70": 8,
+    "closed_count": 0,
+    "avg_conf": 0.5299
+  },
+  {
+    "basic_category": "amusement_park",
+    "total_count": 31,
+    "conf_gte_30": 31,
+    "conf_gte_50": 27,
+    "conf_gte_70": 18,
+    "closed_count": 0,
+    "avg_conf": 0.7351
+  },
+  {
+    "basic_category": "gaming_venue",
+    "total_count": 30,
+    "conf_gte_30": 14,
+    "conf_gte_50": 8,
+    "conf_gte_70": 2,
+    "closed_count": 0,
+    "avg_conf": 0.3595
+  },
+  {
+    "basic_category": "arcade",
+    "total_count": 30,
+    "conf_gte_30": 27,
+    "conf_gte_50": 20,
+    "conf_gte_70": 11,
+    "closed_count": 0,
+    "avg_conf": 0.6308
+  },
+  {
+    "basic_category": "mountain",
+    "total_count": 29,
+    "conf_gte_30": 29,
+    "conf_gte_50": 28,
+    "conf_gte_70": 18,
+    "closed_count": 0,
+    "avg_conf": 0.6963
+  },
+  {
+    "basic_category": "sport_court",
+    "total_count": 26,
+    "conf_gte_30": 24,
+    "conf_gte_50": 18,
+    "conf_gte_70": 12,
+    "closed_count": 0,
+    "avg_conf": 0.6335
+  },
+  {
+    "basic_category": "comedy_club",
+    "total_count": 25,
+    "conf_gte_30": 13,
+    "conf_gte_50": 10,
+    "conf_gte_70": 6,
+    "closed_count": 0,
+    "avg_conf": 0.4241
+  },
+  {
+    "basic_category": "sport_field",
+    "total_count": 25,
+    "conf_gte_30": 23,
+    "conf_gte_50": 19,
+    "conf_gte_70": 6,
+    "closed_count": 0,
+    "avg_conf": 0.5767
+  },
+  {
+    "basic_category": "aquarium",
+    "total_count": 23,
+    "conf_gte_30": 21,
+    "conf_gte_50": 16,
+    "conf_gte_70": 7,
+    "closed_count": 0,
+    "avg_conf": 0.6077
+  },
+  {
+    "basic_category": "military_site",
+    "total_count": 23,
+    "conf_gte_30": 23,
+    "conf_gte_50": 20,
+    "conf_gte_70": 11,
+    "closed_count": 0,
+    "avg_conf": 0.6715
+  },
+  {
+    "basic_category": "condominium",
+    "total_count": 21,
+    "conf_gte_30": 21,
+    "conf_gte_50": 21,
+    "conf_gte_70": 21,
+    "closed_count": 0,
+    "avg_conf": 0.8887
+  },
+  {
+    "basic_category": "brewery",
+    "total_count": 21,
+    "conf_gte_30": 21,
+    "conf_gte_50": 15,
+    "conf_gte_70": 11,
+    "closed_count": 0,
+    "avg_conf": 0.6669
+  },
+  {
+    "basic_category": "ev_charging_station",
+    "total_count": 21,
+    "conf_gte_30": 21,
+    "conf_gte_50": 21,
+    "conf_gte_70": 21,
+    "closed_count": 0,
+    "avg_conf": 0.8538
+  },
+  {
+    "basic_category": "discount_store",
+    "total_count": 20,
+    "conf_gte_30": 12,
+    "conf_gte_50": 11,
+    "conf_gte_70": 6,
+    "closed_count": 0,
+    "avg_conf": 0.4965
+  },
+  {
+    "basic_category": "farmers_market",
+    "total_count": 19,
+    "conf_gte_30": 18,
+    "conf_gte_50": 15,
+    "conf_gte_70": 9,
+    "closed_count": 0,
+    "avg_conf": 0.6566
+  },
+  {
+    "basic_category": "public_plaza",
+    "total_count": 18,
+    "conf_gte_30": 18,
+    "conf_gte_50": 17,
+    "conf_gte_70": 7,
+    "closed_count": 0,
+    "avg_conf": 0.6856
+  },
+  {
+    "basic_category": "campground",
+    "total_count": 18,
+    "conf_gte_30": 18,
+    "conf_gte_50": 17,
+    "conf_gte_70": 9,
+    "closed_count": 0,
+    "avg_conf": 0.6848
+  },
+  {
+    "basic_category": "labor_union",
+    "total_count": 18,
+    "conf_gte_30": 17,
+    "conf_gte_50": 12,
+    "conf_gte_70": 4,
+    "closed_count": 0,
+    "avg_conf": 0.5534
+  },
+  {
+    "basic_category": "fairgrounds",
+    "total_count": 17,
+    "conf_gte_30": 15,
+    "conf_gte_50": 15,
+    "conf_gte_70": 14,
+    "closed_count": 0,
+    "avg_conf": 0.782
+  },
+  {
+    "basic_category": "geographic_entities",
+    "total_count": 17,
+    "conf_gte_30": 16,
+    "conf_gte_50": 16,
+    "conf_gte_70": 6,
+    "closed_count": 0,
+    "avg_conf": 0.6556
+  },
+  {
+    "basic_category": "public_fountain",
+    "total_count": 17,
+    "conf_gte_30": 14,
+    "conf_gte_50": 10,
+    "conf_gte_70": 5,
+    "closed_count": 0,
+    "avg_conf": 0.5457
+  },
+  {
+    "basic_category": "nature_reserve",
+    "total_count": 17,
+    "conf_gte_30": 17,
+    "conf_gte_50": 13,
+    "conf_gte_70": 1,
+    "closed_count": 0,
+    "avg_conf": 0.5635
+  },
+  {
+    "basic_category": "electric_utility_provider",
+    "total_count": 16,
+    "conf_gte_30": 15,
+    "conf_gte_50": 12,
+    "conf_gte_70": 7,
+    "closed_count": 0,
+    "avg_conf": 0.62
+  },
+  {
+    "basic_category": "sport_team",
+    "total_count": 15,
+    "conf_gte_30": 13,
+    "conf_gte_50": 11,
+    "conf_gte_70": 6,
+    "closed_count": 0,
+    "avg_conf": 0.61
+  },
+  {
+    "basic_category": "radio_station",
+    "total_count": 15,
+    "conf_gte_30": 12,
+    "conf_gte_50": 8,
+    "conf_gte_70": 3,
+    "closed_count": 0,
+    "avg_conf": 0.5161
+  },
+  {
+    "basic_category": "zoo",
+    "total_count": 14,
+    "conf_gte_30": 13,
+    "conf_gte_50": 10,
+    "conf_gte_70": 4,
+    "closed_count": 0,
+    "avg_conf": 0.5669
+  },
+  {
+    "basic_category": "middle_school",
+    "total_count": 13,
+    "conf_gte_30": 13,
+    "conf_gte_50": 13,
+    "conf_gte_70": 6,
+    "closed_count": 0,
+    "avg_conf": 0.723
+  },
+  {
+    "basic_category": "educational_facility",
+    "total_count": 13,
+    "conf_gte_30": 12,
+    "conf_gte_50": 11,
+    "conf_gte_70": 4,
+    "closed_count": 0,
+    "avg_conf": 0.5982
+  },
+  {
+    "basic_category": "water_utility_provider",
+    "total_count": 13,
+    "conf_gte_30": 13,
+    "conf_gte_50": 11,
+    "conf_gte_70": 7,
+    "closed_count": 0,
+    "avg_conf": 0.6739
+  },
+  {
+    "basic_category": "casino",
+    "total_count": 11,
+    "conf_gte_30": 10,
+    "conf_gte_50": 8,
+    "conf_gte_70": 2,
+    "closed_count": 0,
+    "avg_conf": 0.5497
+  },
+  {
+    "basic_category": "fort",
+    "total_count": 11,
+    "conf_gte_30": 11,
+    "conf_gte_50": 11,
+    "conf_gte_70": 6,
+    "closed_count": 0,
+    "avg_conf": 0.6964
+  },
+  {
+    "basic_category": "land_feature",
+    "total_count": 11,
+    "conf_gte_30": 11,
+    "conf_gte_50": 11,
+    "conf_gte_70": 4,
+    "closed_count": 0,
+    "avg_conf": 0.6639
+  },
+  {
+    "basic_category": "market",
+    "total_count": 11,
+    "conf_gte_30": 11,
+    "conf_gte_50": 11,
+    "conf_gte_70": 11,
+    "closed_count": 0,
+    "avg_conf": 0.8556
+  },
+  {
+    "basic_category": "fueling_station",
+    "total_count": 11,
+    "conf_gte_30": 11,
+    "conf_gte_50": 11,
+    "conf_gte_70": 11,
+    "closed_count": 0,
+    "avg_conf": 0.77
+  },
+  {
+    "basic_category": "government_department",
+    "total_count": 10,
+    "conf_gte_30": 8,
+    "conf_gte_50": 6,
+    "conf_gte_70": 4,
+    "closed_count": 0,
+    "avg_conf": 0.5752
+  },
+  {
+    "basic_category": "jewish_place_of_worship",
+    "total_count": 9,
+    "conf_gte_30": 9,
+    "conf_gte_50": 7,
+    "conf_gte_70": 4,
+    "closed_count": 0,
+    "avg_conf": 0.7051
+  },
+  {
+    "basic_category": "recreational_trail_or_path",
+    "total_count": 9,
+    "conf_gte_30": 7,
+    "conf_gte_50": 6,
+    "conf_gte_70": 3,
+    "closed_count": 0,
+    "avg_conf": 0.5713
+  },
+  {
+    "basic_category": "animal_attraction",
+    "total_count": 8,
+    "conf_gte_30": 5,
+    "conf_gte_50": 5,
+    "conf_gte_70": 3,
+    "closed_count": 0,
+    "avg_conf": 0.5631
+  },
+  {
+    "basic_category": "public_restroom",
+    "total_count": 8,
+    "conf_gte_30": 5,
+    "conf_gte_50": 1,
+    "conf_gte_70": 0,
+    "closed_count": 0,
+    "avg_conf": 0.3504
+  },
+  {
+    "basic_category": "industrial_facility_or_service",
+    "total_count": 8,
+    "conf_gte_30": 8,
+    "conf_gte_50": 6,
+    "conf_gte_70": 2,
+    "closed_count": 0,
+    "avg_conf": 0.6252
+  },
+  {
+    "basic_category": "distillery",
+    "total_count": 7,
+    "conf_gte_30": 7,
+    "conf_gte_50": 5,
+    "conf_gte_70": 0,
+    "closed_count": 0,
+    "avg_conf": 0.5237
+  },
+  {
+    "basic_category": "natural_gas_utility_provider",
+    "total_count": 7,
+    "conf_gte_30": 7,
+    "conf_gte_50": 7,
+    "conf_gte_70": 7,
+    "closed_count": 0,
+    "avg_conf": 0.8715
+  },
+  {
+    "basic_category": "superstore",
+    "total_count": 7,
+    "conf_gte_30": 7,
+    "conf_gte_50": 5,
+    "conf_gte_70": 2,
+    "closed_count": 0,
+    "avg_conf": 0.5907
+  },
+  {
+    "basic_category": "arts_and_crafts_space",
+    "total_count": 7,
+    "conf_gte_30": 7,
+    "conf_gte_50": 7,
+    "conf_gte_70": 6,
+    "closed_count": 0,
+    "avg_conf": 0.8174
+  },
+  {
+    "basic_category": "river",
+    "total_count": 6,
+    "conf_gte_30": 6,
+    "conf_gte_50": 5,
+    "conf_gte_70": 3,
+    "closed_count": 0,
+    "avg_conf": 0.6716
+  },
+  {
+    "basic_category": "skating_rink",
+    "total_count": 6,
+    "conf_gte_30": 5,
+    "conf_gte_50": 4,
+    "conf_gte_70": 2,
+    "closed_count": 0,
+    "avg_conf": 0.5806
+  },
+  {
+    "basic_category": "inn",
+    "total_count": 6,
+    "conf_gte_30": 6,
+    "conf_gte_50": 5,
+    "conf_gte_70": 2,
+    "closed_count": 0,
+    "avg_conf": 0.6494
+  },
+  {
+    "basic_category": "marina",
+    "total_count": 6,
+    "conf_gte_30": 5,
+    "conf_gte_50": 4,
+    "conf_gte_70": 2,
+    "closed_count": 0,
+    "avg_conf": 0.4969
+  },
+  {
+    "basic_category": "social_club",
+    "total_count": 5,
+    "conf_gte_30": 5,
+    "conf_gte_50": 5,
+    "conf_gte_70": 5,
+    "closed_count": 0,
+    "avg_conf": 0.834
+  },
+  {
+    "basic_category": "national_park",
+    "total_count": 5,
+    "conf_gte_30": 5,
+    "conf_gte_50": 5,
+    "conf_gte_70": 3,
+    "closed_count": 0,
+    "avg_conf": 0.7109
+  },
+  {
+    "basic_category": "dog_park",
+    "total_count": 5,
+    "conf_gte_30": 5,
+    "conf_gte_50": 3,
+    "conf_gte_70": 1,
+    "closed_count": 0,
+    "avg_conf": 0.5467
+  },
+  {
+    "basic_category": "garden",
+    "total_count": 5,
+    "conf_gte_30": 5,
+    "conf_gte_50": 5,
+    "conf_gte_70": 3,
+    "closed_count": 0,
+    "avg_conf": 0.7549
+  },
+  {
+    "basic_category": "winery",
+    "total_count": 5,
+    "conf_gte_30": 5,
+    "conf_gte_50": 2,
+    "conf_gte_70": 1,
+    "closed_count": 0,
+    "avg_conf": 0.5802
+  },
+  {
+    "basic_category": "amusement_attraction",
+    "total_count": 4,
+    "conf_gte_30": 4,
+    "conf_gte_50": 2,
+    "conf_gte_70": 1,
+    "closed_count": 0,
+    "avg_conf": 0.5989
+  },
+  {
+    "basic_category": "emergency_department",
+    "total_count": 4,
+    "conf_gte_30": 1,
+    "conf_gte_50": 1,
+    "conf_gte_70": 1,
+    "closed_count": 0,
+    "avg_conf": 0.3915
+  },
+  {
+    "basic_category": "golf_course",
+    "total_count": 4,
+    "conf_gte_30": 4,
+    "conf_gte_50": 4,
+    "conf_gte_70": 1,
+    "closed_count": 0,
+    "avg_conf": 0.7385
+  },
+  {
+    "basic_category": "waterfall",
+    "total_count": 4,
+    "conf_gte_30": 4,
+    "conf_gte_50": 4,
+    "conf_gte_70": 1,
+    "closed_count": 0,
+    "avg_conf": 0.6313
+  },
+  {
+    "basic_category": "alcoholic_beverage_venue",
+    "total_count": 3,
+    "conf_gte_30": 3,
+    "conf_gte_50": 3,
+    "conf_gte_70": 2,
+    "closed_count": 0,
+    "avg_conf": 0.6908
+  },
+  {
+    "basic_category": "planetarium",
+    "total_count": 2,
+    "conf_gte_30": 2,
+    "conf_gte_50": 2,
+    "conf_gte_70": 2,
+    "closed_count": 0,
+    "avg_conf": 0.8053
+  },
+  {
+    "basic_category": "adult_entertainment_venue",
+    "total_count": 2,
+    "conf_gte_30": 1,
+    "conf_gte_50": 1,
+    "conf_gte_70": 0,
+    "closed_count": 0,
+    "avg_conf": 0.4309
+  },
+  {
+    "basic_category": "skate_park",
+    "total_count": 2,
+    "conf_gte_30": 2,
+    "conf_gte_50": 2,
+    "conf_gte_70": 1,
+    "closed_count": 0,
+    "avg_conf": 0.6717
+  },
+  {
+    "basic_category": "civic_center",
+    "total_count": 2,
+    "conf_gte_30": 2,
+    "conf_gte_50": 2,
+    "conf_gte_70": 2,
+    "closed_count": 0,
+    "avg_conf": 0.9164
+  },
+  {
+    "basic_category": "sculpture_statue",
+    "total_count": 2,
+    "conf_gte_30": 2,
+    "conf_gte_50": 2,
+    "conf_gte_70": 1,
+    "closed_count": 0,
+    "avg_conf": 0.7591
+  },
+  {
+    "basic_category": "island",
+    "total_count": 2,
+    "conf_gte_30": 2,
+    "conf_gte_50": 2,
+    "conf_gte_70": 1,
+    "closed_count": 0,
+    "avg_conf": 0.7174
+  },
+  {
+    "basic_category": "television_station",
+    "total_count": 2,
+    "conf_gte_30": 2,
+    "conf_gte_50": 2,
+    "conf_gte_70": 2,
+    "closed_count": 0,
+    "avg_conf": 0.85
+  },
+  {
+    "basic_category": "pier",
+    "total_count": 2,
+    "conf_gte_30": 2,
+    "conf_gte_50": 2,
+    "conf_gte_70": 1,
+    "closed_count": 0,
+    "avg_conf": 0.6777
+  },
+  {
+    "basic_category": "canal",
+    "total_count": 1,
+    "conf_gte_30": 1,
+    "conf_gte_50": 1,
+    "conf_gte_70": 1,
+    "closed_count": 0,
+    "avg_conf": 0.8905
+  },
+  {
+    "basic_category": "nightlife_venue",
+    "total_count": 1,
+    "conf_gte_30": 1,
+    "conf_gte_50": 1,
+    "conf_gte_70": 1,
+    "closed_count": 0,
+    "avg_conf": 0.77
+  },
+  {
+    "basic_category": "jail_or_prison",
+    "total_count": 1,
+    "conf_gte_30": 1,
+    "conf_gte_50": 1,
+    "conf_gte_70": 1,
+    "closed_count": 0,
+    "avg_conf": 0.7574
+  },
+  {
+    "basic_category": "food_bank",
+    "total_count": 1,
+    "conf_gte_30": 1,
+    "conf_gte_50": 0,
+    "conf_gte_70": 0,
+    "closed_count": 0,
+    "avg_conf": 0.3968
+  },
+  {
+    "basic_category": "food_court",
+    "total_count": 1,
+    "conf_gte_30": 1,
+    "conf_gte_50": 1,
+    "conf_gte_70": 1,
+    "closed_count": 0,
+    "avg_conf": 0.77
+  },
+  {
+    "basic_category": "castle",
+    "total_count": 1,
+    "conf_gte_30": 1,
+    "conf_gte_50": 0,
+    "conf_gte_70": 0,
+    "closed_count": 0,
+    "avg_conf": 0.4168
+  },
+  {
+    "basic_category": "school_district_office",
+    "total_count": 1,
+    "conf_gte_30": 1,
+    "conf_gte_50": 1,
+    "conf_gte_70": 1,
+    "closed_count": 0,
+    "avg_conf": 0.9267
+  },
+  {
+    "basic_category": "rail_facility_or_service",
+    "total_count": 1,
+    "conf_gte_30": 1,
+    "conf_gte_50": 1,
+    "conf_gte_70": 1,
+    "closed_count": 0,
+    "avg_conf": 0.85
+  },
+  {
+    "basic_category": "walk_in_clinic",
+    "total_count": 1,
+    "conf_gte_30": 1,
+    "conf_gte_50": 1,
+    "conf_gte_70": 1,
+    "closed_count": 0,
+    "avg_conf": 0.85
+  },
+  {
+    "basic_category": "built_feature",
+    "total_count": 1,
+    "conf_gte_30": 1,
+    "conf_gte_50": 1,
+    "conf_gte_70": 1,
+    "closed_count": 0,
+    "avg_conf": 0.9497
+  },
+  {
+    "basic_category": "lighthouse",
+    "total_count": 1,
+    "conf_gte_30": 1,
+    "conf_gte_50": 1,
+    "conf_gte_70": 0,
+    "closed_count": 0,
+    "avg_conf": 0.5432
+  },
+  {
+    "basic_category": "housing_or_property_service",
+    "total_count": 1,
+    "conf_gte_30": 1,
+    "conf_gte_50": 1,
+    "conf_gte_70": 1,
+    "closed_count": 0,
+    "avg_conf": 0.8905
+  }
+]

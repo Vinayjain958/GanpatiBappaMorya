@@ -39,7 +39,10 @@ export interface ReviewItem {
 }
 
 export interface ExperienceRatingSummary {
-  averageRating: number;
+  /** Null when the experience has zero real reviews (e.g. a brand-new
+   * traveler contribution) — the UI must render "No ratings yet", never
+   * a fabricated 0.0. */
+  averageRating: number | null;
   reviewCount: number;
   distribution: Record<number, number>;
   isSynthetic: boolean;
@@ -99,6 +102,12 @@ export interface Experience {
   ratingSummary?: ExperienceRatingSummary | null;
   highlights: string[];
   isSynthetic: boolean;
+  /** Only present on the detail shape (ApiExperienceDetail carries
+   * source_type; list/summary responses don't). "traveler_submission"
+   * means this was published directly by a traveler via the "Add a
+   * Local Experience" contribution flow (see docs/DECISIONS.md ADR-058)
+   * — the UI shows a "Community Added" label for it, never "Verified". */
+  sourceType?: string;
   /** Phase 7 — only present when this result came from the personalized
    * ranking pipeline (POST /api/v1/recommendations); undefined for plain
    * discovery/search results. */

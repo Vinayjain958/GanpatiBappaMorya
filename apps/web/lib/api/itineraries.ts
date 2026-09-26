@@ -7,7 +7,18 @@ import type {
   ItineraryListResponse,
   ReplanRequest,
   ReplanResponse,
+  SimilarItinerariesRequest,
+  SimilarItinerariesResponse,
 } from "@/types/api";
+
+/** POST /api/v1/itineraries/similar — ADR-056. Read-only: counts
+ * previously generated, eligible, similar itineraries and returns
+ * anonymized examples the owners opted to share. Never creates or saves
+ * an itinerary (the user must still explicitly choose "Create
+ * personalized itinerary", which calls composeItinerary). */
+export function findSimilarItineraries(request: SimilarItinerariesRequest, signal?: AbortSignal) {
+  return apiClient.post<SimilarItinerariesResponse>("/api/v1/itineraries/similar", request, { signal });
+}
 
 /** POST /api/v1/itineraries/compose — Phase 8. Runs the full backend
  * pipeline (retrieval -> feasibility -> ranking -> composition ->

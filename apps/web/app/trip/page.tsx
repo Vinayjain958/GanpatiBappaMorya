@@ -1,19 +1,16 @@
-import Link from "next/link";
 import type { Metadata } from "next";
-import { MapPinned } from "lucide-react";
 import { PageContainer } from "@/components/layout/PageContainer";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { Button } from "@/components/ui/Button";
-import { Card, CardBody } from "@/components/ui/Card";
-import { DemoDataBadge } from "@/components/ui/DemoDataBadge";
 import { RequireRole } from "@/components/common/RequireRole";
 import { TripComposerSection } from "@/components/trip/TripComposerSection";
-import { mockTrip } from "@/mocks/trip";
 
 export const metadata: Metadata = { title: "Trips" };
 
-const hasTrip = true;
-
+/**
+ * /trip — hydrates entirely from the API (GET /api/v1/itineraries and
+ * GET /api/v1/itineraries/{id}) inside TripComposerSection. No mock trip
+ * data is rendered here; a refresh or a fresh login shows exactly what
+ * the database holds.
+ */
 export default function TripListPage() {
   return (
     <RequireRole role="traveler">
@@ -22,44 +19,12 @@ export default function TripListPage() {
           <div className="space-y-2">
             <h1 className="text-3xl font-semibold tracking-tight text-ink sm:text-4xl">Your trips</h1>
             <p className="text-sm leading-6 text-ink-muted">
-              Compose a new plan, or revisit an existing one.
+              Plan a personalized trip, or revisit one you&apos;ve saved.
             </p>
           </div>
         </div>
 
         <TripComposerSection />
-
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-6">
-          <h2 className="text-lg font-semibold tracking-tight text-ink">Demo plan</h2>
-          <DemoDataBadge />
-        </div>
-
-        {hasTrip ? (
-          <Link href={`/trip/${mockTrip.id}`}>
-            <Card className="rounded-2xl transition-shadow hover:shadow-xl">
-              <CardBody className="flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6">
-                <div>
-                  <p className="font-semibold text-ink">{mockTrip.title}</p>
-                  <p className="text-sm text-ink-muted">{mockTrip.contextSummary}</p>
-                </div>
-                <span className="text-sm font-medium text-accent">View plan &rarr;</span>
-              </CardBody>
-            </Card>
-          </Link>
-        ) : (
-          <EmptyState
-            icon={MapPinned}
-            title="No trip created yet"
-            description="Describe what you want on the Discover page and LocaLens will start building a plan."
-            action={
-              <Link href="/discover">
-                <Button size="sm" className="rounded-full">
-                  Start discovering
-                </Button>
-              </Link>
-            }
-          />
-        )}
       </PageContainer>
     </RequireRole>
   );

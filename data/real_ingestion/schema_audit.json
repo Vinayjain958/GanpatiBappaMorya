@@ -1,0 +1,4435 @@
+{
+  "alembic_version": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "version_num",
+        "type": "VARCHAR(32)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      }
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "sqlite_autoindex_alembic_version_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "experience_categories": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "slug",
+        "type": "VARCHAR(60)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 1,
+        "name": "name",
+        "type": "VARCHAR(80)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "description",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "icon",
+        "type": "VARCHAR(40)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "sort_order",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 6,
+        "name": "created_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "updated_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "ix_experience_categories_slug",
+        "unique": 1,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 1,
+        "name": "sqlite_autoindex_experience_categories_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "locations": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "latitude",
+        "type": "FLOAT",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 1,
+        "name": "longitude",
+        "type": "FLOAT",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "place_name",
+        "type": "VARCHAR(200)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "address",
+        "type": "VARCHAR(500)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "locality",
+        "type": "VARCHAR(120)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "city",
+        "type": "VARCHAR(100)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "state",
+        "type": "VARCHAR(100)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "country",
+        "type": "VARCHAR(100)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 8,
+        "name": "postal_code",
+        "type": "VARCHAR(20)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 9,
+        "name": "timezone",
+        "type": "VARCHAR(60)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 10,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 11,
+        "name": "created_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 12,
+        "name": "updated_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 13,
+        "name": "source_type",
+        "type": "VARCHAR(40)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 14,
+        "name": "source_name",
+        "type": "VARCHAR(80)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 15,
+        "name": "source_record_id",
+        "type": "VARCHAR(120)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 16,
+        "name": "source_version",
+        "type": "VARCHAR(40)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 17,
+        "name": "source_accessed_at",
+        "type": "DATETIME",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 18,
+        "name": "source_url",
+        "type": "VARCHAR(500)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 19,
+        "name": "source_license",
+        "type": "VARCHAR(120)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 20,
+        "name": "attribution_required",
+        "type": "BOOLEAN",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 21,
+        "name": "attribution_text",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 22,
+        "name": "source_confidence",
+        "type": "FLOAT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 23,
+        "name": "is_synthetic",
+        "type": "BOOLEAN",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 24,
+        "name": "is_enriched",
+        "type": "BOOLEAN",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "sqlite_autoindex_locations_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "users": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "email",
+        "type": "VARCHAR(255)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 1,
+        "name": "password_hash",
+        "type": "VARCHAR(255)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "role",
+        "type": "VARCHAR(8)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "is_active",
+        "type": "BOOLEAN",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 5,
+        "name": "created_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "updated_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "ix_users_email",
+        "unique": 1,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 1,
+        "name": "sqlite_autoindex_users_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "providers": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "user_id",
+        "type": "VARCHAR(36)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 1,
+        "name": "business_name",
+        "type": "VARCHAR(200)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "description",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "provider_type",
+        "type": "VARCHAR(40)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "contact_email",
+        "type": "VARCHAR(255)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "contact_phone",
+        "type": "VARCHAR(40)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "website",
+        "type": "VARCHAR(500)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "verification_status",
+        "type": "VARCHAR(16)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 8,
+        "name": "city",
+        "type": "VARCHAR(100)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 9,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 10,
+        "name": "created_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 11,
+        "name": "updated_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 12,
+        "name": "source_type",
+        "type": "VARCHAR(40)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 13,
+        "name": "source_name",
+        "type": "VARCHAR(80)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 14,
+        "name": "source_record_id",
+        "type": "VARCHAR(120)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 15,
+        "name": "source_version",
+        "type": "VARCHAR(40)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 16,
+        "name": "source_accessed_at",
+        "type": "DATETIME",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 17,
+        "name": "source_url",
+        "type": "VARCHAR(500)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 18,
+        "name": "source_license",
+        "type": "VARCHAR(120)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 19,
+        "name": "attribution_required",
+        "type": "BOOLEAN",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 20,
+        "name": "attribution_text",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 21,
+        "name": "source_confidence",
+        "type": "FLOAT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 22,
+        "name": "is_synthetic",
+        "type": "BOOLEAN",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 23,
+        "name": "is_enriched",
+        "type": "BOOLEAN",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [
+      {
+        "id": 0,
+        "seq": 0,
+        "table": "users",
+        "from": "user_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "SET NULL",
+        "match": "NONE"
+      }
+    ],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "sqlite_autoindex_providers_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "travelers": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "user_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 1,
+        "name": "traveler_type",
+        "type": "VARCHAR(30)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "preferences",
+        "type": "JSON",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "accessibility_requirements",
+        "type": "JSON",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 5,
+        "name": "created_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "updated_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [
+      {
+        "id": 0,
+        "seq": 0,
+        "table": "users",
+        "from": "user_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "CASCADE",
+        "match": "NONE"
+      }
+    ],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "sqlite_autoindex_travelers_2",
+        "unique": 1,
+        "origin": "u",
+        "partial": 0
+      },
+      {
+        "seq": 1,
+        "name": "sqlite_autoindex_travelers_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "auth_sessions": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "user_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 1,
+        "name": "jti",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "token_hash",
+        "type": "VARCHAR(64)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "issued_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "expires_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "revoked_at",
+        "type": "DATETIME",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "replaced_by_session_id",
+        "type": "VARCHAR(36)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "user_agent",
+        "type": "VARCHAR(300)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 8,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 9,
+        "name": "created_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 10,
+        "name": "updated_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [
+      {
+        "id": 0,
+        "seq": 0,
+        "table": "users",
+        "from": "user_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "CASCADE",
+        "match": "NONE"
+      },
+      {
+        "id": 1,
+        "seq": 0,
+        "table": "auth_sessions",
+        "from": "replaced_by_session_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "SET NULL",
+        "match": "NONE"
+      }
+    ],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "ix_auth_sessions_user_id",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 1,
+        "name": "ix_auth_sessions_jti",
+        "unique": 1,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 2,
+        "name": "sqlite_autoindex_auth_sessions_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "conversation_sessions": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "user_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 1,
+        "name": "mode",
+        "type": "VARCHAR(5)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "latest_traveler_context",
+        "type": "JSON",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "ended_at",
+        "type": "DATETIME",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 5,
+        "name": "created_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "updated_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "last_search_candidates",
+        "type": "JSON",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [
+      {
+        "id": 0,
+        "seq": 0,
+        "table": "users",
+        "from": "user_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "CASCADE",
+        "match": "NONE"
+      }
+    ],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "ix_conversation_sessions_user_id",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 1,
+        "name": "sqlite_autoindex_conversation_sessions_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "conversation_messages": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "session_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 1,
+        "name": "role",
+        "type": "VARCHAR(9)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "text",
+        "type": "TEXT",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "tool_call_metadata",
+        "type": "JSON",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 5,
+        "name": "created_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "updated_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [
+      {
+        "id": 0,
+        "seq": 0,
+        "table": "conversation_sessions",
+        "from": "session_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "CASCADE",
+        "match": "NONE"
+      }
+    ],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "ix_conversation_messages_session_id",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 1,
+        "name": "sqlite_autoindex_conversation_messages_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "traveler_affinities": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "traveler_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 1,
+        "name": "dimension_type",
+        "type": "VARCHAR(30)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "dimension_key",
+        "type": "VARCHAR(80)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "score",
+        "type": "FLOAT",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "interaction_count",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "positive_count",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "negative_count",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "confidence",
+        "type": "FLOAT",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 8,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 9,
+        "name": "created_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 10,
+        "name": "updated_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [
+      {
+        "id": 0,
+        "seq": 0,
+        "table": "travelers",
+        "from": "traveler_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "CASCADE",
+        "match": "NONE"
+      }
+    ],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "ix_traveler_affinities_traveler_id_dim_type",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 1,
+        "name": "ix_traveler_affinities_traveler_id",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 2,
+        "name": "sqlite_autoindex_traveler_affinities_2",
+        "unique": 1,
+        "origin": "u",
+        "partial": 0
+      },
+      {
+        "seq": 3,
+        "name": "sqlite_autoindex_traveler_affinities_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "traveler_preferences": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "traveler_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 1,
+        "name": "preferred_category_slugs",
+        "type": "JSON",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "budget_sensitivity",
+        "type": "VARCHAR(20)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "preferred_duration_minutes",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "preferred_max_distance_km",
+        "type": "FLOAT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "accessibility_requirements",
+        "type": "JSON",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 7,
+        "name": "created_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 8,
+        "name": "updated_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [
+      {
+        "id": 0,
+        "seq": 0,
+        "table": "travelers",
+        "from": "traveler_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "CASCADE",
+        "match": "NONE"
+      }
+    ],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "sqlite_autoindex_traveler_preferences_2",
+        "unique": 1,
+        "origin": "u",
+        "partial": 0
+      },
+      {
+        "seq": 1,
+        "name": "sqlite_autoindex_traveler_preferences_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "traveler_interactions": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "traveler_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 1,
+        "name": "experience_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "event_type",
+        "type": "VARCHAR(30)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "client_event_id",
+        "type": "VARCHAR(100)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "recommendation_session_id",
+        "type": "VARCHAR(36)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "rank_position",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "rating",
+        "type": "FLOAT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "occurred_at",
+        "type": "DATETIME",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 8,
+        "name": "source",
+        "type": "VARCHAR(30)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 9,
+        "name": "metadata",
+        "type": "JSON",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 10,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 11,
+        "name": "created_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 12,
+        "name": "updated_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [
+      {
+        "id": 0,
+        "seq": 0,
+        "table": "travelers",
+        "from": "traveler_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "CASCADE",
+        "match": "NONE"
+      },
+      {
+        "id": 1,
+        "seq": 0,
+        "table": "experiences",
+        "from": "experience_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "CASCADE",
+        "match": "NONE"
+      }
+    ],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "ix_traveler_interactions_traveler_id_event_type",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 1,
+        "name": "ix_traveler_interactions_traveler_id_created_at",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 2,
+        "name": "ix_traveler_interactions_traveler_id",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 3,
+        "name": "ix_traveler_interactions_experience_id",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 4,
+        "name": "sqlite_autoindex_traveler_interactions_2",
+        "unique": 1,
+        "origin": "u",
+        "partial": 0
+      },
+      {
+        "seq": 5,
+        "name": "sqlite_autoindex_traveler_interactions_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "experience_embeddings": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "experience_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 1,
+        "name": "embedding",
+        "type": "JSON",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "embedding_model",
+        "type": "VARCHAR(80)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "embedding_dimensions",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "source_content_hash",
+        "type": "VARCHAR(64)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 6,
+        "name": "created_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "updated_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [
+      {
+        "id": 0,
+        "seq": 0,
+        "table": "experiences",
+        "from": "experience_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "CASCADE",
+        "match": "NONE"
+      }
+    ],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "ix_experience_embeddings_experience_id",
+        "unique": 1,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 1,
+        "name": "sqlite_autoindex_experience_embeddings_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "booking_requests": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "traveler_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 1,
+        "name": "itinerary_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "itinerary_item_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "experience_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "provider_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "requested_start",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "requested_end",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "party_size",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 8,
+        "name": "traveler_note",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 9,
+        "name": "status",
+        "type": "VARCHAR(9)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 10,
+        "name": "requested_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 11,
+        "name": "responded_at",
+        "type": "DATETIME",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 12,
+        "name": "provider_note",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 13,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 14,
+        "name": "created_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 15,
+        "name": "updated_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [
+      {
+        "id": 0,
+        "seq": 0,
+        "table": "travelers",
+        "from": "traveler_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "CASCADE",
+        "match": "NONE"
+      },
+      {
+        "id": 1,
+        "seq": 0,
+        "table": "providers",
+        "from": "provider_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "RESTRICT",
+        "match": "NONE"
+      },
+      {
+        "id": 2,
+        "seq": 0,
+        "table": "itinerary_items",
+        "from": "itinerary_item_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "CASCADE",
+        "match": "NONE"
+      },
+      {
+        "id": 3,
+        "seq": 0,
+        "table": "itineraries",
+        "from": "itinerary_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "CASCADE",
+        "match": "NONE"
+      },
+      {
+        "id": 4,
+        "seq": 0,
+        "table": "experiences",
+        "from": "experience_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "RESTRICT",
+        "match": "NONE"
+      }
+    ],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "ix_booking_requests_traveler_provider_experience_itinerary_status",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 1,
+        "name": "ix_booking_requests_traveler_id",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 2,
+        "name": "ix_booking_requests_provider_id",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 3,
+        "name": "ix_booking_requests_itinerary_id",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 4,
+        "name": "ix_booking_requests_experience_id",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 5,
+        "name": "sqlite_autoindex_booking_requests_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "context_snapshots": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "context_type",
+        "type": "VARCHAR(7)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 1,
+        "name": "scope_key",
+        "type": "VARCHAR(200)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "payload",
+        "type": "JSON",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "source",
+        "type": "VARCHAR(30)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "fetched_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "valid_until",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "source_version",
+        "type": "VARCHAR(40)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 8,
+        "name": "created_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 9,
+        "name": "updated_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "ix_context_snapshots_type_scope",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 1,
+        "name": "sqlite_autoindex_context_snapshots_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "itinerary_revisions": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "itinerary_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 1,
+        "name": "version",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "previous_revision_id",
+        "type": "VARCHAR(36)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "trigger",
+        "type": "VARCHAR(20)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "status",
+        "type": "VARCHAR(20)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "changes",
+        "type": "JSON",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "context_snapshot_reference",
+        "type": "VARCHAR(36)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "reason",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 8,
+        "name": "idempotency_key",
+        "type": "VARCHAR(100)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 9,
+        "name": "generated_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 10,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 11,
+        "name": "created_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 12,
+        "name": "updated_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [
+      {
+        "id": 0,
+        "seq": 0,
+        "table": "itineraries",
+        "from": "itinerary_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "CASCADE",
+        "match": "NONE"
+      }
+    ],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "ix_itinerary_revisions_itinerary_id_version",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 1,
+        "name": "ix_itinerary_revisions_itinerary_id",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 2,
+        "name": "sqlite_autoindex_itinerary_revisions_2",
+        "unique": 1,
+        "origin": "u",
+        "partial": 0
+      },
+      {
+        "seq": 3,
+        "name": "sqlite_autoindex_itinerary_revisions_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "itinerary_items": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "itinerary_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 1,
+        "name": "experience_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "sequence_order",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "planned_start",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "planned_end",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "duration_minutes",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "travel_from_previous_minutes",
+        "type": "FLOAT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "travel_from_previous_distance_km",
+        "type": "FLOAT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 8,
+        "name": "travel_mode",
+        "type": "VARCHAR(20)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 9,
+        "name": "buffer_before_minutes",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 10,
+        "name": "buffer_after_minutes",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 11,
+        "name": "estimated_cost",
+        "type": "FLOAT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 12,
+        "name": "source_rank_position",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 13,
+        "name": "source_ranking_score",
+        "type": "FLOAT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 14,
+        "name": "narrative_text",
+        "type": "VARCHAR(1000)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 15,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 16,
+        "name": "created_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 17,
+        "name": "updated_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 18,
+        "name": "is_locked",
+        "type": "BOOLEAN",
+        "notnull": 1,
+        "dflt_value": "0",
+        "pk": 0
+      },
+      {
+        "cid": 19,
+        "name": "item_state",
+        "type": "VARCHAR(20)",
+        "notnull": 1,
+        "dflt_value": "'ACTIVE'",
+        "pk": 0
+      },
+      {
+        "cid": 20,
+        "name": "route_status",
+        "type": "VARCHAR(20)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 21,
+        "name": "route_source",
+        "type": "VARCHAR(30)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 22,
+        "name": "route_geometry",
+        "type": "JSON",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 23,
+        "name": "route_waypoint_key",
+        "type": "VARCHAR(200)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 24,
+        "name": "route_calculated_at",
+        "type": "DATETIME",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [
+      {
+        "id": 0,
+        "seq": 0,
+        "table": "experiences",
+        "from": "experience_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "RESTRICT",
+        "match": "NONE"
+      },
+      {
+        "id": 1,
+        "seq": 0,
+        "table": "itineraries",
+        "from": "itinerary_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "CASCADE",
+        "match": "NONE"
+      }
+    ],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "ix_itinerary_items_itinerary_id_experience_id",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 1,
+        "name": "ix_itinerary_items_experience_id",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 2,
+        "name": "ix_itinerary_items_itinerary_id",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 3,
+        "name": "sqlite_autoindex_itinerary_items_2",
+        "unique": 1,
+        "origin": "u",
+        "partial": 0
+      },
+      {
+        "seq": 4,
+        "name": "sqlite_autoindex_itinerary_items_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "provider_synthetic_demand_snapshots": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "provider_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 1,
+        "name": "experience_id",
+        "type": "VARCHAR(36)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "period_start",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "period_end",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "views",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "saves",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "completions",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "booking_requests",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 8,
+        "name": "accepted_bookings",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 9,
+        "name": "ratings_count",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 10,
+        "name": "average_rating",
+        "type": "FLOAT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 11,
+        "name": "segment_type",
+        "type": "VARCHAR(40)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 12,
+        "name": "segment_key",
+        "type": "VARCHAR(80)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 13,
+        "name": "segment_label",
+        "type": "VARCHAR(200)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 14,
+        "name": "is_synthetic",
+        "type": "BOOLEAN",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 15,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 16,
+        "name": "created_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 17,
+        "name": "updated_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [
+      {
+        "id": 0,
+        "seq": 0,
+        "table": "providers",
+        "from": "provider_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "CASCADE",
+        "match": "NONE"
+      },
+      {
+        "id": 1,
+        "seq": 0,
+        "table": "experiences",
+        "from": "experience_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "SET NULL",
+        "match": "NONE"
+      }
+    ],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "ix_provider_synthetic_demand_snapshots_provider_id",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 1,
+        "name": "ix_prov_synth_demand_provider_period",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 2,
+        "name": "ix_prov_synth_demand_provider_experience",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 3,
+        "name": "sqlite_autoindex_provider_synthetic_demand_snapshots_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "provider_notifications": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "provider_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 1,
+        "name": "type",
+        "type": "VARCHAR(16)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "title",
+        "type": "VARCHAR(200)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "body",
+        "type": "TEXT",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "experience_id",
+        "type": "VARCHAR(36)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "match_score",
+        "type": "FLOAT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "segment_summary",
+        "type": "JSON",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "is_read",
+        "type": "BOOLEAN",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 8,
+        "name": "source_event_id",
+        "type": "VARCHAR(36)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 9,
+        "name": "source_booking_request_id",
+        "type": "VARCHAR(36)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 10,
+        "name": "traveler_id",
+        "type": "VARCHAR(36)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 11,
+        "name": "cooldown_key",
+        "type": "VARCHAR(32)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 12,
+        "name": "is_synthetic",
+        "type": "BOOLEAN",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 13,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 14,
+        "name": "created_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 15,
+        "name": "updated_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [
+      {
+        "id": 0,
+        "seq": 0,
+        "table": "booking_requests",
+        "from": "source_booking_request_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "SET NULL",
+        "match": "NONE"
+      },
+      {
+        "id": 1,
+        "seq": 0,
+        "table": "providers",
+        "from": "provider_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "CASCADE",
+        "match": "NONE"
+      },
+      {
+        "id": 2,
+        "seq": 0,
+        "table": "experiences",
+        "from": "experience_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "SET NULL",
+        "match": "NONE"
+      }
+    ],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "ix_provider_notifications_source_booking",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 1,
+        "name": "ix_provider_notifications_provider_read_created",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 2,
+        "name": "ix_provider_notifications_provider_id",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 3,
+        "name": "ix_provider_notifications_provider_cooldown",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 4,
+        "name": "sqlite_autoindex_provider_notifications_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "emergency_alerts": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 1,
+        "name": "traveler_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "status",
+        "type": "VARCHAR(50)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "created_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "acknowledged_at",
+        "type": "DATETIME",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "cancelled_at",
+        "type": "DATETIME",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "trigger_source",
+        "type": "VARCHAR(100)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "message",
+        "type": "VARCHAR(1000)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 8,
+        "name": "latitude",
+        "type": "FLOAT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 9,
+        "name": "longitude",
+        "type": "FLOAT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 10,
+        "name": "location_shared",
+        "type": "BOOLEAN",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 11,
+        "name": "delivery_status",
+        "type": "VARCHAR(100)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 12,
+        "name": "idempotency_key",
+        "type": "VARCHAR(100)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [
+      {
+        "id": 0,
+        "seq": 0,
+        "table": "travelers",
+        "from": "traveler_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "CASCADE",
+        "match": "NONE"
+      }
+    ],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "ix_emergency_alerts_traveler_id",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 1,
+        "name": "sqlite_autoindex_emergency_alerts_2",
+        "unique": 1,
+        "origin": "u",
+        "partial": 0
+      },
+      {
+        "seq": 2,
+        "name": "sqlite_autoindex_emergency_alerts_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "emergency_contacts": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 1,
+        "name": "traveler_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "name",
+        "type": "VARCHAR(100)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "phone",
+        "type": "VARCHAR(30)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "relationship",
+        "type": "VARCHAR(50)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "priority",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "is_primary",
+        "type": "BOOLEAN",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "is_active",
+        "type": "BOOLEAN",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 8,
+        "name": "created_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 9,
+        "name": "updated_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [
+      {
+        "id": 0,
+        "seq": 0,
+        "table": "travelers",
+        "from": "traveler_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "CASCADE",
+        "match": "NONE"
+      }
+    ],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "ix_emergency_contacts_traveler_id",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 1,
+        "name": "sqlite_autoindex_emergency_contacts_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "experiences": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "provider_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 1,
+        "name": "category_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "location_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "title",
+        "type": "VARCHAR(200)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "short_description",
+        "type": "VARCHAR(300)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "full_description",
+        "type": "TEXT",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "currency",
+        "type": "VARCHAR(3)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "price",
+        "type": "FLOAT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 8,
+        "name": "minimum_price",
+        "type": "FLOAT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 9,
+        "name": "maximum_price",
+        "type": "FLOAT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 10,
+        "name": "price_type",
+        "type": "VARCHAR(7)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 11,
+        "name": "price_source",
+        "type": "VARCHAR(20)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 12,
+        "name": "price_confidence",
+        "type": "FLOAT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 13,
+        "name": "is_price_estimated",
+        "type": "BOOLEAN",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 14,
+        "name": "duration_minutes",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 15,
+        "name": "duration_is_estimated",
+        "type": "BOOLEAN",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 16,
+        "name": "minimum_group_size",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 17,
+        "name": "maximum_group_size",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 18,
+        "name": "capacity",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 19,
+        "name": "status",
+        "type": "VARCHAR(8)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 20,
+        "name": "verification_status",
+        "type": "VARCHAR(16)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 21,
+        "name": "wheelchair_accessible",
+        "type": "BOOLEAN",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 22,
+        "name": "step_free",
+        "type": "BOOLEAN",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 23,
+        "name": "accessibility_notes",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 24,
+        "name": "suitability",
+        "type": "JSON",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 25,
+        "name": "tags",
+        "type": "JSON",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 26,
+        "name": "rating",
+        "type": "FLOAT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 27,
+        "name": "rating_source",
+        "type": "VARCHAR(20)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 28,
+        "name": "review_count",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 29,
+        "name": "opening_hours_status",
+        "type": "VARCHAR(20)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 30,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 31,
+        "name": "created_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 32,
+        "name": "updated_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 33,
+        "name": "source_type",
+        "type": "VARCHAR(40)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 34,
+        "name": "source_name",
+        "type": "VARCHAR(80)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 35,
+        "name": "source_record_id",
+        "type": "VARCHAR(120)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 36,
+        "name": "source_version",
+        "type": "VARCHAR(40)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 37,
+        "name": "source_accessed_at",
+        "type": "DATETIME",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 38,
+        "name": "source_url",
+        "type": "VARCHAR(500)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 39,
+        "name": "source_license",
+        "type": "VARCHAR(120)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 40,
+        "name": "attribution_required",
+        "type": "BOOLEAN",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 41,
+        "name": "attribution_text",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 42,
+        "name": "source_confidence",
+        "type": "FLOAT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 43,
+        "name": "is_synthetic",
+        "type": "BOOLEAN",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 44,
+        "name": "is_enriched",
+        "type": "BOOLEAN",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 45,
+        "name": "environmental_type",
+        "type": "VARCHAR(7)",
+        "notnull": 1,
+        "dflt_value": "'UNKNOWN'",
+        "pk": 0
+      },
+      {
+        "cid": 46,
+        "name": "weather_sensitivity",
+        "type": "VARCHAR(7)",
+        "notnull": 1,
+        "dflt_value": "'UNKNOWN'",
+        "pk": 0
+      },
+      {
+        "cid": 47,
+        "name": "weather_policy",
+        "type": "VARCHAR(22)",
+        "notnull": 1,
+        "dflt_value": "'NONE'",
+        "pk": 0
+      },
+      {
+        "cid": 48,
+        "name": "image_url",
+        "type": "VARCHAR(1000)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 49,
+        "name": "image_thumbnail_url",
+        "type": "VARCHAR(1000)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 50,
+        "name": "image_source",
+        "type": "VARCHAR(40)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 51,
+        "name": "image_source_url",
+        "type": "VARCHAR(1000)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 52,
+        "name": "image_source_id",
+        "type": "VARCHAR(300)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 53,
+        "name": "image_license",
+        "type": "VARCHAR(120)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 54,
+        "name": "image_license_url",
+        "type": "VARCHAR(500)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 55,
+        "name": "image_author",
+        "type": "VARCHAR(300)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 56,
+        "name": "image_attribution_text",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 57,
+        "name": "image_is_place_specific",
+        "type": "BOOLEAN",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 58,
+        "name": "image_is_synthetic",
+        "type": "BOOLEAN",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 59,
+        "name": "image_match_method",
+        "type": "VARCHAR(40)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 60,
+        "name": "image_match_score",
+        "type": "FLOAT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 61,
+        "name": "image_retrieved_at",
+        "type": "DATETIME",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [
+      {
+        "id": 0,
+        "seq": 0,
+        "table": "locations",
+        "from": "location_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "CASCADE",
+        "match": "NONE"
+      },
+      {
+        "id": 1,
+        "seq": 0,
+        "table": "experience_categories",
+        "from": "category_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "RESTRICT",
+        "match": "NONE"
+      },
+      {
+        "id": 2,
+        "seq": 0,
+        "table": "providers",
+        "from": "provider_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "CASCADE",
+        "match": "NONE"
+      }
+    ],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "sqlite_autoindex_experiences_2",
+        "unique": 1,
+        "origin": "u",
+        "partial": 0
+      },
+      {
+        "seq": 1,
+        "name": "sqlite_autoindex_experiences_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "experience_reviews": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 1,
+        "name": "experience_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "rating_value",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "title",
+        "type": "VARCHAR(160)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "body",
+        "type": "TEXT",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "author_display_name",
+        "type": "VARCHAR(80)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "language",
+        "type": "VARCHAR(10)",
+        "notnull": 1,
+        "dflt_value": "'en'",
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "reviewed_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 8,
+        "name": "source_type",
+        "type": "VARCHAR(40)",
+        "notnull": 1,
+        "dflt_value": "'synthetic_enrichment'",
+        "pk": 0
+      },
+      {
+        "cid": 9,
+        "name": "source_name",
+        "type": "VARCHAR(80)",
+        "notnull": 1,
+        "dflt_value": "'LocaLens synthetic review generator'",
+        "pk": 0
+      },
+      {
+        "cid": 10,
+        "name": "is_synthetic",
+        "type": "BOOLEAN",
+        "notnull": 1,
+        "dflt_value": "1",
+        "pk": 0
+      },
+      {
+        "cid": 11,
+        "name": "is_enriched",
+        "type": "BOOLEAN",
+        "notnull": 1,
+        "dflt_value": "0",
+        "pk": 0
+      },
+      {
+        "cid": 12,
+        "name": "generation_version",
+        "type": "VARCHAR(20)",
+        "notnull": 1,
+        "dflt_value": "'v1'",
+        "pk": 0
+      },
+      {
+        "cid": 13,
+        "name": "synthetic_sequence",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": "'0'",
+        "pk": 0
+      },
+      {
+        "cid": 14,
+        "name": "created_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 15,
+        "name": "updated_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [
+      {
+        "id": 0,
+        "seq": 0,
+        "table": "experiences",
+        "from": "experience_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "CASCADE",
+        "match": "NONE"
+      }
+    ],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "ix_experience_reviews_exp_reviewed",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 1,
+        "name": "ix_experience_reviews_experience_id",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 2,
+        "name": "sqlite_autoindex_experience_reviews_2",
+        "unique": 1,
+        "origin": "u",
+        "partial": 0
+      },
+      {
+        "seq": 3,
+        "name": "sqlite_autoindex_experience_reviews_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "experience_opening_hours": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "experience_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 1,
+        "name": "day_of_week",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "open_time",
+        "type": "VARCHAR(5)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "close_time",
+        "type": "VARCHAR(5)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "is_closed",
+        "type": "BOOLEAN",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 6,
+        "name": "source_type",
+        "type": "VARCHAR(40)",
+        "notnull": 1,
+        "dflt_value": "'synthetic'",
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "is_synthetic",
+        "type": "BOOLEAN",
+        "notnull": 1,
+        "dflt_value": "1",
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [
+      {
+        "id": 0,
+        "seq": 0,
+        "table": "experiences",
+        "from": "experience_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "CASCADE",
+        "match": "NONE"
+      }
+    ],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "sqlite_autoindex_experience_opening_hours_2",
+        "unique": 1,
+        "origin": "u",
+        "partial": 0
+      },
+      {
+        "seq": 1,
+        "name": "sqlite_autoindex_experience_opening_hours_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "experience_availability": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "experience_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 1,
+        "name": "starts_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "ends_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "capacity",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "available_slots",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "status",
+        "type": "VARCHAR(9)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 7,
+        "name": "created_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 8,
+        "name": "updated_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 9,
+        "name": "source_type",
+        "type": "VARCHAR(40)",
+        "notnull": 1,
+        "dflt_value": "'synthetic'",
+        "pk": 0
+      },
+      {
+        "cid": 10,
+        "name": "is_synthetic",
+        "type": "BOOLEAN",
+        "notnull": 1,
+        "dflt_value": "1",
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [
+      {
+        "id": 0,
+        "seq": 0,
+        "table": "experiences",
+        "from": "experience_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "CASCADE",
+        "match": "NONE"
+      }
+    ],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "ix_experience_availability_experience_id",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 1,
+        "name": "sqlite_autoindex_experience_availability_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "itineraries": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "traveler_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 1,
+        "name": "title",
+        "type": "VARCHAR(200)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "itinerary_date",
+        "type": "DATE",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "start_time",
+        "type": "TIME",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "end_time",
+        "type": "TIME",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "status",
+        "type": "VARCHAR(17)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "source",
+        "type": "VARCHAR(8)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "total_duration_minutes",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 8,
+        "name": "total_travel_minutes",
+        "type": "FLOAT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 9,
+        "name": "estimated_total_cost",
+        "type": "FLOAT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 10,
+        "name": "currency",
+        "type": "VARCHAR(3)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 11,
+        "name": "narrative_title",
+        "type": "VARCHAR(200)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 12,
+        "name": "narrative_summary",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 13,
+        "name": "narrative_closing_message",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 14,
+        "name": "ranking_model_version",
+        "type": "VARCHAR(40)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 15,
+        "name": "narrative_model_version",
+        "type": "VARCHAR(40)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 16,
+        "name": "generated_at",
+        "type": "DATETIME",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 17,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 18,
+        "name": "created_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 19,
+        "name": "updated_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 20,
+        "name": "version",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": "'1'",
+        "pk": 0
+      },
+      {
+        "cid": 21,
+        "name": "current_revision_id",
+        "type": "VARCHAR(36)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 22,
+        "name": "replanning_status",
+        "type": "VARCHAR(30)",
+        "notnull": 1,
+        "dflt_value": "'STABLE'",
+        "pk": 0
+      },
+      {
+        "cid": 23,
+        "name": "context_last_updated_at",
+        "type": "DATETIME",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 24,
+        "name": "is_discoverable",
+        "type": "BOOLEAN",
+        "notnull": 1,
+        "dflt_value": "0",
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [
+      {
+        "id": 0,
+        "seq": 0,
+        "table": "travelers",
+        "from": "traveler_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "CASCADE",
+        "match": "NONE"
+      }
+    ],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "ix_itineraries_traveler_id",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 1,
+        "name": "ix_itineraries_traveler_id_date_status",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 2,
+        "name": "sqlite_autoindex_itineraries_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "itinerary_participants": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 1,
+        "name": "itinerary_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "sequence",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "age_years",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "age_band",
+        "type": "VARCHAR(10)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "gender",
+        "type": "VARCHAR(20)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "created_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "updated_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [
+      {
+        "id": 0,
+        "seq": 0,
+        "table": "itineraries",
+        "from": "itinerary_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "CASCADE",
+        "match": "NONE"
+      }
+    ],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "ix_itinerary_participants_itinerary_id",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 1,
+        "name": "sqlite_autoindex_itinerary_participants_2",
+        "unique": 1,
+        "origin": "u",
+        "partial": 0
+      },
+      {
+        "seq": 2,
+        "name": "sqlite_autoindex_itinerary_participants_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  },
+  "itinerary_planning_profiles": {
+    "columns": [
+      {
+        "cid": 0,
+        "name": "id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 1,
+        "name": "itinerary_id",
+        "type": "VARCHAR(36)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "destination_key",
+        "type": "VARCHAR(160)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "destination_label",
+        "type": "VARCHAR(200)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "group_size",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "children_count",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "teens_count",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "adults_count",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 8,
+        "name": "seniors_count",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 9,
+        "name": "age_band_distribution",
+        "type": "JSON",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 10,
+        "name": "interests",
+        "type": "JSON",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 11,
+        "name": "budget_max",
+        "type": "FLOAT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 12,
+        "name": "pace",
+        "type": "VARCHAR(20)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 13,
+        "name": "accessibility_requirements",
+        "type": "JSON",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 14,
+        "name": "travel_mode",
+        "type": "VARCHAR(20)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 15,
+        "name": "trip_month",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 16,
+        "name": "start_location_lat",
+        "type": "FLOAT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 17,
+        "name": "start_location_lng",
+        "type": "FLOAT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 18,
+        "name": "start_location_label",
+        "type": "VARCHAR(200)",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 19,
+        "name": "similarity_signature",
+        "type": "VARCHAR(40)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 20,
+        "name": "profile_version",
+        "type": "VARCHAR(40)",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 21,
+        "name": "created_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      },
+      {
+        "cid": 22,
+        "name": "updated_at",
+        "type": "DATETIME",
+        "notnull": 1,
+        "dflt_value": "CURRENT_TIMESTAMP",
+        "pk": 0
+      }
+    ],
+    "foreign_keys": [
+      {
+        "id": 0,
+        "seq": 0,
+        "table": "itineraries",
+        "from": "itinerary_id",
+        "to": "id",
+        "on_update": "NO ACTION",
+        "on_delete": "CASCADE",
+        "match": "NONE"
+      }
+    ],
+    "indexes": [
+      {
+        "seq": 0,
+        "name": "ix_itinerary_planning_profiles_destination_key",
+        "unique": 0,
+        "origin": "c",
+        "partial": 0
+      },
+      {
+        "seq": 1,
+        "name": "sqlite_autoindex_itinerary_planning_profiles_2",
+        "unique": 1,
+        "origin": "u",
+        "partial": 0
+      },
+      {
+        "seq": 2,
+        "name": "sqlite_autoindex_itinerary_planning_profiles_1",
+        "unique": 1,
+        "origin": "pk",
+        "partial": 0
+      }
+    ]
+  }
+}

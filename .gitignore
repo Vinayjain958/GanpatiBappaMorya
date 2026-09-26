@@ -104,3 +104,8 @@ temp/
 # output (data/processed/) is small and IS committed for reproducibility.
 data/raw/*
 !data/raw/.gitkeep
+
+# ─── Media uploads (local dev) ────────────────────────────────────────────────
+apps/api/data/uploads/*
+!apps/api/data/uploads/.gitkeep
+

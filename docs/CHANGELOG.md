@@ -6,6 +6,89 @@
 
 ---
 
+## [Unreleased] 2026-09-26 — Traveler Direct-Publish "Add a Local Experience" Contribution (ADR-058)
+
+- **Backend**: New `POST /api/v1/contributions/experiences` (multipart/form-data,
+  traveler-only) publishes directly into the existing `Experience` catalog after
+  deterministic validation — no admin approval step, no second catalog model.
+  New `TravelerExperienceContribution` audit table (migration `996d3e843440`,
+  chained from `d7e2f4a9b301`; upgrade/downgrade/re-upgrade verified, all 15,000
+  existing experiences preserved) plus a singleton "LocaLens Community"
+  placeholder `Provider` row every contribution attaches to.
+- **Provenance**: New `source_type="traveler_submission"` and
+  `image_source="traveler_upload"` values, both excluded from
+  `scripts/enrich_experience_metadata.py`'s synthetic enrichment selection and
+  from Wikimedia image re-resolution — a contribution never gets a fabricated
+  rating, review, opening hours, or overwritten photo. Starts with
+  `rating=NULL`/`review_count=NULL`; real reviews flow through the existing
+  `user_submitted` review path unchanged.
+- **Image upload (new capability)**: `Pillow` added as a dependency (none
+  existed before). `services/media_validation.py` content-sniffs the actual
+  bytes (never trusts filename/Content-Type), strips all EXIF including GPS,
+  downscales, and re-encodes to JPEG. `adapters/media_storage.py::MediaStorageAdapter`
+  is a small local-filesystem dev adapter designed to be swapped for object
+  storage later without touching the service layer.
+- **Duplicate detection**: fully deterministic (`services/contribution_duplicate.py`)
+  — name-similarity + Haversine proximity + phone/website equality. A strong
+  match blocks publication (`409`); an uncertain match returns `200
+  POSSIBLE_DUPLICATE` for the client to confirm or override.
+- **Rate limiting & idempotency**: new in-memory per-traveler sliding-window
+  limiter; a client-supplied `Idempotency-Key` header prevents a network retry
+  or double-click from publishing twice.
+- **Frontend**: new `/contribute/experience` page, `ExperienceContributionForm`
+  / `ExperiencePhotoUploader` / `ExperienceLocationPicker` components, and a
+  new `useExperienceContribution()` hook. `lib/api/client.ts` gained a
+  `postForm()` method (first multipart upload in the codebase). "+ Add Local
+  Experience" entry point added to `SiteHeader` for traveler accounts.
+  `ExperienceDetail` now shows "Community Added" instead of a
+  verified/unverified provider badge for `traveler_submission` experiences,
+  and "No ratings yet — be the first to review" instead of crashing on a
+  `null` average rating.
+- **Tests**: 20 new backend tests (auth, validation, provenance, publish,
+  duplicates, ownership, idempotency, image validation) plus regression
+  coverage confirming synthetic enrichment and reseeding both correctly skip
+  `traveler_submission` rows — all 572 backend tests pass. 6 new frontend
+  API-client tests — all 116 frontend tests pass. See docs/DECISIONS.md
+  ADR-058.
+
+## [Unreleased] 2026-09-26 — Real Mumbai Experience Catalog Expansion to 15,000 Places (ADR-057)
+
+- **Catalog Expansion**: Expanded active LocaLens catalog from 413 to exactly 15,000
+  unique real-world Mumbai experiences using official Overture Maps Places release `2026-09-23.1`
+  (schema v2.x). Zero synthetic businesses or fabricated POIs.
+- **Truthful Completeness**: Missing real-world attributes (hours, ratings, reviews, capacity,
+  availability) preserved strictly as `NULL` / `"unavailable"` (no fake reviews or synthetic ratings).
+- **Conflation & Deduplication**: Multi-signal `PlaceConflationService` with deterministic scoring.
+  149 internal duplicates merged; 273 ambiguous pairs logged to `data/real_ingestion/ambiguous_matches.jsonl`.
+- **Lineage**: Full provenance preserved (`source_type="overture_places"`, GERS IDs, CDLA-Permissive-2.0 license).
+  All 413 pre-existing records (65 synthetic demo, 60 manual) preserved untouched.
+- **Artifacts**: Complete audit manifests, scope definition, and validation reports produced
+  under `data/real_ingestion/`.
+
+## [Unreleased] 2026-09-26 — Personalized Planning, Similar Plans, Route Map (ADR-056)
+
+- **Backend**: `ItineraryParticipant`, `ItineraryPlanningProfile`,
+  `Itinerary.is_discoverable`, route-leg snapshot columns on
+  `ItineraryItem` (migration `d7e2f4a9b301`, chained from `c1b489a12e34`;
+  upgrade/downgrade/re-upgrade verified on an isolated copy of the dev DB,
+  all 14 existing itineraries / 34 items preserved). Optional `planning`
+  context on `POST /itineraries/compose`; new read-only
+  `POST /itineraries/similar`; `GET /itineraries/{id}` now returns
+  planning profile, participants and persisted route map data.
+  `ItineraryRouteService` persists OSRM legs after validation; replanning
+  and manual add refresh only changed legs. OSRM adapter now raises a
+  typed error on malformed route payloads.
+- **Frontend**: `/trip` and `/trip/[id]` load real itineraries from the
+  API (mock demo plan / mock-only detail page removed). Trip Planner form
+  gains destination, group size + per-traveler age/gender rows, starting
+  point (search first, explicit geolocation second), share opt-in, and a
+  similar-count step before generation. Route map on `MapSurface` with
+  numbered stops, per-leg road geometry, backend totals, and
+  timeline <-> map selection.
+- **Tests**: backend 519 passed (83 new); frontend 110 passed (41 new).
+  Playwright smoke run (isolated ports/DB) verified similar count, generation,
+  route map, refresh, and logout/login persistence. Not deployed.
+
 ## [Unreleased] 2026-09-25 — Phase 12 Final Verification Attempt
 
 Attempted full Phase 12 production integration, testing, hardening, and deployment.

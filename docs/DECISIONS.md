@@ -2201,3 +2201,227 @@ recording so nobody re-attempts the same hung approach later.
   `None` at those call sites at runtime. Both are annotation-precision
   gaps, not behavior bugs, and were left as-is per the "minimal fix,
   don't rewrite working subsystems" rule.
+
+---
+
+## ADR-056: Personalized Itinerary Planning, Similar-Plan Lookup, Persisted Route Legs, and the MapLibre Route Map (Single-Day Scope)
+
+**Status**: Accepted
+
+**Context**: Travelers need to plan for a whole group (size, per-person
+age and optional gender, starting point), see how many comparable plans
+already exist *before* generating anything, and get a route map of the
+final plan that survives refresh and logout/login. `Itinerary` is
+single-day (`itinerary_date` + `start_time`/`end_time`) and that scope
+was kept on purpose for this phase — no multi-day migration.
+
+**Decisions**:
+
+1. **Extend, don't duplicate.** Group context is an optional nested
+   `planning: ItineraryPlanningContext` on the existing
+   `ComposeItineraryRequest`; the same `POST /itineraries/compose` and the
+   same Composer/Validator/Narrator services run. The starting point
+   reuses the existing `origin_lat`/`origin_lng`; only its label is new.
+2. **Participants**: new `itinerary_participants` (sequence, age_years,
+   derived age_band, optional gender; no names). `age_band` is always
+   derived server-side (`src/core/itinerary_planning.derive_age_band`),
+   so a stored row can't hold a contradictory pair. Validation (422,
+   never silently corrected): participants == group_size, sequences
+   exactly 1..N, StrictInt ages 0-120, controlled gender vocabulary
+   (incl. `prefer_not_to_say`), `group_size <= Settings.itinerary_max_participants`
+   (**20**, mirrored for UX by `NEXT_PUBLIC_MAX_ITINERARY_PARTICIPANTS`;
+   a hard Pydantic ceiling of 50 rejects oversized payloads before any
+   validator runs). The older `party_size` keeps its own `le=50`.
+3. **Planning profile**: new `itinerary_planning_profiles` (1:1) with a
+   normalized destination key, aggregate group signals (children/teens/
+   adults/seniors + age-band distribution — no gender, no per-person
+   rows), interests, budget, pace, accessibility, travel mode, trip
+   month, start location (rounded to 4 dp) and a signature. It does NOT
+   copy dates (single-day: start = end = `itinerary_date`,
+   duration_days = 1, derived in the response) or ownership.
+4. **Privacy**: `Itinerary.is_discoverable` (default **false**) — a
+   sharing flag kept separate from `ProvenanceMixin`. Private itineraries
+   may contribute to the aggregate `similar_count` but are never
+   examples; examples expose only destination label, group size, pace,
+   themes/categories, stop count and route totals — never owner,
+   participants, narrative text, or ids of private plans. The
+   requester's own itineraries are excluded. Residual risk: a very
+   specific profile with a count of 1 hints that *someone* planned such
+   a trip (no identity/details leak); a k-anonymity floor is a follow-up.
+5. **Similarity** (`ItinerarySimilarityService`, `POST /itineraries/similar`):
+   deterministic weighted scoring (weights/threshold in
+   `src/core/itinerary_planning.py`: destination .25, duration .10, group
+   .20, interests .20, budget .08, pace .08, accessibility .06 — strong
+   only when requested —, trip period .03; threshold 0.60). Same city is
+   a hard SQL prefilter; at most 2000 most-recent profiles are scored;
+   only profile columns are selected. Stable order: score desc,
+   created_at desc, id asc. It never persists, composes, routes, or calls
+   Gemini. **Gender has no weight and no field on the scoring input at
+   all** (regression-tested).
+6. **Group size feeds the existing FeasibilityService capacity check**
+   (`effective_party_size`) in the candidate gate, the validator, manual
+   add and replanning. Missing capacity stays UNKNOWN (excluded) — no
+   invented capacity. Observed on the dev catalog: only 65 of 413 active
+   experiences record capacity, so group plans draw from those.
+7. **No age restrictions were added.** `Experience` has no authoritative
+   minimum/maximum age data, so age never affects feasibility (tested: a
+   2-year-old + 90-year-old get the same plan as two adults). Age and
+   gender are not wired into ranking either — Phase 7 ranking unchanged.
+8. **Route legs live on `ItineraryItem`** (`route_status`, `route_source`,
+   `route_geometry`, `route_waypoint_key`, `route_calculated_at`);
+   distance/duration stay in `travel_from_previous_*`. A single-day
+   itinerary is one linear sequence (one arriving leg per item), so a
+   separate `ItineraryRouteLeg` table would only duplicate data. Legs are
+   computed by `ItineraryRouteService` after validation, for the FINAL
+   sequence only, via the single `RoutingAdapter` (`include_geometry=True`;
+   the composer also asks for geometry so OSRM's TTL cache serves the
+   chosen legs). Statuses: ROUTED (OSRM, real GeoJSON), ESTIMATED
+   (haversine — labelled, never drawn), UNAVAILABLE (NoRoute/timeout/
+   malformed/exception — no numbers claimed), NOT_APPLICABLE (first stop
+   without a start). A route failure never fails a valid itinerary.
+   Totals are computed server-side from usable legs; mixed sources report
+   "mixed". GET never re-routes. `day_index` is always 0 in the contract.
+9. **Replanning / add-item** re-derive legs key by key: unchanged
+   waypoint pairs are reused, changed ones re-routed, and a changed pair
+   that fails to route drops its stale geometry and distance/time.
+10. **Frontend**: `/trip` and `/trip/[id]` hydrate only from
+    `GET /itineraries` / `GET /itineraries/{id}` (the mock "Demo plan"
+    card and the mock-only detail page were removed). The route map
+    reuses `MapSurface` (new stops/legs GeoJSON sources, fit-bounds,
+    stop-click callback; the `h-64` fix preserved). Timeline <-> map
+    selection is plain React state; all route facts also exist as
+    accessible text. Form/state logic is pure
+    (`lib/trip/planningForm.ts`, `lib/itinerary/itineraryMapData.ts`).
+
+**Pre-existing issue surfaced, not fixed**: the composer's
+local-improvement swap copies the replaced item's travel values. The
+route pass now overwrites them with the true leg for the final order,
+but that slot's schedule gap was sized with the old number.
+
+---
+
+## ADR-057: Real-World Experience Catalog Expansion (~15,000 Real Mumbai Places)
+
+**Decision**:
+Expand the active LocaLens experience catalog dynamically from the baseline 413
+records to 15,000 authentic, geolocated, real-world experiences using official
+Overture Maps Places release `2026-09-23.1` (schema v2.x).
+
+**Principles & Implementation**:
+1. **Real Data Only**: Zero synthetic businesses, fabricated venues, or simulated
+   POIs were introduced. Every single record maps directly to an official Overture
+   GERS ID and upstream provider (`meta`, `microsoft`).
+2. **Truthful Completeness**: Missing attributes (hours, ratings, reviews, capacity,
+   bookable availability slots) remain strictly `NULL` / `"unavailable"`. No fake
+   reviews or synthetic ratings are attached to real venues.
+3. **Geographic Scope**: Strictly preserved the project's Mumbai Bounding Box
+   (`[min_lon=72.75, min_lat=18.87, max_lon=72.98, max_lat=19.22]`) across the 12
+   official neighborhood centroids.
+4. **Deterministic Conflation**: Multi-signal `PlaceConflationService` scores identity,
+   geodesic distance, normalized name token overlap, phone numbers, and websites.
+   Pairs scoring 0.45–0.74 are treated as ambiguous and logged to
+   `data/real_ingestion/ambiguous_matches.jsonl` rather than blindly merged.
+5. **Idempotency & Baseline Protection**: All 413 pre-existing records (including 65
+   synthetic demo experiences and 60 manual catalog entries) are preserved untouched.
+   Subsequent pipeline runs verify target achievement and apply 0 duplicate records.
+
+---
+
+## ADR-058: Traveler Direct-Publish Contribution ("Add a Local Experience") — New `traveler_submission` Provenance, a Singleton Community Provider, and Deterministic-Only Duplicate Detection
+
+**Decision**:
+An authenticated traveler can publish a real local experience directly into the
+existing catalog from `POST /api/v1/contributions/experiences` — no admin
+approval step. The published row is an ordinary `Experience` (same table, same
+`GET /api/v1/experiences` discovery, same map, same itinerary composition);
+there is no second catalog, no second Experience/Location model, and no
+AI/Gemini call anywhere in the publish path.
+
+**Provenance**:
+- New `ProvenanceMixin.source_type` value: `"traveler_submission"` (distinct
+  from `"provider_submitted"`, which is a provider self-serve creation, and
+  from `"user_submitted"`, which is a real traveler *review*, not an
+  experience). `is_synthetic=False`, `is_enriched=False`.
+- New `Experience.image_source` value: `"traveler_upload"`, given the same
+  never-overwritten precedence as `"provider_upload"` — the synthetic
+  enrichment pipeline and the Wikimedia image-resolution script
+  (`scripts/enrich_experience_images.py`) both explicitly skip it.
+- A new audit-only table, `traveler_experience_contributions`
+  (`src/models/contribution.py`), records the as-submitted fields, the
+  contributing traveler, duplicate-check outcome, and a link to the
+  published `Experience`. It is **not** a second catalog — it exists purely
+  so a submission stays traceable for future moderation/takedown/ownership-
+  claim workflows without a schema redesign.
+
+**The `Experience.provider_id` NOT NULL problem**: `Experience.provider_id` is
+a required FK to `providers.id`, and a traveler is never auto-converted into
+a Provider account. Resolution: a single, fixed-id "LocaLens Community"
+placeholder `Provider` row (`provider_type="community"`, `source_type="system"`)
+that every traveler-submitted experience is attached to. It is seeded by the
+migration for real deployments and self-healingly get-or-created by
+`services/contribution.py` for test databases built via
+`Base.metadata.create_all` (which never run Alembic's data-seeding step).
+
+**Duplicate detection is entirely deterministic — no AI in the decision**:
+`services/contribution_duplicate.py` scores a candidate set (bounding-box
+pre-filtered via `ExperienceRepository.find_nearby_active`, reusing
+`core/geo.py`'s existing `haversine_km`/`bounding_box`) on normalized name
+similarity, phone-number equality (tolerant of a missing/extra country code),
+and website-domain equality. A **strong** match (same phone + nearby, or
+near-identical name + nearby, or same site + similar name) blocks publication
+outright (`409 DUPLICATE_EXPERIENCE`). An **uncertain** match returns
+`200 POSSIBLE_DUPLICATE` instead of an error — a decision point the frontend
+surfaces as "We may already have this" with `[View Existing]` /
+`[Continue Anyway]`; overriding records `duplicate_check_status="uncertain_overridden"`
+on the contribution row rather than silently merging.
+
+**Ratings/reviews start at zero, and stay real**: `rating`/`review_count` are
+`NULL` at publish time (never a fabricated `0.0`), and
+`scripts/enrich_experience_metadata.py`'s experience-selection query now
+excludes `source_type == "traveler_submission"` — a traveler's contribution
+can never receive synthetic reviews, hours, or availability just because the
+enrichment pipeline exists. Real reviews, once submitted, go through the
+existing `services/reviews.py` path (`source_type="user_submitted"`) exactly
+like a review on any other experience.
+
+**Image upload — new capability, kept minimal**: no upload/storage
+infrastructure existed anywhere in this codebase before this feature.
+`src/adapters/media_storage.py::MediaStorageAdapter` is a small `Protocol`
+with a `LocalFilesystemMediaStorage` dev implementation (served via a new
+`/media` static mount); it exists so a future production object-storage
+adapter (e.g. Supabase Storage — `supabase_url`/keys already exist unused in
+`core/config.py`) can be swapped in without touching the service layer. Every
+upload is content-verified with Pillow (a new dependency — the project had no
+image library at all), re-encoded to strip all EXIF (including GPS) and cap
+dimensions, and stored under a server-generated key — the raw filename and
+client-supplied `Content-Type` are never trusted.
+
+**Rate limiting and idempotency, without new infrastructure**: a small
+in-memory `SlidingWindowLimiter` (`core/inbound_rate_limit.py`) caps
+submissions per traveler per hour — a different shape of problem from
+`core/rate_limit.py::IntervalRateLimiter`, which paces this process's
+*outbound* calls to external services, so it wasn't reused directly.
+Idempotency is a client-supplied `Idempotency-Key` header matched against a
+`(traveler_id, idempotency_key)` unique constraint on the contribution table
+— no Redis, since the existing DB is sufficient for a single-process
+prototype.
+
+**Frontend**: a dedicated route, `/contribute/experience`
+(`app/contribute/experience/page.tsx`), not a modal — the codebase has no
+Dialog/Sheet primitive, and the existing "create an experience" convention
+(`/provider/experiences/new`) is already a dedicated page. Photo capture uses
+two plain `<input type="file">` elements, one with `capture="environment"`
+for the mobile rear camera. Location picking reuses the same search +
+"use current location" pattern as `components/trip/StartLocationField.tsx`
+(`components/contribution/ExperienceLocationPicker.tsx`) rather than adding a
+third variant; map-click placement was not added since `MapSurface` has no
+pin-drop capability today. `lib/api/client.ts` gained a `postForm()` method
+(multipart/form-data, no JSON body) since this is the first feature in the
+codebase to upload a file.
+
+**Non-goals**: no admin moderation dashboard (the contribution table makes
+one possible later without a redesign); no automatic Provider conversion for
+a contributing traveler; no full Playwright/Cypress E2E suite (none exists in
+this repository); no production object-storage vendor wired in yet (the
+adapter interface is ready for one).
+

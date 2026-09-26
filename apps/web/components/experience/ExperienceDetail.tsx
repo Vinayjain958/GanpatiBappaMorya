@@ -112,16 +112,20 @@ export function ExperienceDetail({ experience }: { experience: Experience }) {
           <section className="rounded-3xl border border-line bg-surface p-5 shadow-soft sm:p-6">
             <div className="flex flex-wrap items-center gap-2">
               <Badge tone="accent">{experience.categoryLabel}</Badge>
-              <Badge tone={experience.provider.verified ? "success" : "neutral"}>
-                {experience.provider.verified ? (
-                  <>
-                    <ShieldCheck className="size-3" aria-hidden="true" />
-                    Verified provider
-                  </>
-                ) : (
-                  "Unverified provider"
-                )}
-              </Badge>
+              {experience.sourceType === "traveler_submission" ? (
+                <Badge tone="highlight">Community Added</Badge>
+              ) : (
+                <Badge tone={experience.provider.verified ? "success" : "neutral"}>
+                  {experience.provider.verified ? (
+                    <>
+                      <ShieldCheck className="size-3" aria-hidden="true" />
+                      Verified provider
+                    </>
+                  ) : (
+                    "Unverified provider"
+                  )}
+                </Badge>
+              )}
             </div>
 
             <h1 className="mt-4 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
@@ -129,7 +133,11 @@ export function ExperienceDetail({ experience }: { experience: Experience }) {
             </h1>
 
             <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-              <p className="text-sm text-ink-muted">by {experience.provider.name}</p>
+              {experience.sourceType !== "traveler_submission" ? (
+                <p className="text-sm text-ink-muted">by {experience.provider.name}</p>
+              ) : (
+                <span />
+              )}
               <FeedbackControls experienceId={experience.id} />
             </div>
 
@@ -156,7 +164,7 @@ export function ExperienceDetail({ experience }: { experience: Experience }) {
 
             <span className="inline-flex items-center gap-2 rounded-full bg-surface-raised px-3.5 py-2 text-sm text-ink-muted">
               <Star className="size-4 shrink-0 fill-highlight text-highlight" aria-hidden="true" />
-              {ratingSummary
+              {ratingSummary && ratingSummary.averageRating != null
                 ? `${ratingSummary.averageRating.toFixed(1)} (${ratingSummary.reviewCount} reviews)`
                 : experience.rating != null
                   ? `${experience.rating} (${experience.reviewCount ?? 0} reviews)`
@@ -325,7 +333,7 @@ export function ExperienceDetail({ experience }: { experience: Experience }) {
                 </div>
               </div>
 
-              {ratingSummary ? (
+              {ratingSummary && ratingSummary.averageRating != null ? (
                 <div className="grid gap-6 rounded-2xl bg-surface-raised/60 p-5 sm:grid-cols-[200px_minmax(0,1fr)] sm:items-center">
                   <div className="text-center sm:border-r sm:border-line sm:pr-6 sm:text-left">
                     <div className="text-4xl font-extrabold tracking-tight text-ink">
@@ -336,7 +344,7 @@ export function ExperienceDetail({ experience }: { experience: Experience }) {
                         <Star
                           key={star}
                           className={`size-4 ${
-                            star <= Math.round(ratingSummary.averageRating)
+                            star <= Math.round(ratingSummary.averageRating!)
                               ? "fill-highlight text-highlight"
                               : "text-line"
                           }`}
@@ -371,7 +379,11 @@ export function ExperienceDetail({ experience }: { experience: Experience }) {
                     })}
                   </div>
                 </div>
-              ) : null}
+              ) : (
+                <p className="rounded-2xl bg-surface-raised/60 p-5 text-sm text-ink-muted">
+                  No ratings yet — be the first to review.
+                </p>
+              )}
 
               <WriteReviewForm experienceId={experience.id} onSubmitted={handleReviewSubmitted} />
 

@@ -197,6 +197,7 @@ export function mapApiExperienceToUi(
       : null,
     highlights: [],
     isSynthetic: api.is_synthetic,
+    sourceType: detail?.source_type,
     matchSignals: ranked?.match_signals,
     personalized: ranked?.personalized,
   };

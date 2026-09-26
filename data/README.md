@@ -305,3 +305,53 @@ from the Overture-derived catalog above:
 | Geocoding (search) | Nominatim (OSM) | No | Rate-limited, cached, no autocomplete |
 | Nearby POIs | Overpass API (OSM) | No | Informational only, never becomes catalog data |
 | Routing / travel time | OSRM public demo | No | Best-effort; falls back to Haversine estimate |
+
+---
+
+## 10. Real Mumbai Experience Catalog Expansion (~15,000 Real Experiences)
+
+- **Release queried**: `2026-09-23.1` (Overture Places v2 schema — `basic_category` / `taxonomy`).
+- **Target Achieved**: 15,000 active, unique, geolocated, real-world experiences.
+- **Lineage Breakdown**:
+  - `overture_places`: 14,875 (288 baseline + 14,587 new real-world places)
+  - `synthetic`: 65 (original fictional demo records preserved untouched)
+  - `manual_catalog_2026`: 60 (original curated records preserved untouched)
+- **Pipeline Tools**:
+  - `scripts/ingest_real_mumbai_places.py`: Ingestion CLI (`--dry-run` and `--apply`).
+  - `scripts/conflate_real_places.py`: Deterministic normalizer & `PlaceConflationService`.
+  - `scripts/audit_real_mumbai_catalog.py`: Post-import validation and sampling auditor.
+- **Conflation & Deduplication**:
+  - Multi-signal matching across exact source ID, distance, normalized name, phone, and website.
+  - Ambiguous matches logged to `data/real_ingestion/ambiguous_matches.jsonl` rather than blindly merged.
+- **Truthful Completeness**: Missing hours, ratings, reviews, and availability remain `NULL` / `"unavailable"` (no fake attributes).
+- **Audit Reports**: Full reports and manifests available under `data/real_ingestion/`.
+
+## 11. Traveler direct-publish contributions (`source_type="traveler_submission"`, ADR-058)
+
+A fourth, ongoing lineage alongside the three above: an authenticated traveler can publish a real
+local place directly into the catalog from `/contribute/experience` (see `docs/DECISIONS.md`
+ADR-058). Unlike the other three lineages, this data isn't produced by a batch script — it grows
+one row at a time as travelers submit places.
+
+- **`source_type="traveler_submission"`**: `is_synthetic=false`, `is_enriched=false`. The
+  `Experience.provider_id` points at a single fixed placeholder Provider row ("LocaLens
+  Community", `source_type="system"`) rather than a real business — see ADR-058 for why.
+- **`image_source="traveler_upload"`**: the traveler's own photo, content-verified and re-encoded
+  server-side (`apps/api/src/services/media_validation.py`), with all EXIF (including GPS)
+  stripped. Never overwritten by the Wikimedia enrichment script, same precedence as
+  `provider_upload`.
+- **Never synthetically enriched**: `scripts/enrich_experience_metadata.py`'s selection query
+  excludes `source_type == "traveler_submission"` — no fabricated rating, review, opening hours,
+  or availability is ever attached to a traveler's contribution. `rating`/`review_count` start
+  `NULL` and only change once a real traveler leaves a real review
+  (`source_type="user_submitted"` on `ExperienceReview`, the same path every other review uses).
+- **Audit trail, not a second catalog**: every submission is also recorded in
+  `traveler_experience_contributions` (as-submitted values, contributing traveler, duplicate-check
+  outcome, link to the published `Experience`) — this table exists purely to make future
+  moderation/takedown/ownership-claim workflows possible without a schema redesign; it is never
+  queried by discovery, search, or itinerary composition.
+- **Duplicate detection is deterministic, not AI-scored**: see
+  `apps/api/src/services/contribution_duplicate.py` — name-similarity + Haversine proximity +
+  phone/website equality, following the same "no PostGIS, compute distance in Python" convention
+  as the rest of this codebase's geo code (`apps/api/src/core/geo.py`).
+

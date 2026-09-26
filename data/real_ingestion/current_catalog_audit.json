@@ -1,0 +1,226 @@
+{
+  "database_path": "apps\\api\\localens_dev.db",
+  "experiences": {
+    "total": 413,
+    "active": 413,
+    "inactive": 0,
+    "draft": 0,
+    "provenance_distribution": {
+      "overture_places": 288,
+      "synthetic": 65,
+      "manual_catalog_2026": 60
+    },
+    "synthetic_distribution": {
+      "synthetic": 65,
+      "real": 348
+    },
+    "enriched_distribution": {
+      "enriched": 413,
+      "not_enriched": 0
+    },
+    "category_distribution": {
+      "adventure": 19,
+      "family": 21,
+      "art-galleries": 19,
+      "workshops": 32,
+      "crafts": 19,
+      "entertainment": 22,
+      "cafes": 20,
+      "nightlife": 19,
+      "outdoors": 29,
+      "shopping-markets": 25,
+      "local-experiences": 24,
+      "museums": 20,
+      "culture-heritage": 38,
+      "community": 19,
+      "photography": 19,
+      "food-drink": 20,
+      "wellness": 19,
+      "music": 21,
+      "street-food": 4,
+      "hidden-gems": 4
+    },
+    "geographic_distribution": {
+      "Powai": 70,
+      "Matunga": 33,
+      "Marine Drive": 25,
+      "Kala Ghoda": 20,
+      "Andheri": 80,
+      "Lower Parel": 29,
+      "Juhu": 23,
+      "Bandra": 32,
+      "Churchgate": 8,
+      "Fort": 14,
+      "Colaba": 8,
+      "Dadar": 17,
+      "A Ward": 1,
+      "Mahalakshmi": 3,
+      "Ghatkopar East": 1,
+      "Worli": 1,
+      "Khar": 1,
+      "H/W Ward": 1,
+      "MIDC": 1,
+      "Film City": 1,
+      "Aarey Milk Colony": 1,
+      "R/C Ward": 3,
+      "Vasai": 1,
+      "Virar East": 1,
+      "null": 5,
+      "Byculla East": 2,
+      "Sion East": 1,
+      "Asalpha": 1,
+      "S Ward": 1,
+      "Shivai Nagar": 1,
+      "Manpada": 1,
+      "Aadharwadi": 1,
+      "Sewri": 1,
+      "Sanpada": 1,
+      "Juinagar": 1,
+      "Turbhe": 1,
+      "Belapur West": 1,
+      "Seawoods East": 1,
+      "Bandra West": 1,
+      "Mahim West": 1,
+      "Andheri West": 2,
+      "Kandivali West": 1,
+      "Prabhadevi": 1,
+      "Santacruz West": 1,
+      "Govandi": 1,
+      "Mulund": 1,
+      "Goregaon West": 1,
+      "Santacruz base, Mumbai tours": 1,
+      "Mumbai": 1,
+      "South Mumbai": 1,
+      "Chembur": 1,
+      "Thane West": 1,
+      "Nerul West, Navi Mumbai": 1,
+      "Kharghar, Navi Mumbai": 1,
+      "Kopar Khairane": 1,
+      "Vasai West": 1
+    },
+    "image_availability": {
+      "no_image": 413
+    },
+    "rating_availability": {
+      "has_rating": 413
+    },
+    "review_availability": {
+      "has_reviews": 413
+    },
+    "opening_hour_availability": {
+      "with_opening_hours": 413,
+      "without_opening_hours": 0
+    },
+    "availability_slot_availability": {
+      "with_availability_slots": 413,
+      "without_availability_slots": 0
+    },
+    "provider_relationship_count": 413,
+    "traveler_submission_count": 0
+  },
+  "locations": {
+    "total": 413,
+    "duplicate_coordinate_sets_count": 1,
+    "missing_coordinates": 0,
+    "locality_distribution": {
+      "Powai": 70,
+      "Matunga": 33,
+      "Marine Drive": 25,
+      "Kala Ghoda": 20,
+      "Andheri": 80,
+      "Lower Parel": 29,
+      "Juhu": 23,
+      "Bandra": 32,
+      "Churchgate": 8,
+      "Fort": 14,
+      "Colaba": 8,
+      "Dadar": 17,
+      "A Ward": 1,
+      "Mahalakshmi": 3,
+      "Ghatkopar East": 1,
+      "Worli": 1,
+      "Khar": 1,
+      "H/W Ward": 1,
+      "MIDC": 1,
+      "Film City": 1,
+      "Aarey Milk Colony": 1,
+      "R/C Ward": 3,
+      "Vasai": 1,
+      "Virar East": 1,
+      "null": 5,
+      "Byculla East": 2,
+      "Sion East": 1,
+      "Asalpha": 1,
+      "S Ward": 1,
+      "Shivai Nagar": 1,
+      "Manpada": 1,
+      "Aadharwadi": 1,
+      "Sewri": 1,
+      "Sanpada": 1,
+      "Juinagar": 1,
+      "Turbhe": 1,
+      "Belapur West": 1,
+      "Seawoods East": 1,
+      "Bandra West": 1,
+      "Mahim West": 1,
+      "Andheri West": 2,
+      "Kandivali West": 1,
+      "Prabhadevi": 1,
+      "Santacruz West": 1,
+      "Govandi": 1,
+      "Mulund": 1,
+      "Goregaon West": 1,
+      "Santacruz base, Mumbai tours": 1,
+      "Mumbai": 1,
+      "South Mumbai": 1,
+      "Chembur": 1,
+      "Thane West": 1,
+      "Nerul West, Navi Mumbai": 1,
+      "Kharghar, Navi Mumbai": 1,
+      "Kopar Khairane": 1,
+      "Vasai West": 1
+    },
+    "city_distribution": {
+      "Mumbai": 398,
+      "Gorai": 1,
+      "Vasai-Virar": 3,
+      "Thane": 2,
+      "Kalyan-Dombivli": 1,
+      "Navi Mumbai": 6,
+      "Apta": 1,
+      "Pali": 1
+    }
+  },
+  "providers": {
+    "total": 372,
+    "provenance_distribution": {
+      "overture_places": 261,
+      "synthetic": 50,
+      "registered": 1,
+      "manual_catalog_2026": 60
+    },
+    "synthetic_vs_real": {
+      "synthetic": 50,
+      "real": 322
+    },
+    "verification_status_distribution": {
+      "catalog_imported": 321,
+      "unverified": 51
+    }
+  },
+  "reviews": {
+    "total": 10719,
+    "synthetic_vs_real": {
+      "true": 10716,
+      "false": 3
+    }
+  },
+  "opening_hours": {
+    "total_rows": 2841,
+    "distinct_experiences_covered": 413
+  },
+  "availability": {
+    "total_slots": 36370,
+    "distinct_experiences_covered": 413
+  }
+}

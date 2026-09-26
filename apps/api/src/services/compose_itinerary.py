@@ -1,7 +1,20 @@
 """Orchestrates the full Phase 8 pipeline for one compose request:
 
 RETRIEVAL -> FEASIBILITY -> RANKING -> COMPOSITION -> POST-COMPOSITION
-VALIDATION -> NARRATIVE -> persist.
+VALIDATION -> ROUTE LEGS -> NARRATIVE -> persist (itinerary + items with
+route snapshot + planning profile + participants).
+
+Personalized planning (ADR-056) only EXTENDS this pipeline's inputs:
+  - planning.group_size is fed as party_size into the existing
+    FeasibilityService capacity/maximum_group_size check (both the
+    candidate gate and the post-composition validator) — never a second
+    capacity checker;
+  - participant ages/genders are persisted as context. They do NOT alter
+    retrieval, ranking or feasibility: the catalog has no authoritative
+    age-restriction fields, so age can't be used without fabricating
+    restrictions, and gender is never a preference signal;
+  - the route pass (src/services/itinerary_routes.py) runs after
+    validation on the FINAL sequence only.
 
 This module — not the route handler — owns the ordering invariant so it
 can be reused identically by both POST /itineraries/compose and the
@@ -12,6 +25,9 @@ candidate context is already available (see execute_compose_experience).
 
 from __future__ import annotations
 
+import logging
+import time as time_module
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 
@@ -22,9 +38,18 @@ from src.adapters.embedding import EmbeddingAdapter
 from src.adapters.routing import RoutingAdapter
 from src.core.config import Settings
 from src.core.feasibility_reasons import FeasibilityReasonCode
+from src.core.itinerary_planning import (
+    PLANNING_PROFILE_VERSION,
+    derive_age_band,
+    destination_label,
+    interest_terms,
+    similarity_signature,
+)
 from src.models.experience import Experience
 from src.models.itinerary import Itinerary
 from src.models.itinerary_item import ItineraryItem
+from src.models.itinerary_participant import ItineraryParticipant
+from src.models.itinerary_planning_profile import ItineraryPlanningProfile
 from src.repositories.experience_repository import ExperienceRepository
 from src.repositories.itinerary_repository import ItineraryRepository
 from src.schemas.itinerary import ComposeItineraryRequest
@@ -32,7 +57,11 @@ from src.schemas.ranking import RankedExperienceItem
 from src.services.discovery_pipeline import DiscoveryPipelineService
 from src.services.experience_composer import ComposedItem, ExperienceComposerService
 from src.services.itinerary_narrator import ItineraryNarratorService
+from src.services.itinerary_routes import ItineraryRouteService
+from src.services.itinerary_similarity import build_normalized_profile
 from src.services.itinerary_validator import ItineraryValidatorService, ValidationIssue
+
+logger = logging.getLogger(__name__)
 
 _DEFAULT_TZ = "Asia/Kolkata"
 
@@ -75,7 +104,7 @@ async def _get_ranked_feasible_candidates(
     # the mandatory, authoritative gate for per-slot time fit.
     constraints = TravelerConstraints(
         budget_max=request.max_budget,
-        party_size=request.party_size,
+        party_size=request.effective_party_size,
         available_date=request.itinerary_date,
         origin_lat=request.origin_lat,
         origin_lng=request.origin_lng,
@@ -107,6 +136,41 @@ async def compose_and_persist_itinerary(
     traveler_id: str,
     request: ComposeItineraryRequest,
     ranked_candidates: list[RankedExperienceItem] | None = None,
+) -> ComposeOutcome:
+    started = time_module.monotonic()
+    logger.info(
+        "event=itinerary_generation_started personalized=%s group_size=%s has_start_location=%s",
+        request.planning is not None, request.effective_party_size, request.origin_lat is not None,
+    )
+    outcome = await _compose_and_persist(
+        session=session,
+        settings=settings,
+        routing_adapter=routing_adapter,
+        embedding_adapter=embedding_adapter,
+        ai_adapter=ai_adapter,
+        traveler_id=traveler_id,
+        request=request,
+        ranked_candidates=ranked_candidates,
+    )
+    logger.info(
+        "event=itinerary_generation_completed valid=%s reason_code=%s items=%d duration_ms=%d",
+        outcome.valid, outcome.reason_code,
+        len(outcome.itinerary.items) if outcome.itinerary is not None else 0,
+        int((time_module.monotonic() - started) * 1000),
+    )
+    return outcome
+
+
+async def _compose_and_persist(
+    *,
+    session: AsyncSession,
+    settings: Settings,
+    routing_adapter: RoutingAdapter,
+    embedding_adapter: EmbeddingAdapter | None,
+    ai_adapter: AIAdapter,
+    traveler_id: str,
+    request: ComposeItineraryRequest,
+    ranked_candidates: list[RankedExperienceItem] | None,
 ) -> ComposeOutcome:
     if ranked_candidates is None:
         ranked_candidates, candidate_count, feasible_count = await _get_ranked_feasible_candidates(
@@ -189,7 +253,7 @@ async def compose_and_persist_itinerary(
             requested_end=requested_end,
             max_budget=request.max_budget,
             max_experiences=request.max_experiences,
-            party_size=request.party_size,
+            party_size=request.effective_party_size,
             travel_mode=request.travel_mode,
         )
 
@@ -226,6 +290,50 @@ async def compose_and_persist_itinerary(
             feasible_count=feasible_count,
         )
 
+    # Route legs for the FINAL, validated sequence (start location -> stop
+    # 1 -> ... -> stop N). Built on unattached item rows so the snapshot
+    # is persisted in the same transaction as the itinerary itself.
+    item_rows = [
+        ItineraryItem(
+            id=str(uuid.uuid4()),
+            experience_id=composed.experience.id,
+            sequence_order=composed.sequence_order,
+            planned_start=composed.planned_start,
+            planned_end=composed.planned_end,
+            duration_minutes=composed.duration_minutes,
+            travel_from_previous_minutes=composed.travel_from_previous_minutes,
+            travel_from_previous_distance_km=composed.travel_from_previous_distance_km,
+            travel_mode=composed.travel_mode,
+            buffer_before_minutes=composed.buffer_before_minutes,
+            buffer_after_minutes=composed.buffer_after_minutes,
+            estimated_cost=composed.estimated_cost,
+            source_rank_position=composed.source_rank_position,
+            source_ranking_score=composed.source_ranking_score,
+        )
+        for composed in composition.items
+    ]
+    # Same 4-dp rounding the planning profile persists, so a later replan
+    # re-derives an identical first-leg waypoint key (no needless re-route).
+    start_location = (
+        (round(request.origin_lat, 4), round(request.origin_lng, 4))
+        if request.origin_lat is not None and request.origin_lng is not None
+        else None
+    )
+    await ItineraryRouteService(routing_adapter).refresh_item_legs(
+        items=item_rows,
+        coordinates_by_item_id={
+            row.id: (composed.experience.location.latitude, composed.experience.location.longitude)
+            for row, composed in zip(item_rows, composition.items, strict=True)
+        },
+        start_location=start_location,
+        travel_mode=request.travel_mode,
+    )
+    # Keep the narrator's facts consistent with the persisted legs.
+    for row, composed in zip(item_rows, composition.items, strict=True):
+        composed.travel_from_previous_minutes = row.travel_from_previous_minutes
+        composed.travel_from_previous_distance_km = row.travel_from_previous_distance_km
+    composition.total_travel_minutes = sum(r.travel_from_previous_minutes or 0.0 for r in item_rows)
+
     narrator = ItineraryNarratorService(ai_adapter, settings)
     outcome_narration = await narrator.narrate(
         items=composition.items,
@@ -253,39 +361,96 @@ async def compose_and_persist_itinerary(
         ranking_model_version=settings.ranking_model_version,
         narrative_model_version=outcome_narration.model_version,
         generated_at=datetime.now(tz),
+        is_discoverable=request.planning.is_discoverable if request.planning is not None else False,
     )
     ItineraryRepository(session).add(itinerary)
     await session.flush()
 
     narrative_by_id = {n.experience_id: n.text for n in outcome_narration.narrative.item_narratives}
-    for composed in composition.items:
-        item_row = ItineraryItem(
-            itinerary_id=itinerary.id,
-            experience_id=composed.experience.id,
-            sequence_order=composed.sequence_order,
-            planned_start=composed.planned_start,
-            planned_end=composed.planned_end,
-            duration_minutes=composed.duration_minutes,
-            travel_from_previous_minutes=composed.travel_from_previous_minutes,
-            travel_from_previous_distance_km=composed.travel_from_previous_distance_km,
-            travel_mode=composed.travel_mode,
-            buffer_before_minutes=composed.buffer_before_minutes,
-            buffer_after_minutes=composed.buffer_after_minutes,
-            estimated_cost=composed.estimated_cost,
-            source_rank_position=composed.source_rank_position,
-            source_ranking_score=composed.source_ranking_score,
-            narrative_text=narrative_by_id.get(composed.experience.id),
-        )
+    for item_row in item_rows:
+        item_row.itinerary_id = itinerary.id
+        item_row.narrative_text = narrative_by_id.get(item_row.experience_id)
         session.add(item_row)
 
+    session.add(_build_planning_profile(itinerary.id, request))
+    if request.planning is not None:
+        for participant in request.planning.participants:
+            session.add(
+                ItineraryParticipant(
+                    itinerary_id=itinerary.id,
+                    sequence=participant.sequence,
+                    age_years=participant.age_years,
+                    age_band=derive_age_band(participant.age_years),  # derived, never client-supplied
+                    gender=participant.gender,
+                )
+            )
+
     await session.commit()
-    await session.refresh(itinerary, attribute_names=["items"])
+    await session.refresh(itinerary, attribute_names=["items", "participants", "planning_profile"])
 
     return ComposeOutcome(
         valid=True,
         itinerary=itinerary,
         candidate_count=candidate_count,
         feasible_count=feasible_count,
+    )
+
+
+def _build_planning_profile(itinerary_id: str, request: ComposeItineraryRequest) -> ItineraryPlanningProfile:
+    """Normalized snapshot used later by ItinerarySimilarityService. Uses
+    the exact same normalization as the similarity query side
+    (build_normalized_profile + interest_terms)."""
+    normalized = build_normalized_profile(
+        city=request.city,
+        locality=request.locality,
+        itinerary_date=request.itinerary_date,
+        interests=interest_terms(request.interests, request.query),
+        category_slugs=request.category_slugs,
+        max_budget=request.max_budget,
+        pace=request.pace,
+        accessibility_requirements=list(request.accessibility_requirements),
+        planning=request.planning,
+        party_size=request.party_size,
+    )
+    group = normalized.group
+    signature = similarity_signature(
+        {
+            "destination": normalized.destination_key,
+            "group_size": group.group_size,
+            "age_bands": group.age_band_distribution,
+            "interests": list(normalized.interests),
+            "budget_max": normalized.budget_max,
+            "pace": normalized.pace,
+            "accessibility": list(normalized.accessibility),
+            "trip_month": normalized.trip_month,
+            "duration_days": normalized.duration_days,
+            "version": PLANNING_PROFILE_VERSION,
+        }
+    )
+    has_start = request.origin_lat is not None and request.origin_lng is not None
+    return ItineraryPlanningProfile(
+        itinerary_id=itinerary_id,
+        destination_key=normalized.destination_key,
+        destination_label=destination_label(request.city, request.locality),
+        group_size=group.group_size,
+        children_count=group.children_count,
+        teens_count=group.teens_count,
+        adults_count=group.adults_count,
+        seniors_count=group.seniors_count,
+        age_band_distribution=dict(group.age_band_distribution),
+        interests=list(normalized.interests),
+        budget_max=normalized.budget_max,
+        pace=normalized.pace,
+        accessibility_requirements=list(normalized.accessibility),
+        travel_mode=request.travel_mode,
+        trip_month=normalized.trip_month,
+        # ~11 m precision is plenty for a city-scale route start; no need
+        # to persist the browser's full-precision fix.
+        start_location_lat=round(request.origin_lat, 4) if has_start and request.origin_lat is not None else None,
+        start_location_lng=round(request.origin_lng, 4) if has_start and request.origin_lng is not None else None,
+        start_location_label=request.planning.start_location_label if request.planning is not None else None,
+        similarity_signature=signature,
+        profile_version=PLANNING_PROFILE_VERSION,
     )
 
 
@@ -424,7 +589,8 @@ async def add_item_to_itinerary(
         requested_end=requested_end,
         max_budget=None,
         max_experiences=None,
-        party_size=None,
+        # The group the itinerary was planned for still has to fit.
+        party_size=itinerary.planning_profile.group_size if itinerary.planning_profile is not None else None,
         travel_mode=travel_mode,
     )
     if not validation.valid:
@@ -447,8 +613,17 @@ async def add_item_to_itinerary(
         source_ranking_score=None,
     )
     session.add(new_item)
+    await session.flush()
+    # Legs whose waypoint pair is unchanged and already routed are reused;
+    # in practice only the new stop's arriving leg is routed.
+    await ItineraryRouteService(routing_adapter).refresh_persisted_itinerary(
+        itinerary=itinerary,
+        ordered_items=[*existing_items, new_item],
+        experiences_by_id=experiences_by_id,
+        default_travel_mode=travel_mode,
+    )
     await session.commit()
-    await session.refresh(itinerary, attribute_names=["items"])
+    await session.refresh(itinerary, attribute_names=["items", "participants", "planning_profile"])
     return ComposeOutcome(valid=True, itinerary=itinerary)
 
 

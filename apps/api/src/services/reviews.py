@@ -19,6 +19,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.core.display_name import derive_display_name
 from src.core.errors import ApiError
 from src.models.experience import Experience
 from src.models.review import ExperienceReview
@@ -29,16 +30,6 @@ from src.schemas.experience import ReviewCreateRequest
 
 USER_REVIEW_SOURCE_TYPE = "user_submitted"
 USER_REVIEW_SOURCE_NAME = "LocaLens traveler review"
-
-
-def _author_display_name(user: User) -> str:
-    """Derives a display name from the account without ever exposing the
-    raw email address to other viewers of the review."""
-    local_part = user.email.split("@", 1)[0]
-    cleaned = "".join(ch if ch.isalnum() else " " for ch in local_part).strip()
-    if not cleaned:
-        return "LocaLens traveler"
-    return cleaned.title()[:80]
 
 
 async def submit_review(
@@ -66,7 +57,7 @@ async def submit_review(
         rating_value=payload.rating_value,
         title=payload.title,
         body=payload.body,
-        author_display_name=_author_display_name(user),
+        author_display_name=derive_display_name(user),
         language="en",
         reviewed_at=datetime.now(UTC),
         source_type=USER_REVIEW_SOURCE_TYPE,

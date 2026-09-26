@@ -8,6 +8,7 @@ from src.api.v1 import (
     bookings,
     categories,
     context,
+    contributions,
     conversation,
     experiences,
     feasibility,
@@ -15,8 +16,8 @@ from src.api.v1 import (
     health,
     itineraries,
     location,
-    providers,
     provider_intelligence,
+    providers,
     recommendations,
     safety,
 )
@@ -27,6 +28,7 @@ api_v1_router.include_router(auth.router)
 api_v1_router.include_router(categories.router)
 api_v1_router.include_router(providers.router)
 api_v1_router.include_router(experiences.router)
+api_v1_router.include_router(contributions.router)
 api_v1_router.include_router(availability.router)
 api_v1_router.include_router(location.router)
 api_v1_router.include_router(conversation.router)

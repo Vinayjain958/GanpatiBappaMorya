@@ -15,8 +15,19 @@ import { RefreshCw } from "lucide-react";
 import { mapConfig } from "@/lib/config/map";
 import { cn } from "@/lib/utils/cn";
 import type { ExperienceFeatureCollection } from "@/lib/geo/geojson";
+import type {
+  RouteFeatureCollection,
+  StopFeatureCollection,
+} from "@/lib/itinerary/itineraryMapData";
 
 const SOURCE_ID = "experiences";
+// Itinerary route map (ADR-056): one GeoJSON source per data kind,
+// updated imperatively via setData — no DOM marker per stop.
+const STOPS_SOURCE_ID = "itinerary-stops";
+const STOPS_CIRCLE_LAYER = "itinerary-stops-circle";
+const STOPS_LABEL_LAYER = "itinerary-stops-label";
+const LEGS_SOURCE_ID = "itinerary-route-legs";
+const LEGS_LAYER = "itinerary-route-legs-line";
 const CLUSTER_LAYER = "experience-clusters";
 const CLUSTER_COUNT_LAYER = "experience-cluster-count";
 const POINT_LAYER = "experience-points";
@@ -73,7 +84,17 @@ export interface MapSurfaceProps {
   zoom?: number;
   className?: string;
   label?: string;
+  /** Numbered itinerary stops (selection encoded in properties.selected). */
+  stops?: StopFeatureCollection | null;
+  /** Per-leg route LineStrings from the backend's persisted snapshot. */
+  routeLegs?: RouteFeatureCollection | null;
+  onSelectStop?: (itemId: string) => void;
+  /** Fits the camera once per distinct bounds value. */
+  fitBounds?: [[number, number], [number, number]] | null;
 }
+
+const EMPTY_STOPS: StopFeatureCollection = { type: "FeatureCollection", features: [] };
+const EMPTY_LEGS: RouteFeatureCollection = { type: "FeatureCollection", features: [] };
 
 export function MapSurface({
   features = EMPTY_COLLECTION,
@@ -85,13 +106,24 @@ export function MapSurface({
   zoom,
   className,
   label = "Experience map",
+  stops = null,
+  routeLegs = null,
+  onSelectStop,
+  fitBounds = null,
 }: MapSurfaceProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const popupRef = useRef<Popup | null>(null);
+  // Map event handlers are registered once at init — read the latest
+  // callback through a ref so they never call a stale closure.
+  const onSelectStopRef = useRef(onSelectStop);
   const [mapError, setMapError] = useState(false);
   const [showSearchArea, setShowSearchArea] = useState(false);
   const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    onSelectStopRef.current = onSelectStop;
+  }, [onSelectStop]);
 
   // Initialize the map once.
   useEffect(() => {
@@ -222,6 +254,54 @@ export function MapSurface({
           "line-opacity": 0.85,
         },
       });
+
+      map.addSource(LEGS_SOURCE_ID, { type: "geojson", data: EMPTY_LEGS });
+      map.addLayer({
+        id: LEGS_LAYER,
+        type: "line",
+        source: LEGS_SOURCE_ID,
+        layout: { "line-join": "round", "line-cap": "round" },
+        paint: {
+          "line-color": ["case", ["get", "selected"], palette.highlight, palette.accent],
+          "line-width": ["case", ["get", "selected"], 7, 4],
+          "line-opacity": 0.9,
+        },
+      });
+
+      map.addSource(STOPS_SOURCE_ID, { type: "geojson", data: EMPTY_STOPS });
+      map.addLayer({
+        id: STOPS_CIRCLE_LAYER,
+        type: "circle",
+        source: STOPS_SOURCE_ID,
+        paint: {
+          "circle-radius": ["case", ["get", "selected"], 15, 12],
+          "circle-color": ["case", ["get", "selected"], palette.highlight, palette.primary],
+          "circle-stroke-width": 3,
+          "circle-stroke-color": palette.surface,
+        },
+      });
+      map.addLayer({
+        id: STOPS_LABEL_LAYER,
+        type: "symbol",
+        source: STOPS_SOURCE_ID,
+        layout: {
+          "text-field": ["get", "label"],
+          "text-size": 12,
+          "text-font": ["Noto Sans Bold"],
+          "text-allow-overlap": true,
+          "text-ignore-placement": true,
+        },
+        paint: { "text-color": palette.surface },
+      });
+
+      const handleStopClick = (event: MapLayerMouseEvent) => {
+        const itemId = event.features?.[0]?.properties?.itemId;
+        if (typeof itemId === "string") onSelectStopRef.current?.(itemId);
+      };
+      map.on("click", STOPS_CIRCLE_LAYER, handleStopClick);
+      map.on("click", STOPS_LABEL_LAYER, handleStopClick);
+      map.on("mouseenter", STOPS_CIRCLE_LAYER, () => (map.getCanvas().style.cursor = "pointer"));
+      map.on("mouseleave", STOPS_CIRCLE_LAYER, () => (map.getCanvas().style.cursor = ""));
 
       map.on("click", CLUSTER_LAYER, (event: MapLayerMouseEvent) => {
         const clusterFeatures = map.queryRenderedFeatures(event.point, {
@@ -379,6 +459,34 @@ export function MapSurface({
         : EMPTY_COLLECTION,
     );
   }, [routeGeometry, loaded]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loaded) return;
+    (map.getSource(STOPS_SOURCE_ID) as GeoJSONSource | undefined)?.setData(stops ?? EMPTY_STOPS);
+  }, [stops, loaded]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loaded) return;
+    (map.getSource(LEGS_SOURCE_ID) as GeoJSONSource | undefined)?.setData(routeLegs ?? EMPTY_LEGS);
+  }, [routeLegs, loaded]);
+
+  // Fit to the whole itinerary once per distinct bounds (not on every
+  // render/selection change — selection re-centers via `center`).
+  const boundsKey = fitBounds ? JSON.stringify(fitBounds) : null;
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loaded || !boundsKey) return;
+    const bounds = JSON.parse(boundsKey) as [[number, number], [number, number]];
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const [[west, south], [east, north]] = bounds;
+    if (west === east && south === north) {
+      map.jumpTo({ center: [west, south], zoom: 14 });
+      return;
+    }
+    map.fitBounds(bounds, { padding: 48, maxZoom: 15, duration: prefersReducedMotion ? 0 : 600 });
+  }, [boundsKey, loaded]);
 
   useEffect(() => {
     const map = mapRef.current;

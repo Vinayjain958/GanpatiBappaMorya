@@ -10,9 +10,9 @@ data). Items are only reachable through their owning Itinerary.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.schema import Index, UniqueConstraint
 
@@ -66,6 +66,28 @@ class ItineraryItem(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # ACTIVE | AFFECTED | INVALIDATED | CANCELLED — set by
     # ContextImpactService/ReplanningService; never edited by Gemini.
     item_state: Mapped[str] = mapped_column(String(20), default="ACTIVE", nullable=False)
+
+    # ─── Route leg snapshot (ADR-056) ─────────────────────────────────────
+    # Each item stores the route leg that ARRIVES at it (from the previous
+    # stop, or from the planning profile's start location for stop 1).
+    # A single-day itinerary is one linear sequence, so exactly one leg
+    # per item — no separate ItineraryRouteLeg table (that would duplicate
+    # travel_from_previous_distance_km/minutes, which remain the leg's
+    # distance/duration). Written by src/services/itinerary_routes.py
+    # only; never recomputed on GET.
+    #
+    # route_status: ROUTED (real routing-adapter result, geometry when the
+    # provider returned one) | ESTIMATED (explicitly labelled haversine
+    # estimate — never drawn as a road route) | UNAVAILABLE (routing
+    # failed: NoRoute/timeout/provider error — no distance/time/geometry
+    # is claimed) | NOT_APPLICABLE (first stop with no start location).
+    route_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    route_source: Mapped[str | None] = mapped_column(String(30), nullable=True)  # "osrm" | "haversine_estimate"
+    route_geometry: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)  # GeoJSON LineString
+    # Identifies the waypoint pair + mode this leg was computed for; a
+    # mismatch after a replan means the leg is stale and is recomputed.
+    route_waypoint_key: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    route_calculated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     itinerary: Mapped[Itinerary] = relationship(back_populates="items")
 

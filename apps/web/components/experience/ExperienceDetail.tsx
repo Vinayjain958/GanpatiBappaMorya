@@ -3,27 +3,25 @@
 import { useState } from "react";
 import {
   Bookmark,
-  CalendarDays,
   CheckCircle2,
   Clock,
   Crosshair,
   MapPin,
-  MessageSquare,
   Route as RouteIcon,
   ShieldCheck,
   Star,
   User,
 } from "lucide-react";
-import type { Experience } from "@/types/experience";
+import type { Experience, ExperienceRatingSummary, ReviewItem } from "@/types/experience";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
 import { MapSurface } from "@/components/common/MapSurface";
-import { DemoDataBadge } from "@/components/ui/DemoDataBadge";
 import { FeedbackControls } from "@/components/experience/FeedbackControls";
 import { ImageAttribution } from "@/components/experience/ImageAttribution";
 import { ExperienceImageView } from "@/components/experience/ExperienceImageView";
 import { PersonalizationBadge } from "@/components/ui/PersonalizationBadge";
+import { WriteReviewForm } from "@/components/experience/WriteReviewForm";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { getRoute } from "@/lib/api/location";
 import { haversineKm } from "@/lib/geo/haversine";
@@ -40,28 +38,19 @@ function formatReviewDate(dateStr: string): string {
   }
 }
 
-function formatSlotDate(dateStr: string): string {
-  try {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
-  } catch {
-    return dateStr;
-  }
-}
-
-function formatSlotTime(dateStr: string): string {
-  try {
-    const d = new Date(dateStr);
-    return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-  } catch {
-    return dateStr;
-  }
-}
-
 export function ExperienceDetail({ experience }: { experience: Experience }) {
   const { status: geoStatus, coordinate: origin, request: requestLocation } = useUserLocation();
   const [route, setRoute] = useState<RouteResponse | null>(null);
   const [routeStatus, setRouteStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [reviews, setReviews] = useState<ReviewItem[]>(experience.reviews ?? []);
+  const [ratingSummary, setRatingSummary] = useState<ExperienceRatingSummary | null | undefined>(
+    experience.ratingSummary,
+  );
+
+  function handleReviewSubmitted(review: ReviewItem, summary: ExperienceRatingSummary) {
+    setReviews((prev) => [review, ...prev]);
+    setRatingSummary(summary);
+  }
 
   const distanceKm = origin
     ? Math.round(
@@ -111,11 +100,6 @@ export function ExperienceDetail({ experience }: { experience: Experience }) {
           className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent"
           aria-hidden="true"
         />
-        {experience.isSynthetic ? (
-          <div className="absolute left-4 top-4">
-            <DemoDataBadge label="Demo experience" />
-          </div>
-        ) : null}
         {!experience.image.isFallback ? (
           <div className="absolute bottom-3 right-3 rounded bg-surface/80 px-2 py-1 backdrop-blur">
             <ImageAttribution image={experience.image} />
@@ -172,17 +156,11 @@ export function ExperienceDetail({ experience }: { experience: Experience }) {
 
             <span className="inline-flex items-center gap-2 rounded-full bg-surface-raised px-3.5 py-2 text-sm text-ink-muted">
               <Star className="size-4 shrink-0 fill-highlight text-highlight" aria-hidden="true" />
-              {experience.rating != null
-                ? `${experience.rating} (${experience.reviewCount ?? 0} reviews)`
-                : "No ratings yet"}
-              {experience.isSynthetic || experience.ratingSummary?.isSynthetic ? (
-                <span
-                  className="rounded bg-surface px-1.5 py-0.5 text-[10px] font-medium text-ink-subtle ring-1 ring-inset ring-line"
-                  title="Synthetic Demo Rating"
-                >
-                  Demo
-                </span>
-              ) : null}
+              {ratingSummary
+                ? `${ratingSummary.averageRating.toFixed(1)} (${ratingSummary.reviewCount} reviews)`
+                : experience.rating != null
+                  ? `${experience.rating} (${experience.reviewCount ?? 0} reviews)`
+                  : "No ratings yet"}
             </span>
           </div>
 
@@ -306,9 +284,6 @@ export function ExperienceDetail({ experience }: { experience: Experience }) {
                     Weekly Schedule
                   </h2>
                 </div>
-                {experience.isOpeningHoursSynthetic ? (
-                  <DemoDataBadge label="Simulated Schedule" />
-                ) : null}
               </div>
 
               {experience.openingHoursWeekly && experience.openingHoursWeekly.length > 0 ? (
@@ -339,54 +314,6 @@ export function ExperienceDetail({ experience }: { experience: Experience }) {
             </CardBody>
           </Card>
 
-          {experience.availabilitySlots && experience.availabilitySlots.length > 0 ? (
-            <Card>
-              <CardBody className="space-y-4 p-5 sm:p-6">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5">
-                    <CalendarDays className="size-5 text-accent" aria-hidden="true" />
-                    <h2 className="text-lg font-semibold tracking-tight text-ink">
-                      Upcoming Availability
-                    </h2>
-                  </div>
-                  {experience.isAvailabilitySynthetic ? (
-                    <DemoDataBadge label="Demo Availability" />
-                  ) : null}
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {experience.availabilitySlots.slice(0, 6).map((slot) => {
-                    const spotsRemaining = Math.max(0, slot.capacity - slot.bookedCount);
-                    return (
-                      <div
-                        key={slot.id}
-                        className="rounded-2xl border border-line bg-surface-raised/50 p-3.5 space-y-1.5 transition-colors hover:border-accent/40"
-                      >
-                        <div className="text-xs font-semibold text-ink">
-                          {formatSlotDate(slot.startTime)}
-                        </div>
-                        <div className="text-sm text-ink-muted">
-                          {formatSlotTime(slot.startTime)} – {formatSlotTime(slot.endTime)}
-                        </div>
-                        <div className="flex items-center justify-between pt-1">
-                          <span className="text-[11px] font-medium text-success">
-                            {spotsRemaining} {spotsRemaining === 1 ? "spot" : "spots"} left
-                          </span>
-                          <span className="text-[10px] uppercase tracking-wider text-ink-subtle">
-                            {slot.capacity} max
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <p className="text-xs text-ink-subtle">
-                  Showing next available departures. Real-time calendar booking preview.
-                </p>
-              </CardBody>
-            </Card>
-          ) : null}
-
           <Card>
             <CardBody className="space-y-6 p-5 sm:p-6">
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -396,23 +323,20 @@ export function ExperienceDetail({ experience }: { experience: Experience }) {
                     Ratings &amp; Traveler Reviews
                   </h2>
                 </div>
-                {experience.isSynthetic || experience.ratingSummary?.isSynthetic ? (
-                  <DemoDataBadge label="Synthetic Demo Rating" />
-                ) : null}
               </div>
 
-              {experience.ratingSummary ? (
+              {ratingSummary ? (
                 <div className="grid gap-6 rounded-2xl bg-surface-raised/60 p-5 sm:grid-cols-[200px_minmax(0,1fr)] sm:items-center">
                   <div className="text-center sm:border-r sm:border-line sm:pr-6 sm:text-left">
                     <div className="text-4xl font-extrabold tracking-tight text-ink">
-                      {experience.ratingSummary.averageRating.toFixed(1)}
+                      {ratingSummary.averageRating.toFixed(1)}
                     </div>
                     <div className="mt-1 flex justify-center gap-1 sm:justify-start">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <Star
                           key={star}
                           className={`size-4 ${
-                            star <= Math.round(experience.ratingSummary!.averageRating)
+                            star <= Math.round(ratingSummary.averageRating)
                               ? "fill-highlight text-highlight"
                               : "text-line"
                           }`}
@@ -421,19 +345,14 @@ export function ExperienceDetail({ experience }: { experience: Experience }) {
                       ))}
                     </div>
                     <p className="mt-1.5 text-xs text-ink-muted">
-                      Based on {experience.ratingSummary.reviewCount} reviews
+                      Based on {ratingSummary.reviewCount} reviews
                     </p>
-                    {experience.ratingSummary.isSynthetic ? (
-                      <p className="mt-0.5 text-[10px] text-ink-subtle">
-                        (Synthetic demonstration data)
-                      </p>
-                    ) : null}
                   </div>
 
                   <div className="space-y-1.5">
                     {[5, 4, 3, 2, 1].map((star) => {
-                      const count = experience.ratingSummary?.distribution[star] ?? 0;
-                      const total = experience.ratingSummary?.reviewCount || 1;
+                      const count = ratingSummary.distribution[star] ?? 0;
+                      const total = ratingSummary.reviewCount || 1;
                       const pct = Math.round((count / total) * 100);
                       return (
                         <div key={star} className="flex items-center gap-2 text-xs">
@@ -454,17 +373,19 @@ export function ExperienceDetail({ experience }: { experience: Experience }) {
                 </div>
               ) : null}
 
-              {experience.reviews && experience.reviews.length > 0 ? (
+              <WriteReviewForm experienceId={experience.id} onSubmitted={handleReviewSubmitted} />
+
+              {reviews.length > 0 ? (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-ink">Sample Reviews</h3>
                     <span className="text-xs text-ink-subtle">
-                      Showing {experience.reviews.length} recent reviews
+                      Showing {reviews.length} recent reviews
                     </span>
                   </div>
 
                   <div className="space-y-3">
-                    {experience.reviews.map((rev) => (
+                    {reviews.map((rev) => (
                       <div
                         key={rev.id}
                         className="rounded-2xl border border-line bg-surface-raised/40 p-4 space-y-2"
@@ -475,11 +396,6 @@ export function ExperienceDetail({ experience }: { experience: Experience }) {
                               <User className="size-3.5" aria-hidden="true" />
                             </div>
                             <span className="text-xs font-medium text-ink">{rev.author}</span>
-                            {rev.isSynthetic ? (
-                              <span className="rounded bg-surface-sunken px-1.5 py-0.5 text-[9px] font-medium text-ink-subtle">
-                                Synthetic
-                              </span>
-                            ) : null}
                           </div>
 
                           <div className="flex items-center gap-2">

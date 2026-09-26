@@ -38,7 +38,7 @@ def register_error_handlers(app: FastAPI) -> None:
             error.pop("ctx", None)
             safe_errors.append(jsonable_encoder(error))
         return JSONResponse(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content={"message": "Validation failed", "detail": safe_errors},
         )
 

@@ -54,14 +54,10 @@ export interface OpeningHourDay {
   isSynthetic?: boolean;
 }
 
-export interface AvailabilitySlot {
-  id: string;
-  startTime: string;
-  endTime: string;
-  capacity: number;
-  bookedCount: number;
-  isAvailable: boolean;
-  isSynthetic: boolean;
+export interface ReviewSubmission {
+  ratingValue: number;
+  title: string;
+  body: string;
 }
 
 export interface Experience {
@@ -99,8 +95,6 @@ export interface Experience {
   openingHours: string | null;
   openingHoursWeekly?: OpeningHourDay[];
   isOpeningHoursSynthetic?: boolean;
-  availabilitySlots?: AvailabilitySlot[];
-  isAvailabilitySynthetic?: boolean;
   reviews?: ReviewItem[];
   ratingSummary?: ExperienceRatingSummary | null;
   highlights: string[];

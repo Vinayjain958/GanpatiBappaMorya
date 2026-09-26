@@ -10,12 +10,13 @@ from src.adapters.errors import AdapterError
 from src.adapters.routing import OSRMRoutingAdapter, RoutingAdapter
 from src.core.config import Settings, get_settings
 from src.core.db import get_session
-from src.core.deps import CurrentProvider, CurrentUser
+from src.core.deps import CurrentProvider, CurrentUser, require_traveler
 from src.core.embedding import get_embedding_adapter
 from src.core.errors import ApiError
 from src.core.location import get_routing_adapter
 from src.models.experience import Experience
 from src.models.provider import Provider
+from src.models.user import User
 from src.repositories.experience_repository import ExperienceRepository
 from src.repositories.review_repository import ReviewRepository
 from src.schemas.experience import (
@@ -26,6 +27,8 @@ from src.schemas.experience import (
     ExperienceReviewSummary,
     ExperienceSummary,
     RatingSummary,
+    ReviewCreateRequest,
+    ReviewCreateResponse,
 )
 from src.schemas.experience_write import ExperienceCreateRequest, ExperienceUpdateRequest
 from src.schemas.semantic_search import (
@@ -37,6 +40,7 @@ from src.schemas.semantic_search import (
 from src.services import experience as experience_service
 from src.services.discovery import DiscoveryQuery, ExperienceDiscoveryService
 from src.services.discovery_pipeline import DiscoveryPipelineService
+from src.services.reviews import submit_review
 
 router = APIRouter(prefix="/experiences", tags=["experiences"])
 
@@ -229,6 +233,36 @@ async def list_experience_reviews(
     )
     items = [ExperienceReviewSummary.model_validate(r) for r in reviews]
     return ExperienceReviewListResponse(items=items, total=total, limit=limit, offset=offset)
+
+
+@router.post(
+    "/{experience_id}/reviews", response_model=ReviewCreateResponse, status_code=201
+)
+async def create_experience_review(
+    experience_id: str,
+    payload: ReviewCreateRequest,
+    user: Annotated[User, Depends(require_traveler)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> ReviewCreateResponse:
+    """Real, persisted traveler review. Always is_synthetic=False,
+    source_type="user_submitted" — the aggregate rating is recomputed
+    from every ExperienceReview row (synthetic and real) immediately
+    after the write, so it never disagrees with GET .../reviews."""
+    review, experience = await submit_review(session, experience_id, user, payload)
+
+    review_repo = ReviewRepository(session)
+    avg_rating, count, distribution = await review_repo.get_distribution_and_avg(experience_id)
+    has_synthetic = await review_repo.has_synthetic_reviews(experience_id)
+
+    return ReviewCreateResponse(
+        review=ExperienceReviewSummary.model_validate(review),
+        rating_summary=RatingSummary(
+            average_rating=avg_rating,
+            review_count=count,
+            rating_distribution=distribution,
+            is_synthetic=has_synthetic,
+        ),
+    )
 
 
 async def _get_owned_or_404(session: AsyncSession, experience_id: str, provider: Provider) -> Experience:

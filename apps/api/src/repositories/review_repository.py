@@ -75,6 +75,32 @@ class ReviewRepository:
         avg = round(total_sum / total_count, 1)
         return avg, total_count, distribution
 
+    async def has_synthetic_reviews(self, experience_id: str) -> bool:
+        query = (
+            select(ExperienceReview.id)
+            .where(
+                ExperienceReview.experience_id == experience_id,
+                ExperienceReview.is_synthetic == True,  # noqa: E712 - SQLAlchemy comparison
+            )
+            .limit(1)
+        )
+        result = (await self._session.execute(query)).scalar_one_or_none()
+        return result is not None
+
+    async def next_synthetic_sequence(self, experience_id: str, generation_version: str) -> int:
+        """Returns the next free synthetic_sequence for this experience +
+        generation_version pair, so callers can satisfy
+        uq_experience_review_synthetic_seq without colliding — used by
+        both the synthetic generator (sequential from 0) and real user
+        review submission (generation_version="user"), which otherwise
+        would collide on a second review for the same experience."""
+        query = select(func.max(ExperienceReview.synthetic_sequence)).where(
+            ExperienceReview.experience_id == experience_id,
+            ExperienceReview.generation_version == generation_version,
+        )
+        current_max = (await self._session.execute(query)).scalar_one_or_none()
+        return 0 if current_max is None else current_max + 1
+
     def add(self, review: ExperienceReview) -> None:
         self._session.add(review)
 

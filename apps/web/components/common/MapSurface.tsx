@@ -302,7 +302,17 @@ export function MapSurface({
       map.on("zoomend", () => setShowSearchArea(true));
     }
 
+    // MapLibre measures the container once at construction. In a grid/
+    // flex/sticky layout (e.g. the detail page's two-column grid) the
+    // container's final size can settle after that first measurement,
+    // leaving the canvas at a stale (sometimes zero) size and the map
+    // rendering blank until the window happens to resize. Watch the
+    // container itself so the map always repaints at its real size.
+    const resizeObserver = new ResizeObserver(() => map.resize());
+    resizeObserver.observe(containerRef.current);
+
     return () => {
+      resizeObserver.disconnect();
       popupRef.current?.remove();
       map.remove();
       mapRef.current = null;
@@ -406,7 +416,7 @@ export function MapSurface({
       <div
         role="status"
         className={cn(
-          "flex min-h-64 w-full flex-col items-center justify-center gap-2 rounded-2xl border border-line bg-pastel-sky/25 px-4 text-sm text-ink-muted",
+          "flex h-64 w-full flex-col items-center justify-center gap-2 rounded-2xl border border-line bg-pastel-sky/25 px-4 text-sm text-ink-muted",
           className,
         )}
       >
@@ -419,9 +429,16 @@ export function MapSurface({
   }
 
   return (
+    // `h-64` (an explicit height, not `min-h-64`) is deliberate: the
+    // inner container below is `h-full` so MapLibre can measure a real
+    // pixel height. A `min-height`-only wrapper never gives a `height:
+    // 100%` child a basis to resolve against, so it collapses to 0 and
+    // the map silently never paints — every caller either overrides this
+    // with its own explicit height (e.g. DiscoverExperience's `h-[65vh]`)
+    // or keeps this fallback, but it can never be `min-h-*` alone.
     <div
       className={cn(
-        "relative min-h-64 w-full overflow-hidden rounded-2xl border border-line bg-surface-raised shadow-soft",
+        "relative h-64 w-full overflow-hidden rounded-2xl border border-line bg-surface-raised shadow-soft",
         className,
       )}
     >

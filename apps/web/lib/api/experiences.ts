@@ -1,5 +1,11 @@
 import { apiClient } from "@/lib/api/client";
-import type { ApiExperienceDetail, ApiExperienceListResponse, ExperienceListFilters } from "@/types/api";
+import type {
+  ApiExperienceDetail,
+  ApiExperienceListResponse,
+  ApiReviewCreateRequest,
+  ApiReviewCreateResponse,
+  ExperienceListFilters,
+} from "@/types/api";
 
 function toSearchParams(filters: ExperienceListFilters): string {
   const params = new URLSearchParams();
@@ -35,4 +41,16 @@ export function listExperiences(filters: ExperienceListFilters = {}, signal?: Ab
 
 export function getExperience(id: string, signal?: AbortSignal) {
   return apiClient.get<ApiExperienceDetail>(`/api/v1/experiences/${id}`, { signal });
+}
+
+export function createExperienceReview(
+  experienceId: string,
+  payload: ApiReviewCreateRequest,
+  signal?: AbortSignal,
+) {
+  return apiClient.post<ApiReviewCreateResponse>(
+    `/api/v1/experiences/${experienceId}/reviews`,
+    payload,
+    { signal },
+  );
 }

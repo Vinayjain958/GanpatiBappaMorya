@@ -16,7 +16,7 @@ from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.adapters.ai import AIAdapter
@@ -187,7 +187,7 @@ async def add_itinerary_item(
     return await _to_itinerary_response(outcome.itinerary, session)
 
 
-@router.delete("/itineraries/{itinerary_id}", status_code=204, response_class=Response)
+@router.delete("/itineraries/{itinerary_id}", status_code=204, response_model=None)
 async def cancel_itinerary(
     itinerary_id: str,
     user: Annotated[User, Depends(require_traveler)],

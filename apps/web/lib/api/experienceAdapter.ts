@@ -171,18 +171,6 @@ export function mapApiExperienceToUi(
         }))
       : undefined,
     isOpeningHoursSynthetic: detail?.opening_hours?.some((w) => w.is_synthetic) ?? false,
-    availabilitySlots: detail?.availability_slots
-      ? detail.availability_slots.map((s) => ({
-          id: s.id,
-          startTime: s.start_time,
-          endTime: s.end_time,
-          capacity: s.capacity,
-          bookedCount: s.booked_count,
-          isAvailable: s.is_available,
-          isSynthetic: s.is_synthetic,
-        }))
-      : undefined,
-    isAvailabilitySynthetic: detail?.availability_slots?.some((s) => s.is_synthetic) ?? false,
     reviews: detail?.reviews
       ? detail.reviews.map((r) => ({
           id: r.id,

@@ -119,8 +119,8 @@ describe("mapApiExperienceToUi — image resolution", () => {
   });
 });
 
-describe("mapApiExperienceToUi — reviews, ratings, hours, availability", () => {
-  it("maps synthetic reviews, rating distribution, opening hours, and availability slots from detail", () => {
+describe("mapApiExperienceToUi — reviews, ratings, hours", () => {
+  it("maps synthetic reviews, rating distribution, and opening hours from detail", () => {
     const apiDetail = {
       ...makeApiExperience(),
       full_description: "Full description of museum",
@@ -138,17 +138,6 @@ describe("mapApiExperienceToUi — reviews, ratings, hours, availability", () =>
           open_time: null,
           close_time: null,
           is_closed: true,
-          is_synthetic: true,
-        },
-      ],
-      availability_slots: [
-        {
-          id: "slot-1",
-          start_time: "2026-09-28T10:00:00Z",
-          end_time: "2026-09-28T12:00:00Z",
-          capacity: 20,
-          booked_count: 5,
-          is_available: true,
           is_synthetic: true,
         },
       ],
@@ -206,15 +195,5 @@ describe("mapApiExperienceToUi — reviews, ratings, hours, availability", () =>
       isSynthetic: true,
     });
     expect(ui.isOpeningHoursSynthetic).toBe(true);
-
-    expect(ui.availabilitySlots).toHaveLength(1);
-    expect(ui.availabilitySlots![0]).toMatchObject({
-      id: "slot-1",
-      capacity: 20,
-      bookedCount: 5,
-      isAvailable: true,
-      isSynthetic: true,
-    });
-    expect(ui.isAvailabilitySynthetic).toBe(true);
   });
 });

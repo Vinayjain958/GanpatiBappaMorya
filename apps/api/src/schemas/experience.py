@@ -8,8 +8,9 @@ internal-only fields (see docs/AI_CONTEXT.md INV-3/INV-5).
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 
 
 class CategorySummary(BaseModel):
@@ -54,6 +55,28 @@ class OpeningHourWindow(BaseModel):
     is_closed: bool
 
 
+class ExperienceImage(BaseModel):
+    """Normalized image metadata — see src/services/experience_images.py
+    and src/models/experience.py's image_* columns. `image_url` is None
+    when no suitable image has been resolved yet (never a fabricated
+    placeholder); the frontend falls back to its own generic category
+    art in that case, clearly distinct from a real venue photo."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    url: str | None = None
+    thumbnail_url: str | None = None
+    source: str | None = None
+    source_url: str | None = None
+    license: str | None = None
+    license_url: str | None = None
+    author: str | None = None
+    attribution_text: str | None = None
+    is_place_specific: bool | None = None
+    is_synthetic: bool | None = None
+    match_method: str | None = None
+
+
 class ExperienceSummary(BaseModel):
     """Compact shape used in list responses (matches the Discover grid)."""
 
@@ -79,6 +102,38 @@ class ExperienceSummary(BaseModel):
     verification_status: str
     is_synthetic: bool
     is_enriched: bool
+    image: ExperienceImage | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _build_image_from_flat_columns(cls, data: Any) -> Any:
+        """The ORM stores image_* as flat columns (src/models/experience.py)
+        but the API exposes them as a nested `image` object — assembled
+        here rather than duplicating the flat/nested shape in the model."""
+        if isinstance(data, dict):
+            return data
+        if getattr(data, "image_url", None) is None:
+            return data
+        image = ExperienceImage(
+            url=data.image_url,
+            thumbnail_url=data.image_thumbnail_url,
+            source=data.image_source,
+            source_url=data.image_source_url,
+            license=data.image_license,
+            license_url=data.image_license_url,
+            author=data.image_author,
+            attribution_text=data.image_attribution_text,
+            is_place_specific=data.image_is_place_specific,
+            is_synthetic=data.image_is_synthetic,
+            match_method=data.image_match_method,
+        )
+        values = {
+            field: getattr(data, field)
+            for field in cls.model_fields
+            if field != "image" and hasattr(data, field)
+        }
+        values["image"] = image
+        return values
 
     # Location-aware discovery fields (Phase 4). distance_km is a
     # straight-line Haversine distance — only populated when the request

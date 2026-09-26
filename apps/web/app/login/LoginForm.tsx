@@ -23,9 +23,11 @@ export function LoginForm() {
     event.preventDefault();
     setError(null);
     setIsSubmitting(true);
+
     try {
       const user = await login({ email, password });
       const next = searchParams.get("next");
+
       if (next) {
         router.push(next);
       } else {
@@ -51,7 +53,7 @@ export function LoginForm() {
         </>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+      <form onSubmit={handleSubmit} className="space-y-5" noValidate>
         <Input
           type="email"
           label="Email"
@@ -73,7 +75,7 @@ export function LoginForm() {
           onChange={(event) => setPassword(event.target.value)}
           errorMessage={error ?? undefined}
         />
-        <Button type="submit" className="w-full" loading={isSubmitting}>
+        <Button type="submit" className="w-full rounded-full" loading={isSubmitting}>
           Continue
         </Button>
       </form>

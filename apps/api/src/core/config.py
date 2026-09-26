@@ -199,6 +199,63 @@ class Settings(BaseSettings):
     provider_notification_cooldown_days: int = 7
     provider_insight_default_window: str = "30d"
 
+    # ─── Phase 11 — Safety resources ────────────────────────────────────────
+    # "auto" tries the live OSM/Overpass adapter first and falls back to the
+    # deterministic seed adapter only on a genuine provider failure (network
+    # error, timeout, malformed response) — never merely because live
+    # returned zero results. "live" never falls back (surfaces a service
+    # error instead); "fallback" always uses seed data.
+    safety_resources_mode: Literal["auto", "live", "fallback"] = "auto"
+    safety_resources_base_url: str = "https://overpass-api.de/api/interpreter"
+    # Additional public Overpass mirrors tried in order, after the primary
+    # base_url, when a request fails (timeout/5xx/429/504) — the public
+    # instances load-shed independently, so a mirror often succeeds when
+    # the primary doesn't. Never arbitrary/user-supplied (SSRF guard).
+    safety_resources_mirror_urls: list[str] = Field(
+        default_factory=lambda: [
+            "https://overpass.kumi.systems/api/interpreter",
+            "https://lz4.overpass-api.de/api/interpreter",
+        ]
+    )
+    safety_resources_min_interval_seconds: float = 2.0
+    safety_resources_cache_ttl_seconds: int = 900
+    safety_resources_request_timeout_seconds: float = 10.0
+    safety_resources_default_radius_km: float = 5.0
+    safety_resources_min_radius_km: float = 0.5
+    safety_resources_max_radius_km: float = 25.0
+
+    # Second-tier live provider — tried only if the free Overpass/mirror
+    # chain genuinely fails (auto mode). Requires a Mapbox access token;
+    # when absent, this tier is skipped and auto mode falls straight
+    # through to seed data on an Overpass failure, same as before this
+    # tier existed. Never a hard startup requirement (docs/AI_CONTEXT.md
+    # adapter fallback contract) — Safety must still boot without it.
+    mapbox_api_key: str = ""
+    mapbox_search_base_url: str = "https://api.mapbox.com/search/searchbox/v1/category"
+    mapbox_request_timeout_seconds: float = 10.0
+    mapbox_search_limit: int = 15
+
+    # ─── Wikimedia Commons image resolution ─────────────────────────────────
+    # No API key required — Wikimedia's public MediaWiki API is used
+    # unauthenticated, but every request must send a meaningful
+    # identifying User-Agent per Wikimedia's API etiquette
+    # (https://meta.wikimedia.org/wiki/User-Agent_policy). This has a
+    # documented, non-personal default so the app boots without a .env
+    # file; set WIKIMEDIA_USER_AGENT to identify your own deployment.
+    wikimedia_user_agent: str = "LocaLens/1.0 (https://github.com/localens; contact=dev@localens.example)"
+    wikimedia_api_base_url: str = "https://commons.wikimedia.org/w/api.php"
+    wikimedia_min_interval_seconds: float = 1.0
+    wikimedia_cache_ttl_seconds: int = 86400
+    wikimedia_request_timeout_seconds: float = 15.0
+    # Geosearch radius escalation (meters) — start narrow, widen only when
+    # no relevant result exists, never search an entire city per experience.
+    wikimedia_geosearch_radii_m: list[int] = Field(default_factory=lambda: [1000, 3000, 5000])
+    wikimedia_geosearch_limit: int = 20
+    wikimedia_search_limit: int = 10
+    # Below this deterministic match score, no image is selected at all —
+    # "no suitable image" beats "wrong image" (see enrichment script).
+    wikimedia_min_match_score: float = 20.0
+
     @model_validator(mode="after")
     def _validate_match_weights(self) -> Settings:
         total = sum([

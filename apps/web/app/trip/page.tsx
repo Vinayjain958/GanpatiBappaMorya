@@ -17,25 +17,27 @@ const hasTrip = true;
 export default function TripListPage() {
   return (
     <RequireRole role="traveler">
-      <PageContainer className="space-y-6 py-8">
+      <PageContainer className="space-y-8 py-8 sm:py-10">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Your trips</h1>
-            <p className="text-sm text-ink-muted">Compose a new plan, or revisit an existing one.</p>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-semibold tracking-tight text-ink sm:text-4xl">Your trips</h1>
+            <p className="text-sm leading-6 text-ink-muted">
+              Compose a new plan, or revisit an existing one.
+            </p>
           </div>
         </div>
 
         <TripComposerSection />
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-6">
-          <h2 className="text-lg font-semibold text-ink">Demo plan</h2>
+          <h2 className="text-lg font-semibold tracking-tight text-ink">Demo plan</h2>
           <DemoDataBadge />
         </div>
 
         {hasTrip ? (
           <Link href={`/trip/${mockTrip.id}`}>
-            <Card className="transition-shadow hover:shadow-[0_16px_32px_-16px_rgba(11,18,32,0.25)]">
-              <CardBody className="flex flex-wrap items-center justify-between gap-4">
+            <Card className="rounded-2xl transition-shadow hover:shadow-xl">
+              <CardBody className="flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6">
                 <div>
                   <p className="font-semibold text-ink">{mockTrip.title}</p>
                   <p className="text-sm text-ink-muted">{mockTrip.contextSummary}</p>
@@ -51,7 +53,9 @@ export default function TripListPage() {
             description="Describe what you want on the Discover page and LocaLens will start building a plan."
             action={
               <Link href="/discover">
-                <Button size="sm">Start discovering</Button>
+                <Button size="sm" className="rounded-full">
+                  Start discovering
+                </Button>
               </Link>
             }
           />

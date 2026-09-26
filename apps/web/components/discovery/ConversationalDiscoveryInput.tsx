@@ -14,9 +14,7 @@ export interface ConversationalDiscoveryInputProps {
   size?: "hero" | "compact";
   suggestions?: string[];
   onSubmitQuery?: (query: string) => void;
-  /** Real conversational discovery (Phase 5): fired with a deterministic
-   * DiscoveryState patch derived from a text turn's extracted
-   * TravelerContext, or a voice turn's search_experiences tool args. */
+  /** Real conversational discovery: text and voice turns can update discovery state. */
   onDiscoveryPatch?: (patch: Partial<DiscoveryState>) => void;
   className?: string;
 }
@@ -28,15 +26,6 @@ const defaultSuggestions = [
   "Quiet places near me",
 ];
 
-/**
- * Reusable conversational entry point for traveler intent (Phase 5: real
- * Gemini-backed text + voice discovery). Text submission still calls
- * onSubmitQuery (keyword search, unchanged) and additionally runs a real
- * conversational turn (Gemini extracts TravelerContext, the app
- * deterministically translates it into a DiscoveryState patch via
- * onDiscoveryPatch). The microphone button is a real Gemini Live voice
- * control — never a fake "coming soon" placeholder.
- */
 export function ConversationalDiscoveryInput({
   size = "hero",
   suggestions = defaultSuggestions,
@@ -56,6 +45,7 @@ export function ConversationalDiscoveryInput({
     event.preventDefault();
     const trimmed = value.trim();
     if (!trimmed) return;
+
     onSubmitQuery?.(trimmed);
     void sendMessage(trimmed);
   }
@@ -64,15 +54,17 @@ export function ConversationalDiscoveryInput({
     <div className={cn("w-full", className)}>
       <form
         onSubmit={handleSubmit}
-        className={cn(
-          "flex items-center gap-2 rounded-2xl border border-line-strong bg-surface p-2 shadow-[0_20px_50px_-25px_rgba(11,18,32,0.35)] transition-shadow focus-within:border-accent focus-within:shadow-[0_20px_50px_-20px_rgba(14,165,196,0.35)]",
-          isHero ? "sm:p-2.5" : "",
-        )}
         role="search"
+        className={cn(
+          "flex items-center gap-2 rounded-[1.25rem] border border-line-strong bg-surface-raised p-2 shadow-soft transition-all",
+          "focus-within:border-accent focus-within:shadow-lg",
+          isHero && "sm:p-2.5",
+        )}
       >
         <label htmlFor={inputId} className="sr-only">
           Describe what you&apos;re in the mood for
         </label>
+
         <input
           id={inputId}
           type="text"
@@ -80,21 +72,23 @@ export function ConversationalDiscoveryInput({
           onChange={(event) => setValue(event.target.value)}
           placeholder="What are you in the mood for?"
           className={cn(
-            "flex-1 bg-transparent px-3 text-ink placeholder:text-ink-subtle focus:outline-none",
+            "min-w-0 flex-1 bg-transparent px-3 text-ink placeholder:text-ink-subtle focus:outline-none",
             isHero ? "text-base sm:text-lg" : "text-sm",
           )}
         />
+
         <VoiceControlButton
           state={voice.state}
           isAvailable={voice.isAvailable}
           onStart={() => void voice.start()}
           onStop={voice.stop}
         />
+
         <button
           type="submit"
           disabled={!value.trim()}
           aria-label="Search experiences"
-          className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-ink transition-opacity disabled:opacity-40"
+          className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-ink transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <ArrowUp className="size-4.5" aria-hidden="true" />
         </button>
@@ -103,12 +97,18 @@ export function ConversationalDiscoveryInput({
       {voice.state !== "IDLE" ? (
         <div className="mt-3 space-y-2">
           <VoiceTranscriptPanel entries={voice.transcript} />
-          {voice.errorMessage ? <p className="text-xs text-danger">{voice.errorMessage}</p> : null}
+          {voice.errorMessage ? (
+            <p className="text-xs text-danger">{voice.errorMessage}</p>
+          ) : null}
         </div>
       ) : null}
 
       {suggestions.length ? (
-        <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Example prompts">
+        <div
+          className="mt-3 flex flex-wrap gap-2"
+          role="group"
+          aria-label="Example prompts"
+        >
           {suggestions.map((suggestion) => (
             <button
               key={suggestion}
@@ -117,7 +117,7 @@ export function ConversationalDiscoveryInput({
                 setValue(suggestion);
                 onSubmitQuery?.(suggestion);
               }}
-              className="rounded-full border border-line bg-surface px-3.5 py-1.5 text-xs font-medium text-ink-muted transition-colors hover:border-accent hover:text-accent"
+              className="rounded-full border border-line bg-surface-raised px-3.5 py-2 text-xs font-medium text-ink-muted transition-colors hover:border-accent hover:bg-pastel-mint/50 hover:text-ink"
             >
               {suggestion}
             </button>

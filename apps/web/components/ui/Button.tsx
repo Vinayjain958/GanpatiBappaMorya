@@ -14,30 +14,41 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<Variant, string> = {
   primary:
-    "bg-primary text-primary-ink hover:brightness-110 active:brightness-95 shadow-sm shadow-black/5",
+    "bg-primary text-primary-ink shadow-sm hover:brightness-110 active:scale-[0.98]",
   secondary:
-    "bg-accent text-accent-ink hover:brightness-105 active:brightness-95 shadow-sm shadow-black/5",
+    "bg-pastel-mint text-ink hover:brightness-[0.98] active:scale-[0.98]",
   outline:
-    "border border-line-strong text-ink bg-transparent hover:bg-surface-sunken",
-  ghost: "text-ink hover:bg-surface-sunken",
-  danger: "bg-danger text-white hover:brightness-110",
+    "border border-line-strong bg-surface text-ink hover:bg-surface-sunken active:scale-[0.98]",
+  ghost: "text-ink hover:bg-surface-sunken active:scale-[0.98]",
+  danger: "bg-danger text-white hover:brightness-110 active:scale-[0.98]",
 };
 
 const sizeClasses: Record<Size, string> = {
-  sm: "h-9 px-3.5 text-sm gap-1.5 rounded-md",
-  md: "h-11 px-5 text-sm gap-2 rounded-lg",
-  lg: "h-13 px-6 text-base gap-2 rounded-lg",
-  icon: "h-10 w-10 rounded-lg",
+  sm: "h-9 gap-1.5 rounded-full px-4 text-sm",
+  md: "h-11 gap-2 rounded-full px-5 text-sm",
+  lg: "h-13 gap-2 rounded-full px-6 text-base",
+  icon: "size-10 rounded-full",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "primary", size = "md", loading, disabled, children, ...props }, ref) => {
+  (
+    {
+      className,
+      variant = "primary",
+      size = "md",
+      loading,
+      disabled,
+      children,
+      ...props
+    },
+    ref,
+  ) => {
     return (
       <button
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center font-medium transition-colors duration-150",
-          "disabled:opacity-50 disabled:cursor-not-allowed",
+          "inline-flex items-center justify-center font-medium transition duration-150",
+          "disabled:cursor-not-allowed disabled:opacity-50",
           "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
           variantClasses[variant],
           sizeClasses[size],
@@ -47,10 +58,13 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         aria-busy={loading || undefined}
         {...props}
       >
-        {loading ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
+        {loading ? (
+          <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+        ) : null}
         {children}
       </button>
     );
   },
 );
+
 Button.displayName = "Button";

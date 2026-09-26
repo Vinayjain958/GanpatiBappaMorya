@@ -9,9 +9,9 @@ import { bookingStatusLabel, bookingStatusTone } from "@/lib/itinerary/itinerary
 import type { ApiBookingRequest, BookingStatus } from "@/types/api";
 
 /**
- * Request/Requested/Accepted/Declined/Cancelled state button. Never
- * shows "Confirmed" for a REQUESTED (or even ACCEPTED) status — REQUESTED
- * intent only, no payment, ever (docs/DECISIONS.md ADR-046).
+ * Shows the booking request state. A REQUESTED or ACCEPTED status is not
+ * shown as “Confirmed”; a request records intent and does not take payment
+ * (docs/DECISIONS.md ADR-046).
  */
 export function BookingRequestButton({
   itineraryId,
@@ -28,16 +28,22 @@ export function BookingRequestButton({
 
   if (booking) {
     const tone = bookingStatusTone(booking.status as BookingStatus);
+
     return (
-      <Badge tone={tone === "neutral" ? "neutral" : tone}>{bookingStatusLabel(booking.status as BookingStatus)}</Badge>
+      <Badge tone={tone === "neutral" ? "neutral" : tone}>
+        {bookingStatusLabel(booking.status as BookingStatus)}
+      </Badge>
     );
   }
 
   async function handleRequest() {
     setSubmitting(true);
     setError(null);
+
     try {
-      const created = await createBookingRequest(itineraryId, { itinerary_item_id: itineraryItemId });
+      const created = await createBookingRequest(itineraryId, {
+        itinerary_item_id: itineraryItemId,
+      });
       setBooking(created);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not send the booking request.");
@@ -48,10 +54,18 @@ export function BookingRequestButton({
 
   return (
     <div className="flex flex-col items-end gap-1">
-      <Button size="sm" variant="outline" loading={submitting} onClick={handleRequest}>
+      <Button
+        size="sm"
+        variant="outline"
+        loading={submitting}
+        onClick={handleRequest}
+        className="rounded-full border-accent/30 bg-accent-soft px-4 text-accent hover:border-accent/50 hover:bg-accent-soft"
+      >
         Request booking
       </Button>
-      {error ? <span className="text-xs text-danger">{error}</span> : null}
+      {error ? (
+        <span className="max-w-48 text-right text-xs text-danger">{error}</span>
+      ) : null}
     </div>
   );
 }

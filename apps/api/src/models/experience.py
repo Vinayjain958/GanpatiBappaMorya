@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     JSON,
     Boolean,
+    DateTime,
     Enum,
     Float,
     ForeignKey,
@@ -128,6 +130,35 @@ class Experience(UUIDPrimaryKeyMixin, TimestampMixin, ProvenanceMixin, Base):
     environmental_type: Mapped[str] = mapped_column(EnvironmentalType, default="UNKNOWN", nullable=False)
     weather_sensitivity: Mapped[str] = mapped_column(WeatherSensitivity, default="UNKNOWN", nullable=False)
     weather_policy: Mapped[str] = mapped_column(WeatherPolicy, default="NONE", nullable=False)
+
+    # ─── Image resolution (Wikimedia Commons image system) ──────────────
+    # image_source distinguishes how image_url was populated:
+    #   "provider_upload"   -> a real business uploaded this themselves;
+    #                          the enrichment script must NEVER overwrite it.
+    #   "wikimedia_commons"  -> resolved via src/services/experience_images.py;
+    #                          image_is_synthetic is always False.
+    #   "category_fallback"  -> LocaLens's own generic per-category stock
+    #                          image; image_is_synthetic is always True.
+    #   None                -> not yet enriched.
+    # image_is_place_specific distinguishes an image of the actual venue
+    # (exact/geo match) from a semantic/category placeholder that merely
+    # depicts the general kind of place — both can be non-synthetic
+    # Wikimedia content, but only the former should be shown without a
+    # "representative image" qualifier (see docs/DECISIONS.md image ADR).
+    image_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    image_thumbnail_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    image_source: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    image_source_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    image_source_id: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    image_license: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    image_license_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    image_author: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    image_attribution_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    image_is_place_specific: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    image_is_synthetic: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    image_match_method: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    image_match_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    image_retrieved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     provider: Mapped[Provider] = relationship(back_populates="experiences")
     category: Mapped[ExperienceCategory] = relationship(back_populates="experiences")

@@ -18,13 +18,26 @@ import { updateExperience } from "@/lib/api/experiencesWrite";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthContext";
 
-function valuesFromApi(experience: Awaited<ReturnType<typeof getExperience>>): ExperienceFormValues {
+function valuesFromApi(
+  experience: Awaited<ReturnType<typeof getExperience>>,
+): ExperienceFormValues {
   const openingHours = experience.opening_hours.length
     ? Array.from({ length: 7 }, (_, day) => {
         const match = experience.opening_hours.find((w) => w.day_of_week === day);
+
         return match
-          ? { day_of_week: day, open_time: match.open_time, close_time: match.close_time, is_closed: match.is_closed }
-          : { day_of_week: day, open_time: "10:00", close_time: "18:00", is_closed: true };
+          ? {
+              day_of_week: day,
+              open_time: match.open_time,
+              close_time: match.close_time,
+              is_closed: match.is_closed,
+            }
+          : {
+              day_of_week: day,
+              open_time: "10:00",
+              close_time: "18:00",
+              is_closed: true,
+            };
       })
     : EMPTY_OPENING_HOURS;
 
@@ -34,9 +47,12 @@ function valuesFromApi(experience: Awaited<ReturnType<typeof getExperience>>): E
     full_description: experience.full_description,
     category_id: experience.category.id,
     price: experience.price != null ? String(experience.price) : "",
-    duration_minutes: experience.duration_minutes != null ? String(experience.duration_minutes) : "",
-    minimum_group_size: experience.minimum_group_size != null ? String(experience.minimum_group_size) : "",
-    maximum_group_size: experience.maximum_group_size != null ? String(experience.maximum_group_size) : "",
+    duration_minutes:
+      experience.duration_minutes != null ? String(experience.duration_minutes) : "",
+    minimum_group_size:
+      experience.minimum_group_size != null ? String(experience.minimum_group_size) : "",
+    maximum_group_size:
+      experience.maximum_group_size != null ? String(experience.maximum_group_size) : "",
     capacity: experience.capacity != null ? String(experience.capacity) : "",
     wheelchair_accessible: experience.wheelchair_accessible ?? false,
     step_free: experience.step_free ?? false,
@@ -58,23 +74,27 @@ export function EditExperienceClient({ experienceId }: { experienceId: string })
   const router = useRouter();
   const { provider: authProvider } = useAuth();
   const [initialValues, setInitialValues] = useState<ExperienceFormValues | null>(null);
-  const [status, setStatus] = useState<"loading" | "success" | "error" | "forbidden">("loading");
+  const [status, setStatus] = useState<"loading" | "success" | "error" | "forbidden">(
+    "loading",
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+
     getExperience(experienceId)
       .then((experience) => {
         if (cancelled) return;
-        // GET is public (read-only), so this also succeeds for another
-        // provider's or a catalog-imported experience — only the owning
-        // provider may see the edit form here; mutation is independently
-        // enforced server-side regardless of this check.
+
+        // GET is public and read-only, so it can return another provider's
+        // or a catalog-imported experience. Only the owning provider may
+        // see the edit form; the server also enforces ownership on updates.
         if (!authProvider || experience.provider.id !== authProvider.id) {
           setStatus("forbidden");
           return;
         }
+
         setInitialValues(valuesFromApi(experience));
         setStatus("success");
       })
@@ -82,6 +102,7 @@ export function EditExperienceClient({ experienceId }: { experienceId: string })
         if (cancelled) return;
         setStatus(err instanceof ApiError && err.status === 404 ? "forbidden" : "error");
       });
+
     return () => {
       cancelled = true;
     };
@@ -90,6 +111,7 @@ export function EditExperienceClient({ experienceId }: { experienceId: string })
   async function handleSubmit(values: ExperienceFormValues) {
     setIsSubmitting(true);
     setError(null);
+
     try {
       await updateExperience(experienceId, buildUpdatePayload(values));
       router.refresh();
@@ -103,15 +125,17 @@ export function EditExperienceClient({ experienceId }: { experienceId: string })
 
   return (
     <RequireRole role="provider">
-      <PageContainer className="max-w-3xl space-y-8 py-8">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Manage experience</h1>
+      <PageContainer className="max-w-4xl space-y-7 py-8 sm:py-10">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+            Manage experience
+          </h1>
         </div>
 
         {status === "loading" ? (
           <div className="space-y-4" aria-busy="true">
-            <Skeleton className="h-8 w-2/3" />
-            <Skeleton className="h-40 w-full rounded-xl" />
+            <Skeleton className="h-10 w-2/3 rounded-xl" />
+            <Skeleton className="h-48 w-full rounded-2xl" />
           </div>
         ) : status === "forbidden" ? (
           <ErrorState
@@ -121,7 +145,7 @@ export function EditExperienceClient({ experienceId }: { experienceId: string })
         ) : status === "error" || !initialValues ? (
           <ErrorState title="Couldn't load this experience" />
         ) : (
-          <>
+          <div className="space-y-7">
             <ExperienceForm
               mode="edit"
               initialValues={initialValues}
@@ -131,7 +155,7 @@ export function EditExperienceClient({ experienceId }: { experienceId: string })
               error={error}
             />
             <AvailabilityManager experienceId={experienceId} />
-          </>
+          </div>
         )}
       </PageContainer>
     </RequireRole>

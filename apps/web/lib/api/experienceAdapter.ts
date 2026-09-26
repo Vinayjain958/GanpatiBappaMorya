@@ -59,6 +59,32 @@ function formatOpeningHours(windows: ApiOpeningHourWindow[] | undefined): string
   return `${days[0]} ${openDays[0].open_time}–${openDays[0].close_time} (varies by day)`;
 }
 
+function imageFromSummary(api: ApiExperienceSummary): Experience["image"] {
+  const resolved = api.image;
+  if (resolved?.url) {
+    return {
+      imageUrl: resolved.url,
+      isFallback: false,
+      isPlaceSpecific: resolved.is_place_specific ?? false,
+      source: resolved.source,
+      sourceUrl: resolved.source_url,
+      license: resolved.license,
+      author: resolved.author,
+      attributionText: resolved.attribution_text,
+    };
+  }
+  return {
+    imageUrl: CATEGORY_IMAGES[api.category.slug] ?? FALLBACK_IMAGE,
+    isFallback: true,
+    isPlaceSpecific: false,
+    source: null,
+    sourceUrl: null,
+    license: null,
+    author: null,
+    attributionText: null,
+  };
+}
+
 function priceFromSummary(api: ApiExperienceSummary): number {
   if (api.price != null) return api.price;
   if (api.minimum_price != null) return api.minimum_price;
@@ -96,6 +122,7 @@ export function mapApiExperienceToUi(
           haversineKm(fallbackOrigin.lat, fallbackOrigin.lng, api.location.latitude, api.location.longitude) * 10,
         ) / 10
       : null);
+  const image = imageFromSummary(api);
 
   return {
     id: api.id,
@@ -104,7 +131,8 @@ export function mapApiExperienceToUi(
     categoryLabel: api.category.name,
     shortDescription: api.short_description,
     description: detail?.full_description ?? api.short_description,
-    imageUrl: CATEGORY_IMAGES[api.category.slug] ?? FALLBACK_IMAGE,
+    imageUrl: image.imageUrl,
+    image,
     location: {
       area: api.location.locality ?? api.location.city,
       city: api.location.city,

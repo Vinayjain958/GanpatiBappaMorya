@@ -6,7 +6,11 @@ import { Card, CardBody } from "@/components/ui/Card";
 import { ApiError } from "@/lib/api/client";
 import { composeItinerary } from "@/lib/api/itineraries";
 import { isCompositionFailure } from "@/types/api";
-import type { ApiItinerary, CompositionPace, CompositionValidationResponse } from "@/types/api";
+import type {
+  ApiItinerary,
+  CompositionPace,
+  CompositionValidationResponse,
+} from "@/types/api";
 
 const REASON_LABELS: Record<string, string> = {
   OPENING_HOURS_CONFLICT: "isn't open during your chosen time window",
@@ -21,40 +25,45 @@ const REASON_LABELS: Record<string, string> = {
   CAPACITY_UNAVAILABLE: "has no capacity data on record",
 };
 
-/** Builds a genuinely explanatory message from the real backend reason
- * codes rather than showing the generic "failed validation" string —
- * every claim here traces back to data actually in the response, never
- * guessed. */
-function describeCompositionFailure(result: CompositionValidationResponse): string {
+/**
+ * Builds a message from backend reason codes and response data.
+ */
+function describeCompositionFailure(
+  result: CompositionValidationResponse,
+): string {
   if (result.candidate_count === 0) {
     return "No experiences matched your search. Try a broader interest or a different date.";
   }
+
   if (result.feasible_count === 0) {
     return `Found ${result.candidate_count} matching experiences, but none fit your constraints — try an earlier/later time window, a higher budget, or fewer experiences.`;
   }
 
   const reasonCounts = new Map<string, number>();
   for (const issue of result.issues) {
-    const reasons = (issue.evidence.reasons as string[] | undefined) ?? [issue.code];
+    const reasons = (issue.evidence.reasons as string[] | undefined) ?? [
+      issue.code,
+    ];
     for (const reason of reasons) {
       reasonCounts.set(reason, (reasonCounts.get(reason) ?? 0) + 1);
     }
   }
-  const topReason = [...reasonCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+
+  const topReason = [...reasonCounts.entries()].sort(
+    (a, b) => b[1] - a[1],
+  )[0]?.[0];
   const explanation = topReason ? REASON_LABELS[topReason] : undefined;
 
   if (explanation) {
     return `Found ${result.feasible_count} matching experiences, but the best available option ${explanation}. Try a different time window or budget.`;
   }
+
   return `Found ${result.feasible_count} matching experiences, but couldn't fit them into a valid plan for the given constraints.`;
 }
 
 /**
- * Composer form: date / time window / budget / max experiences /
- * preferences -> calls the backend compose API. Never computes
- * feasibility, ordering, or timing locally — every field here is just a
- * request parameter; all decisions happen server-side
- * (src/services/compose_itinerary.py).
+ * Sends composition parameters to the backend. Feasibility, ordering, and
+ * timing decisions remain server-side.
  */
 export function ItineraryComposerForm({
   onComposed,
@@ -70,17 +79,22 @@ export function ItineraryComposerForm({
   const [pace, setPace] = useState<CompositionPace>("balanced");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [validationMessage, setValidationMessage] = useState<string | null>(null);
+  const [validationMessage, setValidationMessage] = useState<string | null>(
+    null,
+  );
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+
     if (!date) {
       setError("Please choose a date.");
       return;
     }
+
     setSubmitting(true);
     setError(null);
     setValidationMessage(null);
+
     try {
       const result = await composeItinerary({
         query: query || undefined,
@@ -91,94 +105,127 @@ export function ItineraryComposerForm({
         max_budget: maxBudget ? Number(maxBudget) : undefined,
         pace,
       });
+
       if (isCompositionFailure(result)) {
         setValidationMessage(describeCompositionFailure(result));
         return;
       }
+
       onComposed(result);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Something went wrong. Please try again.",
+      );
     } finally {
       setSubmitting(false);
     }
   }
 
+  const controlClassName =
+    "w-full rounded-xl border border-line-strong bg-surface-raised px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-subtle focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+
   return (
     <Card>
-      <CardBody className="space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold text-ink">Create an itinerary</h2>
-          <p className="text-sm text-ink-muted">
-            LocaLens will compose a chronological, travel-aware plan from feasible experiences.
+      <CardBody className="space-y-5">
+        <div className="rounded-2xl bg-pastel-lemon/45 p-4 sm:p-5">
+          <h2 className="text-lg font-semibold text-ink">
+            Create an itinerary
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-ink-muted">
+            LocaLens will compose a chronological, travel-aware plan from
+            feasible experiences.
           </p>
         </div>
-        <form className="space-y-3" onSubmit={handleSubmit}>
+
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <label className="block text-sm">
-            <span className="mb-1 block font-medium text-ink">What are you interested in?</span>
+            <span className="mb-1.5 block font-medium text-ink">
+              What are you interested in?
+            </span>
             <input
-              className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm"
+              className={controlClassName}
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(event) => setQuery(event.target.value)}
               placeholder="e.g. food, heritage walks"
             />
           </label>
-          <div className="grid grid-cols-2 gap-3">
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="block text-sm">
-              <span className="mb-1 block font-medium text-ink">Date</span>
+              <span className="mb-1.5 block font-medium text-ink">Date</span>
               <input
                 type="date"
-                className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm"
+                className={controlClassName}
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
+                onChange={(event) => setDate(event.target.value)}
                 required
               />
             </label>
+
             <label className="block text-sm">
-              <span className="mb-1 block font-medium text-ink">Max experiences</span>
+              <span className="mb-1.5 block font-medium text-ink">
+                Max experiences
+              </span>
               <input
                 type="number"
                 min={1}
                 max={20}
-                className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm"
+                className={controlClassName}
                 value={maxExperiences}
-                onChange={(e) => setMaxExperiences(Number(e.target.value))}
+                onChange={(event) =>
+                  setMaxExperiences(Number(event.target.value))
+                }
               />
             </label>
+
             <label className="block text-sm">
-              <span className="mb-1 block font-medium text-ink">Start time</span>
+              <span className="mb-1.5 block font-medium text-ink">
+                Start time
+              </span>
               <input
                 type="time"
-                className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm"
+                className={controlClassName}
                 value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
+                onChange={(event) => setStartTime(event.target.value)}
               />
             </label>
+
             <label className="block text-sm">
-              <span className="mb-1 block font-medium text-ink">End time</span>
+              <span className="mb-1.5 block font-medium text-ink">
+                End time
+              </span>
               <input
                 type="time"
-                className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm"
+                className={controlClassName}
                 value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
+                onChange={(event) => setEndTime(event.target.value)}
               />
             </label>
+
             <label className="block text-sm">
-              <span className="mb-1 block font-medium text-ink">Max budget (INR)</span>
+              <span className="mb-1.5 block font-medium text-ink">
+                Max budget (INR)
+              </span>
               <input
                 type="number"
                 min={0}
-                className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm"
+                className={controlClassName}
                 value={maxBudget}
-                onChange={(e) => setMaxBudget(e.target.value)}
+                onChange={(event) => setMaxBudget(event.target.value)}
                 placeholder="No limit"
               />
             </label>
+
             <label className="block text-sm">
-              <span className="mb-1 block font-medium text-ink">Pace</span>
+              <span className="mb-1.5 block font-medium text-ink">Pace</span>
               <select
-                className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm"
+                className={controlClassName}
                 value={pace}
-                onChange={(e) => setPace(e.target.value as CompositionPace)}
+                onChange={(event) =>
+                  setPace(event.target.value as CompositionPace)
+                }
               >
                 <option value="relaxed">Relaxed</option>
                 <option value="balanced">Balanced</option>
@@ -186,10 +233,15 @@ export function ItineraryComposerForm({
               </select>
             </label>
           </div>
+
           {error ? <p className="text-sm text-danger">{error}</p> : null}
+
           {validationMessage ? (
-            <p className="rounded-lg bg-warning-soft px-3 py-2 text-sm text-warning">{validationMessage}</p>
+            <p className="rounded-xl bg-warning-soft px-3.5 py-3 text-sm text-warning">
+              {validationMessage}
+            </p>
           ) : null}
+
           <Button type="submit" loading={submitting} className="w-full">
             Compose itinerary
           </Button>

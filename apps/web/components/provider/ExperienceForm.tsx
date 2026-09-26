@@ -7,7 +7,11 @@ import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import { listCategories, type ApiCategory } from "@/lib/api/categories";
 import { useLocationSearch } from "@/hooks/useLocationSearch";
-import type { ExperienceCreateInput, ExperienceUpdateInput, OpeningHourInput } from "@/types/provider-api";
+import type {
+  ExperienceCreateInput,
+  ExperienceUpdateInput,
+  OpeningHourInput,
+} from "@/types/provider-api";
 
 const DAY_LABELS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const SUITABILITY_OPTIONS = ["solo", "couple", "friends", "family", "business"];
@@ -101,7 +105,7 @@ export function buildCreatePayload(values: ExperienceFormValues): ExperienceCrea
     accessibility_notes: values.accessibility_notes || undefined,
     tags: values.tags
       .split(",")
-      .map((t) => t.trim())
+      .map((tag) => tag.trim())
       .filter(Boolean),
     suitability: values.suitability,
     status: values.status,
@@ -133,7 +137,12 @@ export function ExperienceForm({
   const [values, setValues] = useState(initialValues);
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [placeQuery, setPlaceQuery] = useState("");
-  const { status: placeSearchStatus, results: placeResults, search: searchPlace, clear: clearPlaceResults } = useLocationSearch();
+  const {
+    status: placeSearchStatus,
+    results: placeResults,
+    search: searchPlace,
+    clear: clearPlaceResults,
+  } = useLocationSearch();
 
   useEffect(() => {
     listCategories()
@@ -141,7 +150,10 @@ export function ExperienceForm({
       .catch(() => setCategories([]));
   }, []);
 
-  function update<K extends keyof ExperienceFormValues>(key: K, value: ExperienceFormValues[K]) {
+  function update<K extends keyof ExperienceFormValues>(
+    key: K,
+    value: ExperienceFormValues[K],
+  ) {
     setValues((prev) => ({ ...prev, [key]: value }));
   }
 
@@ -151,9 +163,14 @@ export function ExperienceForm({
     await searchPlace(placeQuery);
   }
 
-  function handlePickPlace(result: { lat: number; lng: number; display_name: string; city: string | null; locality: string | null }) {
-    // Only ever applied on an explicit pick — never silently overwrites
-    // a manually entered location (docs/DECISIONS.md ADR-022).
+  function handlePickPlace(result: {
+    lat: number;
+    lng: number;
+    display_name: string;
+    city: string | null;
+    locality: string | null;
+  }) {
+    // Only applied after an explicit pick; manually entered location isn't silently overwritten.
     setValues((prev) => ({
       ...prev,
       latitude: String(result.lat),
@@ -181,15 +198,16 @@ export function ExperienceForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      <section className="space-y-4">
-        <h2 className="text-base font-semibold text-ink">Basic details</h2>
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <section className="space-y-5 rounded-3xl border border-line bg-surface p-5 shadow-soft sm:p-6">
+        <h2 className="text-lg font-semibold tracking-tight text-ink">Basic details</h2>
+
         <Input
           label="Title"
           required
           minLength={3}
           value={values.title}
-          onChange={(e) => update("title", e.target.value)}
+          onChange={(event) => update("title", event.target.value)}
         />
         <Textarea
           label="Short description"
@@ -197,22 +215,23 @@ export function ExperienceForm({
           minLength={10}
           maxLength={300}
           value={values.short_description}
-          onChange={(e) => update("short_description", e.target.value)}
+          onChange={(event) => update("short_description", event.target.value)}
         />
         <Textarea
           label="Full description"
           required
           minLength={10}
           value={values.full_description}
-          onChange={(e) => update("full_description", e.target.value)}
+          onChange={(event) => update("full_description", event.target.value)}
         />
-        <label className="flex flex-col gap-1.5 text-sm font-medium text-ink">
+
+        <label className="flex flex-col gap-2 text-sm font-medium text-ink">
           Category
           <select
             required
             value={values.category_id}
-            onChange={(e) => update("category_id", e.target.value)}
-            className="h-11 rounded-lg border border-line-strong bg-surface px-3.5 text-sm text-ink"
+            onChange={(event) => update("category_id", event.target.value)}
+            className="h-11 rounded-xl border border-line-strong bg-surface px-3.5 text-sm text-ink outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15"
           >
             <option value="" disabled>
               Select a category
@@ -227,30 +246,38 @@ export function ExperienceForm({
       </section>
 
       {mode === "create" ? (
-        <section className="space-y-4">
-          <h2 className="text-base font-semibold text-ink">Location</h2>
-          <div className="space-y-2">
-            <form onSubmit={handlePlaceSearch} className="flex items-center gap-1.5">
+        <section className="space-y-5 rounded-3xl border border-line bg-surface p-5 shadow-soft sm:p-6">
+          <h2 className="text-lg font-semibold tracking-tight text-ink">Location</h2>
+
+          <div className="space-y-3 rounded-2xl bg-surface-raised p-3 sm:p-4">
+            <form onSubmit={handlePlaceSearch} className="flex flex-col gap-2 sm:flex-row">
               <input
                 type="text"
                 value={placeQuery}
-                onChange={(e) => setPlaceQuery(e.target.value)}
+                onChange={(event) => setPlaceQuery(event.target.value)}
                 placeholder="Search a place to fill the fields below"
-                className="h-9 w-72 max-w-full rounded-lg border border-line-strong bg-surface px-3 text-sm text-ink placeholder:text-ink-subtle focus:outline-none"
+                className="h-11 min-w-0 flex-1 rounded-xl border border-line-strong bg-surface px-3.5 text-sm text-ink placeholder:text-ink-subtle outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15"
               />
-              <Button type="submit" size="sm" variant="outline" loading={placeSearchStatus === "loading"}>
+              <Button
+                type="submit"
+                size="sm"
+                variant="outline"
+                loading={placeSearchStatus === "loading"}
+                className="rounded-full"
+              >
                 <Search className="size-4" aria-hidden="true" />
                 Search
               </Button>
             </form>
+
             {placeSearchStatus === "success" && placeResults.length > 0 ? (
-              <ul className="max-w-md rounded-lg border border-line bg-surface p-1 shadow-sm">
+              <ul className="max-w-full space-y-1 rounded-2xl border border-line bg-surface p-2 shadow-soft sm:max-w-xl">
                 {placeResults.map((result) => (
                   <li key={`${result.lat}-${result.lng}`}>
                     <button
                       type="button"
                       onClick={() => handlePickPlace(result)}
-                      className="block w-full truncate rounded-md px-3 py-2 text-left text-sm text-ink hover:bg-surface-sunken"
+                      className="block w-full truncate rounded-xl px-3 py-2.5 text-left text-sm text-ink transition-colors hover:bg-accent-soft"
                     >
                       {result.display_name}
                     </button>
@@ -258,9 +285,12 @@ export function ExperienceForm({
                 ))}
               </ul>
             ) : placeSearchStatus === "success" ? (
-              <p className="text-xs text-ink-subtle">No matching places found — enter coordinates manually below.</p>
+              <p className="rounded-xl bg-highlight-soft px-3 py-2 text-xs text-ink-muted">
+                No matching places found — enter coordinates manually below.
+              </p>
             ) : null}
           </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
               label="Latitude"
@@ -268,7 +298,7 @@ export function ExperienceForm({
               step="any"
               required
               value={values.latitude}
-              onChange={(e) => update("latitude", e.target.value)}
+              onChange={(event) => update("latitude", event.target.value)}
             />
             <Input
               label="Longitude"
@@ -276,73 +306,83 @@ export function ExperienceForm({
               step="any"
               required
               value={values.longitude}
-              onChange={(e) => update("longitude", e.target.value)}
+              onChange={(event) => update("longitude", event.target.value)}
             />
             <Input
               label="Place name"
               value={values.place_name}
-              onChange={(e) => update("place_name", e.target.value)}
+              onChange={(event) => update("place_name", event.target.value)}
             />
-            <Input label="City" value={values.city} onChange={(e) => update("city", e.target.value)} />
+            <Input
+              label="City"
+              value={values.city}
+              onChange={(event) => update("city", event.target.value)}
+            />
             <Input
               label="Address"
               className="sm:col-span-2"
               value={values.address}
-              onChange={(e) => update("address", e.target.value)}
+              onChange={(event) => update("address", event.target.value)}
             />
             <Input
               label="Locality / area"
               value={values.locality}
-              onChange={(e) => update("locality", e.target.value)}
+              onChange={(event) => update("locality", event.target.value)}
             />
           </div>
         </section>
       ) : null}
 
-      <section className="space-y-4">
-        <h2 className="text-base font-semibold text-ink">Pricing &amp; logistics</h2>
+      <section className="space-y-5 rounded-3xl border border-line bg-surface p-5 shadow-soft sm:p-6">
+        <h2 className="text-lg font-semibold tracking-tight text-ink">
+          Pricing &amp; logistics
+        </h2>
+
         <div className="grid gap-4 sm:grid-cols-2">
           <Input
             label="Price (₹)"
             type="number"
             min={0}
             value={values.price}
-            onChange={(e) => update("price", e.target.value)}
+            onChange={(event) => update("price", event.target.value)}
           />
           <Input
             label="Duration (minutes)"
             type="number"
             min={1}
             value={values.duration_minutes}
-            onChange={(e) => update("duration_minutes", e.target.value)}
+            onChange={(event) => update("duration_minutes", event.target.value)}
           />
           <Input
             label="Minimum group size"
             type="number"
             min={1}
             value={values.minimum_group_size}
-            onChange={(e) => update("minimum_group_size", e.target.value)}
+            onChange={(event) => update("minimum_group_size", event.target.value)}
           />
           <Input
             label="Maximum group size"
             type="number"
             min={1}
             value={values.maximum_group_size}
-            onChange={(e) => update("maximum_group_size", e.target.value)}
+            onChange={(event) => update("maximum_group_size", event.target.value)}
           />
           <Input
             label="Capacity"
             type="number"
             min={1}
             value={values.capacity}
-            onChange={(e) => update("capacity", e.target.value)}
+            onChange={(event) => update("capacity", event.target.value)}
           />
-          <label className="flex flex-col gap-1.5 text-sm font-medium text-ink">
+
+          <label className="flex flex-col gap-2 text-sm font-medium text-ink">
             Status
             <select
               value={values.status}
-              onChange={(e) => update("status", e.target.value as ExperienceFormValues["status"])}
-              className="h-11 rounded-lg border border-line-strong bg-surface px-3.5 text-sm text-ink"
+              onChange={(event) =>
+                update("status", event.target.value as ExperienceFormValues["status"])
+              }
+              className="h-11 rounded-xl border border-line-strong bg-surface px-3.5 text-sm text-ink outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15"
             >
               <option value="draft">Draft</option>
               <option value="active">Active</option>
@@ -352,30 +392,35 @@ export function ExperienceForm({
         </div>
       </section>
 
-      <section className="space-y-4">
-        <h2 className="text-base font-semibold text-ink">Discovery &amp; accessibility</h2>
+      <section className="space-y-5 rounded-3xl border border-line bg-surface p-5 shadow-soft sm:p-6">
+        <h2 className="text-lg font-semibold tracking-tight text-ink">
+          Discovery &amp; accessibility
+        </h2>
+
         <Input
           label="Tags (comma-separated)"
           value={values.tags}
-          onChange={(e) => update("tags", e.target.value)}
+          onChange={(event) => update("tags", event.target.value)}
         />
-        <fieldset className="space-y-2">
+
+        <fieldset className="space-y-3">
           <legend className="text-sm font-medium text-ink">Suitable for</legend>
           <div className="flex flex-wrap gap-2">
             {SUITABILITY_OPTIONS.map((option) => (
               <label
                 key={option}
-                className="inline-flex items-center gap-1.5 rounded-full border border-line-strong px-3 py-1.5 text-xs capitalize text-ink-muted"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface-raised px-3.5 py-2 text-xs capitalize text-ink-muted transition-colors hover:border-accent/40 hover:bg-accent-soft"
               >
                 <input
                   type="checkbox"
+                  className="size-4 accent-accent"
                   checked={values.suitability.includes(option)}
-                  onChange={(e) =>
+                  onChange={(event) =>
                     update(
                       "suitability",
-                      e.target.checked
+                      event.target.checked
                         ? [...values.suitability, option]
-                        : values.suitability.filter((s) => s !== option),
+                        : values.suitability.filter((item) => item !== option),
                     )
                   }
                 />
@@ -384,61 +429,86 @@ export function ExperienceForm({
             ))}
           </div>
         </fieldset>
-        <div className="flex flex-wrap gap-4">
-          <label className="inline-flex items-center gap-2 text-sm text-ink">
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:gap-6">
+          <label className="inline-flex cursor-pointer items-center gap-2.5 text-sm text-ink">
             <input
               type="checkbox"
+              className="size-4 accent-accent"
               checked={values.wheelchair_accessible}
-              onChange={(e) => update("wheelchair_accessible", e.target.checked)}
+              onChange={(event) => update("wheelchair_accessible", event.target.checked)}
             />
             Wheelchair accessible
           </label>
-          <label className="inline-flex items-center gap-2 text-sm text-ink">
+          <label className="inline-flex cursor-pointer items-center gap-2.5 text-sm text-ink">
             <input
               type="checkbox"
+              className="size-4 accent-accent"
               checked={values.step_free}
-              onChange={(e) => update("step_free", e.target.checked)}
+              onChange={(event) => update("step_free", event.target.checked)}
             />
             Step-free route
           </label>
         </div>
+
         <Textarea
           label="Accessibility notes (optional)"
           value={values.accessibility_notes}
-          onChange={(e) => update("accessibility_notes", e.target.value)}
+          onChange={(event) => update("accessibility_notes", event.target.value)}
         />
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-base font-semibold text-ink">Opening hours</h2>
-        <div className="space-y-2">
+      <section className="space-y-5 rounded-3xl border border-line bg-surface p-5 shadow-soft sm:p-6">
+        <h2 className="text-lg font-semibold tracking-tight text-ink">Opening hours</h2>
+
+        <div className="space-y-3">
           {values.openingHours.map((window) => (
-            <div key={window.day_of_week} className="flex flex-wrap items-center gap-3 text-sm">
-              <span className="w-24 text-ink-muted">{DAY_LABELS[window.day_of_week]}</span>
-              <label className="inline-flex items-center gap-1.5 text-xs text-ink-muted">
+            <div
+              key={window.day_of_week}
+              className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-line bg-surface-raised p-3 sm:p-4"
+            >
+              <span className="w-24 text-sm font-medium text-ink">
+                {DAY_LABELS[window.day_of_week]}
+              </span>
+
+              <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-ink-muted">
                 <input
                   type="checkbox"
+                  className="size-4 accent-accent"
                   checked={window.is_closed}
-                  onChange={(e) => updateOpeningHour(window.day_of_week, { is_closed: e.target.checked })}
+                  onChange={(event) =>
+                    updateOpeningHour(window.day_of_week, {
+                      is_closed: event.target.checked,
+                    })
+                  }
                 />
                 Closed
               </label>
+
               {!window.is_closed ? (
-                <>
+                <div className="flex flex-wrap items-center gap-2">
                   <input
                     type="time"
                     value={window.open_time ?? "10:00"}
-                    onChange={(e) => updateOpeningHour(window.day_of_week, { open_time: e.target.value })}
-                    className="h-9 rounded-md border border-line-strong bg-surface px-2 text-sm text-ink"
+                    onChange={(event) =>
+                      updateOpeningHour(window.day_of_week, {
+                        open_time: event.target.value,
+                      })
+                    }
+                    className="h-10 rounded-xl border border-line-strong bg-surface px-3 text-sm text-ink outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15"
                   />
-                  <span className="text-ink-subtle">to</span>
+                  <span className="text-xs text-ink-subtle">to</span>
                   <input
                     type="time"
                     value={window.close_time ?? "18:00"}
-                    onChange={(e) => updateOpeningHour(window.day_of_week, { close_time: e.target.value })}
-                    className="h-9 rounded-md border border-line-strong bg-surface px-2 text-sm text-ink"
+                    onChange={(event) =>
+                      updateOpeningHour(window.day_of_week, {
+                        close_time: event.target.value,
+                      })
+                    }
+                    className="h-10 rounded-xl border border-line-strong bg-surface px-3 text-sm text-ink outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15"
                   />
-                </>
+                </div>
               ) : null}
             </div>
           ))}
@@ -446,14 +516,19 @@ export function ExperienceForm({
       </section>
 
       {error ? (
-        <p role="alert" className="text-sm text-danger">
+        <p
+          role="alert"
+          className="rounded-2xl border border-danger/20 bg-danger-soft px-4 py-3 text-sm text-danger"
+        >
           {error}
         </p>
       ) : null}
 
-      <Button type="submit" loading={isSubmitting}>
-        {submitLabel}
-      </Button>
+      <div className="flex justify-end">
+        <Button type="submit" loading={isSubmitting} className="min-w-44 rounded-full">
+          {submitLabel}
+        </Button>
+      </div>
     </form>
   );
 }

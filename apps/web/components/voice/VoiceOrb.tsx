@@ -10,12 +10,16 @@ const STATE_ICON: Partial<Record<VoiceState, typeof Mic>> = {
 };
 
 const PULSING_STATES: VoiceState[] = ["LISTENING", "SPEAKING"];
-const BUSY_STATES: VoiceState[] = ["CONNECTING", "THINKING", "TOOL_EXECUTING", "RECONNECTING"];
+const BUSY_STATES: VoiceState[] = [
+  "CONNECTING",
+  "THINKING",
+  "TOOL_EXECUTING",
+  "RECONNECTING",
+];
 
 /**
- * Presentational-only state indicator. Never animates a "listening"
- * pulse unless the voice state actually says so — no fake waveform when
- * no audio is being captured/played (docs/AI_CONTEXT.md INV-10).
+ * Presentational-only state indicator. It only pulses while the voice state
+ * says listening or speaking; it doesn't imply audio activity otherwise.
  */
 export function VoiceOrb({ state, className }: { state: VoiceState; className?: string }) {
   const Icon = STATE_ICON[state] ?? Mic;
@@ -25,16 +29,19 @@ export function VoiceOrb({ state, className }: { state: VoiceState; className?: 
   return (
     <div
       className={cn(
-        "relative inline-flex size-10 items-center justify-center rounded-full transition-colors",
+        "relative inline-flex size-10 shrink-0 items-center justify-center rounded-2xl transition-colors",
         state === "ERROR" ? "bg-danger-soft text-danger" : "bg-accent-soft text-accent",
         className,
       )}
     >
       {isPulsing ? (
-        <span className="absolute inset-0 animate-ping rounded-full bg-accent/30" aria-hidden="true" />
+        <span
+          className="absolute inset-0 animate-ping rounded-2xl bg-accent/20 motion-reduce:animate-none"
+          aria-hidden="true"
+        />
       ) : null}
       {isBusy ? (
-        <Loader2 className="size-4.5 animate-spin" aria-hidden="true" />
+        <Loader2 className="size-4.5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
       ) : (
         <Icon className="size-4.5" aria-hidden="true" />
       )}

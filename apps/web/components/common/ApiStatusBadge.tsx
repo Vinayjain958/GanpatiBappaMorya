@@ -15,7 +15,15 @@ export function ApiStatusBadge() {
         : "Checking API…";
 
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-xs text-ink-subtle">
+    <span
+      className={cn(
+        "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium",
+        status === "success" && "border-success/20 bg-success-soft text-success",
+        status === "error" && "border-danger/20 bg-danger-soft text-danger",
+        (status === "idle" || status === "loading") &&
+          "border-line bg-surface-raised text-ink-subtle",
+      )}
+    >
       <span
         aria-hidden="true"
         className={cn(

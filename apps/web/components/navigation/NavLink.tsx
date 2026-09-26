@@ -27,13 +27,14 @@ export function NavLink({
       onClick={onClick}
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-ink-muted transition-colors",
-        "hover:text-ink hover:bg-surface-sunken",
-        isActive && "text-ink bg-surface-sunken",
+        "inline-flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
+        "text-ink-muted hover:bg-surface-raised hover:text-ink",
+        "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+        isActive && "bg-accent-soft text-accent",
         className,
       )}
     >
-      {Icon ? <Icon className="size-4" aria-hidden="true" /> : null}
+      {Icon ? <Icon className="size-4 shrink-0" aria-hidden="true" /> : null}
       {label}
     </Link>
   );

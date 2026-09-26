@@ -21,11 +21,16 @@ export default function NewExperiencePage() {
   async function handleSubmit(values: ExperienceFormValues) {
     setIsSubmitting(true);
     setError(null);
+
     try {
       const created = await createExperience(buildCreatePayload(values));
       router.push(`/provider/experiences/${created.id}`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't create this experience. Please try again.");
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Couldn't create this experience. Please try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -33,11 +38,16 @@ export default function NewExperiencePage() {
 
   return (
     <RequireRole role="provider">
-      <PageContainer className="max-w-3xl space-y-6 py-8">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">New experience</h1>
-          <p className="text-sm text-ink-muted">This starts as a draft — set status to Active when ready.</p>
+      <PageContainer className="max-w-3xl space-y-7 py-8 sm:py-10">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+            New experience
+          </h1>
+          <p className="text-sm leading-6 text-ink-muted">
+            This starts as a draft — set status to Active when ready.
+          </p>
         </div>
+
         <ExperienceForm
           mode="create"
           initialValues={EMPTY_FORM_VALUES}

@@ -15,15 +15,26 @@ export function SectionHeading({
   className?: string;
 }) {
   return (
-    <div className={cn("flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between", className)}>
-      <div className="space-y-1.5">
+    <div
+      className={cn(
+        "flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between",
+        className,
+      )}
+    >
+      <div className="space-y-2">
         {eyebrow ? (
-          <p className="text-xs font-semibold uppercase tracking-wider text-accent">{eyebrow}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-accent">
+            {eyebrow}
+          </p>
         ) : null}
-        <h2 className="text-xl font-semibold tracking-tight text-ink sm:text-2xl">{title}</h2>
-        {description ? <p className="max-w-2xl text-sm text-ink-muted">{description}</p> : null}
+        <h2 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
+          {title}
+        </h2>
+        {description ? (
+          <p className="max-w-2xl text-sm leading-6 text-ink-muted">{description}</p>
+        ) : null}
       </div>
-      {action}
+      {action ? <div className="shrink-0">{action}</div> : null}
     </div>
   );
 }

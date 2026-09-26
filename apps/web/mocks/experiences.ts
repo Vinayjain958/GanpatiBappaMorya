@@ -10,7 +10,7 @@ import type { Experience } from "@/types/experience";
  */
 type RawMockExperience = Omit<
   Experience,
-  "categoryLabel" | "isPriceEstimated" | "travelTimeMinutes" | "travelTimeSource"
+  "categoryLabel" | "isPriceEstimated" | "travelTimeMinutes" | "travelTimeSource" | "image"
 >;
 
 const categoryLabels: Record<string, string> = {
@@ -207,4 +207,16 @@ export const mockExperiences: Experience[] = rawMockExperiences.map((experience)
   isPriceEstimated: false,
   travelTimeMinutes: null,
   travelTimeSource: null,
+  // Illustrative stock photos, not resolved venue photos — always the
+  // fallback shape (see types/experience.ts ExperienceImage).
+  image: {
+    imageUrl: experience.imageUrl,
+    isFallback: true,
+    isPlaceSpecific: false,
+    source: null,
+    sourceUrl: null,
+    license: null,
+    author: null,
+    attributionText: null,
+  },
 }));

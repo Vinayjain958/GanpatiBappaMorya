@@ -13,31 +13,31 @@ export interface FeedbackControlsProps {
   className?: string;
 }
 
-export function FeedbackControls({ 
-  experienceId, 
+export function FeedbackControls({
+  experienceId,
   initialSaved = false,
   onSaveToggle,
-  className 
+  className,
 }: FeedbackControlsProps) {
   const [isSaved, setIsSaved] = useState(initialSaved);
   const [rating, setRating] = useState<number | null>(null);
   const [isVoting, setIsVoting] = useState(false);
 
-  const recordInteraction = useCallback(async (
-    eventType: InteractionEventType, 
-    value?: number
-  ) => {
-    try {
-      await feedbackApi.recordInteraction({
-        experience_id: experienceId,
-        event_type: eventType,
-        rating: value,
-        client_event_id: `${experienceId}-${eventType}-${Date.now()}`
-      });
-    } catch (err) {
-      console.error("Failed to record interaction:", err);
-    }
-  }, [experienceId]);
+  const recordInteraction = useCallback(
+    async (eventType: InteractionEventType, value?: number) => {
+      try {
+        await feedbackApi.recordInteraction({
+          experience_id: experienceId,
+          event_type: eventType,
+          rating: value,
+          client_event_id: `${experienceId}-${eventType}-${Date.now()}`,
+        });
+      } catch (err) {
+        console.error("Failed to record interaction:", err);
+      }
+    },
+    [experienceId],
+  );
 
   const handleSaveToggle = () => {
     const newState = !isSaved;
@@ -55,54 +55,68 @@ export function FeedbackControls({
   };
 
   return (
-    <div className={cn("flex items-center gap-3", className)}>
+    <div className={cn("flex flex-wrap items-center gap-2", className)}>
       <button
         type="button"
-        onClick={(e) => {
-          e.preventDefault();
+        onClick={(event) => {
+          event.preventDefault();
           handleSaveToggle();
         }}
         aria-pressed={isSaved}
         className={cn(
-          "inline-flex h-9 items-center justify-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors hover:bg-surface-sunken",
-          isSaved ? "border-accent text-accent bg-accent/5" : "border-line text-ink-subtle"
+          "inline-flex h-10 items-center justify-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors",
+          "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+          isSaved
+            ? "border-accent/25 bg-accent-soft text-accent"
+            : "border-line bg-surface text-ink-muted hover:bg-surface-raised hover:text-ink",
         )}
       >
-        <Bookmark className={cn("size-4", isSaved && "fill-current")} />
+        <Bookmark className={cn("size-4", isSaved && "fill-current")} aria-hidden="true" />
         {isSaved ? "Saved" : "Save"}
       </button>
 
-      <div className="flex h-9 items-center gap-0.5 rounded-md border border-line bg-surface px-1">
+      <div className="flex h-10 items-center gap-1 rounded-full border border-line bg-surface p-1">
         <button
           type="button"
-          onClick={(e) => {
-            e.preventDefault();
+          onClick={(event) => {
+            event.preventDefault();
             handleVote(true);
           }}
           disabled={isVoting || rating === 5}
           className={cn(
-            "inline-flex size-7 items-center justify-center rounded-sm transition-colors hover:bg-surface-sunken hover:text-ink",
-            rating === 5 ? "text-success bg-success/10" : "text-ink-subtle"
+            "inline-flex size-8 items-center justify-center rounded-full transition-colors",
+            "disabled:cursor-not-allowed disabled:opacity-50",
+            rating === 5
+              ? "bg-success-soft text-success"
+              : "text-ink-subtle hover:bg-surface-raised hover:text-ink",
           )}
           aria-label="Thumbs up"
         >
-          <ThumbsUp className={cn("size-4", rating === 5 && "fill-current")} />
+          <ThumbsUp className={cn("size-4", rating === 5 && "fill-current")} aria-hidden="true" />
         </button>
-        <div className="h-4 w-px bg-line mx-0.5" />
+
+        <span className="h-4 w-px bg-line" aria-hidden="true" />
+
         <button
           type="button"
-          onClick={(e) => {
-            e.preventDefault();
+          onClick={(event) => {
+            event.preventDefault();
             handleVote(false);
           }}
           disabled={isVoting || rating === 1}
           className={cn(
-            "inline-flex size-7 items-center justify-center rounded-sm transition-colors hover:bg-surface-sunken hover:text-ink",
-            rating === 1 ? "text-danger bg-danger/10" : "text-ink-subtle"
+            "inline-flex size-8 items-center justify-center rounded-full transition-colors",
+            "disabled:cursor-not-allowed disabled:opacity-50",
+            rating === 1
+              ? "bg-danger-soft text-danger"
+              : "text-ink-subtle hover:bg-surface-raised hover:text-ink",
           )}
           aria-label="Thumbs down"
         >
-          <ThumbsDown className={cn("size-4", rating === 1 && "fill-current")} />
+          <ThumbsDown
+            className={cn("size-4", rating === 1 && "fill-current")}
+            aria-hidden="true"
+          />
         </button>
       </div>
     </div>

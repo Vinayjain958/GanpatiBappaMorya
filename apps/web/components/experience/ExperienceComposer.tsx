@@ -6,71 +6,83 @@ import { DemoDataBadge } from "@/components/ui/DemoDataBadge";
 
 /**
  * Presentation shell for the future AI Experience Composer (Phase 8).
- * Renders a structured, already-composed plan — never invented reasoning
- * text or a chat transcript. In Phase 1 it is fed mock trip data; later
- * phases wire it to the real composer output with the same shape.
+ * Renders a structured, already-composed plan using the existing trip data.
  */
 export function ExperienceComposer({ trip }: { trip: Trip }) {
   return (
-    <Card className="overflow-hidden">
-      <div className="flex items-center justify-between border-b border-line bg-surface-sunken/60 px-5 py-4">
-        <div className="flex items-center gap-2">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-ink">
-            <Sparkles className="size-4" aria-hidden="true" />
+    <Card className="overflow-hidden rounded-3xl">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-surface-raised px-5 py-4 sm:px-6">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-accent-soft text-accent">
+            <Sparkles className="size-5" aria-hidden="true" />
           </span>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-accent">Your experience</p>
-            <p className="text-sm text-ink-muted">{trip.contextSummary}</p>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">
+              Your experience
+            </p>
+            <p className="truncate text-sm text-ink-muted">{trip.contextSummary}</p>
           </div>
         </div>
         <DemoDataBadge />
       </div>
 
-      <CardBody className="space-y-1">
+      <CardBody className="space-y-2 p-4 sm:p-5">
         {trip.items.map((item, index) => (
           <div key={item.id}>
             {index > 0 ? (
-              <div className="flex items-center gap-2 py-1 pl-4 text-xs text-ink-subtle">
-                <ArrowDown className="size-3.5" aria-hidden="true" />
+              <div className="flex items-center gap-2 py-2 pl-5 text-xs text-ink-subtle">
+                <span className="flex size-6 items-center justify-center rounded-full bg-highlight-soft text-highlight">
+                  <ArrowDown className="size-3.5" aria-hidden="true" />
+                </span>
                 {item.travelMinutesFromPrevious} min travel
               </div>
             ) : null}
-            <div className="flex items-start justify-between gap-3 rounded-lg border border-line p-3.5">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-ink-subtle">{item.time}</p>
-                <p className="font-semibold text-ink">{item.title}</p>
-                <p className="text-sm text-ink-muted">
+
+            <div className="flex items-start justify-between gap-3 rounded-2xl border border-line bg-surface p-4">
+              <div className="min-w-0">
+                <p className="text-xs font-medium uppercase tracking-wide text-accent">
+                  {item.time}
+                </p>
+                <p className="mt-1 font-semibold text-ink">{item.title}</p>
+                <p className="mt-1 text-sm text-ink-muted">
                   {item.location} &middot; {item.provider}
                 </p>
               </div>
-              <Badge tone="neutral">{item.durationMinutes} min</Badge>
+              <Badge tone="neutral" className="shrink-0">
+                {item.durationMinutes} min
+              </Badge>
             </div>
           </div>
         ))}
       </CardBody>
 
-      <div className="grid grid-cols-2 gap-3 border-t border-line bg-surface-sunken/50 px-5 py-4 text-sm sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 border-t border-line bg-surface-raised px-5 py-4 sm:grid-cols-4 sm:px-6">
         <div>
-          <p className="flex items-center gap-1 text-xs text-ink-subtle">
+          <p className="flex items-center gap-1.5 text-xs text-ink-subtle">
             <Clock className="size-3.5" aria-hidden="true" />
             Total time
           </p>
-          <p className="font-semibold text-ink">{Math.round(trip.totalTimeMinutes / 60)}h {trip.totalTimeMinutes % 60}m</p>
+          <p className="mt-1 font-semibold text-ink">
+            {Math.round(trip.totalTimeMinutes / 60)}h {trip.totalTimeMinutes % 60}m
+          </p>
         </div>
+
         <div>
           <p className="text-xs text-ink-subtle">Travel time</p>
-          <p className="font-semibold text-ink">{trip.totalTravelMinutes} min</p>
+          <p className="mt-1 font-semibold text-ink">{trip.totalTravelMinutes} min</p>
         </div>
+
         <div>
-          <p className="flex items-center gap-1 text-xs text-ink-subtle">
+          <p className="flex items-center gap-1.5 text-xs text-ink-subtle">
             <Wallet className="size-3.5" aria-hidden="true" />
             Estimated cost
           </p>
-          <p className="font-semibold text-ink">&#8377;{trip.totalCostInr}</p>
+          <p className="mt-1 font-semibold text-ink">₹{trip.totalCostInr}</p>
         </div>
+
         <div>
           <p className="text-xs text-ink-subtle">Preferences matched</p>
-          <p className="font-semibold text-ink">{trip.preferencesMatched.length}</p>
+          <p className="mt-1 font-semibold text-ink">{trip.preferencesMatched.length}</p>
         </div>
       </div>
     </Card>

@@ -29,17 +29,21 @@ function FilterSelect<T extends string>({
   disabledOptionValues?: T[];
 }) {
   return (
-    <label className="inline-flex items-center gap-2 rounded-lg border border-line-strong bg-surface px-3 py-2 text-sm text-ink-muted">
+    <label className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-sm text-ink-muted shadow-sm transition-colors focus-within:border-accent focus-within:bg-pastel-lavender/20">
       <Icon className="size-4 shrink-0" aria-hidden="true" />
       <span className="sr-only">{label}</span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value as T)}
-        className="bg-transparent text-ink focus:outline-none"
+        className="min-w-0 max-w-[190px] cursor-pointer bg-transparent text-ink focus:outline-none"
         aria-label={label}
       >
         {options.map((option) => (
-          <option key={option.value} value={option.value} disabled={disabledOptionValues?.includes(option.value)}>
+          <option
+            key={option.value}
+            value={option.value}
+            disabled={disabledOptionValues?.includes(option.value)}
+          >
             {option.label}
           </option>
         ))}
@@ -64,7 +68,7 @@ export function FilterBar({
   hasLocation: boolean;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2.5">
       <FilterSelect
         icon={Wallet}
         label="Budget"
@@ -72,6 +76,7 @@ export function FilterBar({
         options={budgetOptions as { value: BudgetOption; label: string }[]}
         onChange={(budget) => onChange({ ...value, budget })}
       />
+
       <FilterSelect
         icon={Clock}
         label="Duration"
@@ -79,17 +84,21 @@ export function FilterBar({
         options={durationOptions as { value: DurationOption; label: string }[]}
         onChange={(duration) => onChange({ ...value, duration })}
       />
+
       <FilterSelect
         icon={ArrowUpDown}
         label="Sort"
         value={value.sort}
         options={sortOptions}
         onChange={(sort) => onChange({ ...value, sort })}
-        disabledOptionValues={hasLocation ? [] : (["distance"] as DiscoverySort[])}
+        disabledOptionValues={
+          hasLocation ? [] : (["distance"] as DiscoverySort[])
+        }
       />
+
       {!hasLocation ? (
-        <span className="inline-flex items-center gap-1.5 text-xs text-ink-subtle">
-          <MapPinned className="size-3.5" aria-hidden="true" />
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-pastel-lemon/50 px-3 py-2 text-xs text-ink-muted">
+          <MapPinned className="size-3.5 shrink-0" aria-hidden="true" />
           Set a location to sort by distance
         </span>
       ) : null}

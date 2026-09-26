@@ -8,14 +8,16 @@ export const metadata: Metadata = { title: "Safety" };
 
 export default function SafetyPage() {
   return (
-    <PageContainer className="space-y-8 py-8">
+    <PageContainer className="space-y-8 py-8 sm:py-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
-            <ShieldAlert className="size-7 text-danger" aria-hidden="true" />
+        <div className="space-y-2">
+          <h1 className="flex items-center gap-2.5 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+            <span className="flex size-10 items-center justify-center rounded-2xl bg-danger-soft text-danger">
+              <ShieldAlert className="size-5" aria-hidden="true" />
+            </span>
             Safety Center
           </h1>
-          <p className="text-sm text-ink-muted">
+          <p className="text-sm leading-6 text-ink-muted">
             Kept separate from recommendations &mdash; this stays available even if discovery is down.
           </p>
         </div>

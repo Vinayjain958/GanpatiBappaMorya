@@ -18,19 +18,23 @@ async function fetchExperience(id: string) {
   }
 }
 
-export async function generateMetadata({ params }: PageProps<"/discover/[id]">): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps<"/discover/[id]">): Promise<Metadata> {
   const { id } = await params;
   const experience = await fetchExperience(id).catch(() => null);
   return { title: experience?.title ?? "Experience" };
 }
 
-export default async function ExperienceDetailPage({ params }: PageProps<"/discover/[id]">) {
+export default async function ExperienceDetailPage({
+  params,
+}: PageProps<"/discover/[id]">) {
   const { id } = await params;
   const experience = await fetchExperience(id);
   if (!experience) notFound();
 
   return (
-    <PageContainer className="py-8">
+    <PageContainer className="max-w-6xl py-8 sm:py-10">
       <ExperienceDetail experience={experience} />
     </PageContainer>
   );

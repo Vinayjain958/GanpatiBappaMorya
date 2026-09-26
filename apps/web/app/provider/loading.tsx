@@ -3,11 +3,15 @@ import { Skeleton } from "@/components/ui/Skeleton";
 
 export default function ProviderLoading() {
   return (
-    <PageContainer className="space-y-6 py-8" aria-busy="true" aria-live="polite">
-      <Skeleton className="h-8 w-64" />
-      <div className="grid gap-4 sm:grid-cols-3">
+    <PageContainer
+      className="space-y-7 py-8 sm:py-10"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <Skeleton className="h-10 w-64 rounded-xl" />
+      <div className="grid gap-5 sm:grid-cols-3">
         {Array.from({ length: 3 }).map((_, index) => (
-          <Skeleton key={index} className="h-24 w-full rounded-xl" />
+          <Skeleton key={index} className="h-32 w-full rounded-2xl" />
         ))}
       </div>
     </PageContainer>

@@ -42,8 +42,13 @@ class FakeAsyncClient:
         self.calls.append({"method": "GET", "url": url, "params": params, "headers": headers, "timeout": timeout})
         return self.responder(method="GET", url=url, params=params, headers=headers)
 
-    async def post(self, url: str, data: dict | None = None) -> httpx.Response:
-        self.calls.append({"method": "POST", "url": url, "data": data})
+    async def post(
+        self,
+        url: str,
+        data: dict | None = None,
+        timeout: object | None = None,
+    ) -> httpx.Response:
+        self.calls.append({"method": "POST", "url": url, "data": data, "timeout": timeout})
         return self.responder(method="POST", url=url, data=data)
 
 

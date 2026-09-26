@@ -14,21 +14,22 @@ export function CategoryChips({
     <div
       role="group"
       aria-label="Filter by category"
-      className="flex gap-2 overflow-x-auto scrollbar-none pb-1"
+      className="flex gap-2 overflow-x-auto pb-1 scrollbar-none"
     >
       <button
         type="button"
         aria-pressed={value === null}
         onClick={() => onChange(null)}
         className={cn(
-          "shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
+          "shrink-0 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors",
           value === null
-            ? "border-primary bg-primary text-primary-ink"
-            : "border-line-strong text-ink-muted hover:text-ink",
+            ? "border-transparent bg-pastel-lemon text-ink"
+            : "border-line bg-surface text-ink-muted hover:border-line-strong hover:bg-pastel-lavender/35 hover:text-ink",
         )}
       >
         All
       </button>
+
       {categoryOptions.map((option) => (
         <button
           key={option.value}
@@ -36,10 +37,10 @@ export function CategoryChips({
           aria-pressed={value === option.value}
           onClick={() => onChange(option.value)}
           className={cn(
-            "shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
+            "shrink-0 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors",
             value === option.value
-              ? "border-primary bg-primary text-primary-ink"
-              : "border-line-strong text-ink-muted hover:text-ink",
+              ? "border-transparent bg-pastel-lemon text-ink"
+              : "border-line bg-surface text-ink-muted hover:border-line-strong hover:bg-pastel-lavender/35 hover:text-ink",
           )}
         >
           {option.label}

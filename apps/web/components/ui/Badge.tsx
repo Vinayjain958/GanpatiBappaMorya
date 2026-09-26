@@ -4,12 +4,12 @@ import { cn } from "@/lib/utils/cn";
 type Tone = "neutral" | "accent" | "success" | "warning" | "danger" | "highlight";
 
 const toneClasses: Record<Tone, string> = {
-  neutral: "bg-surface-sunken text-ink-muted",
-  accent: "bg-accent-soft text-accent",
-  success: "bg-success-soft text-success",
-  warning: "bg-warning-soft text-warning",
-  danger: "bg-danger-soft text-danger",
-  highlight: "bg-highlight-soft text-highlight",
+  neutral: "border border-line bg-surface-sunken text-ink-muted",
+  accent: "border border-transparent bg-pastel-lavender text-ink",
+  success: "border border-transparent bg-success-soft text-success",
+  warning: "border border-transparent bg-warning-soft text-warning",
+  danger: "border border-transparent bg-danger-soft text-danger",
+  highlight: "border border-transparent bg-pastel-lemon text-ink",
 };
 
 export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
@@ -20,7 +20,7 @@ export function Badge({ className, tone = "neutral", ...props }: BadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium leading-none",
+        "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium leading-none",
         toneClasses[tone],
         className,
       )}

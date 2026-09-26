@@ -11,11 +11,16 @@ export const metadata: Metadata = { title: "Saved" };
 export default function SavedPage() {
   return (
     <RequireRole role="traveler">
-      <PageContainer className="space-y-6 py-8">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Saved</h1>
-          <p className="text-sm text-ink-muted">Experiences you&apos;ve bookmarked for later.</p>
+      <PageContainer className="space-y-8 py-8 sm:py-10">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+            Saved
+          </h1>
+          <p className="text-sm leading-6 text-ink-muted">
+            Experiences you&apos;ve bookmarked for later.
+          </p>
         </div>
+
         <EmptyState
           icon={Bookmark}
           title="No saved experiences"

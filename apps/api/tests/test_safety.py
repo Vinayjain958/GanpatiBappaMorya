@@ -69,18 +69,28 @@ def test_emergency_alert_idempotency(client, alert_payload):
     response3 = client.post("/api/v1/safety/emergency-alerts", json=alert_payload_modified, headers=headers)
     assert response3.status_code == 409
 
-def test_get_nearby_resources_auto_fallback(client):
-    user_data = register_traveler(client, email="traveler3@test.com")
-    headers = auth_header(user_data)
+def test_get_nearby_resources_explicit_fallback_mode(client, monkeypatch):
+    # Deterministic: forces the seed adapter via SAFETY_RESOURCES_MODE
+    # rather than depending on the real Overpass network call failing
+    # (live/auto-fallback behavior is covered by
+    # tests/test_safety_resource_adapters.py against a fake HTTP client).
+    from src.core.config import get_settings
 
-    # Tests the /resources/nearby endpoint. Will use the auto mode (default) which fails live adapter and falls back to seed.
-    response = client.get("/api/v1/safety/resources/nearby?lat=40.7128&lng=-74.0060&radius_km=10", headers=headers)
-    assert response.status_code == 200
-    data = response.json()
-    assert len(data) > 0
-    assert data[0]["is_synthetic"] is True
-    
-    types = [d["type"] for d in data]
-    assert "hospital" in types
-    assert "police" in types
-    assert "consulate" in types
+    monkeypatch.setenv("SAFETY_RESOURCES_MODE", "fallback")
+    get_settings.cache_clear()
+    try:
+        user_data = register_traveler(client, email="traveler3@test.com")
+        headers = auth_header(user_data)
+
+        response = client.get("/api/v1/safety/resources/nearby?lat=40.7128&lng=-74.0060&radius_km=10", headers=headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) > 0
+        assert data[0]["is_synthetic"] is True
+
+        types = [d["type"] for d in data]
+        assert "hospital" in types
+        assert "police" in types
+        assert "consulate" in types
+    finally:
+        get_settings.cache_clear()

@@ -5,7 +5,10 @@ export function Skeleton({ className }: { className?: string }) {
     <div
       role="presentation"
       aria-hidden="true"
-      className={cn("animate-pulse rounded-md bg-surface-sunken", className)}
+      className={cn(
+        "animate-pulse rounded-2xl bg-surface-sunken motion-reduce:animate-none",
+        className,
+      )}
     />
   );
 }

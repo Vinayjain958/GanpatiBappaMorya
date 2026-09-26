@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
+from typing import List, Optional
 
 from src.core.db import get_session
 from src.api.v1.auth import require_traveler
@@ -18,6 +18,7 @@ from src.schemas.safety import (
 from src.services.safety import contacts as contacts_service
 from src.services.safety import emergency_alerts as alerts_service
 from src.services.safety import safety_resources as resources_service
+from src.services.safety.safety_resources import InvalidRadiusError, SafetyResourceServiceError
 
 router = APIRouter(prefix="/safety", tags=["safety"])
 
@@ -60,13 +61,18 @@ async def delete_emergency_contact(
 
 @router.get("/resources/nearby", response_model=List[SafetyResource])
 async def get_nearby_resources(
-    lat: float = Query(...),
-    lng: float = Query(...),
-    radius_km: float = Query(5.0),
-    category: str = Query(None),
+    lat: float = Query(..., ge=-90, le=90),
+    lng: float = Query(..., ge=-180, le=180),
+    radius_km: float = Query(5.0, gt=0),
+    category: Optional[str] = Query(None, pattern="^(hospital|police|consulate)$"),
     user: User = Depends(require_traveler)
 ):
-    return await resources_service.get_nearby_safety_resources(lat, lng, radius_km, category)
+    try:
+        return await resources_service.get_nearby_safety_resources(lat, lng, radius_km, category)
+    except InvalidRadiusError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    except SafetyResourceServiceError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
 
 
 # --- Emergency Alerts ---

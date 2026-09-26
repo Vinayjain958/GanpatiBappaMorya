@@ -18,16 +18,20 @@ export function ProviderExperienceRow({
   onDeactivate?: (id: string) => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-line bg-surface p-4">
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
+    <div className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-4 shadow-soft transition-shadow hover:shadow-md sm:flex-row sm:items-center sm:justify-between sm:p-5">
+      <div className="min-w-0 flex-1 space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
           <p className="truncate font-semibold text-ink">{experience.title}</p>
-          <Badge tone={statusTone[experience.status as keyof typeof statusTone] ?? "neutral"} className="capitalize">
+          <Badge
+            tone={statusTone[experience.status as keyof typeof statusTone] ?? "neutral"}
+            className="capitalize"
+          >
             {experience.status}
           </Badge>
         </div>
-        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-subtle">
-          <span>
+
+        <p className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-ink-subtle">
+          <span className="font-medium text-ink-muted">
             {experience.price != null
               ? `₹${experience.price}`
               : experience.minimum_price != null
@@ -35,25 +39,32 @@ export function ProviderExperienceRow({
                 : "Price TBD"}
           </span>
           {experience.duration_minutes != null ? (
-            <span className="inline-flex items-center gap-1">
-              <Clock className="size-3.5" aria-hidden="true" />
+            <span className="inline-flex items-center gap-1.5">
+              <Clock className="size-3.5 text-accent" aria-hidden="true" />
               {experience.duration_minutes} min
             </span>
           ) : null}
-          <span className="inline-flex items-center gap-1">
-            <MapPin className="size-3.5" aria-hidden="true" />
+          <span className="inline-flex items-center gap-1.5">
+            <MapPin className="size-3.5 text-accent" aria-hidden="true" />
             {experience.location.locality ?? experience.location.city}
           </span>
         </p>
       </div>
-      <div className="flex items-center gap-2">
+
+      <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
         <Link href={`/provider/experiences/${experience.id}`}>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="rounded-full">
             Manage
           </Button>
         </Link>
+
         {experience.status !== "inactive" && onDeactivate ? (
-          <Button variant="ghost" size="sm" onClick={() => onDeactivate(experience.id)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-full text-ink-muted"
+            onClick={() => onDeactivate(experience.id)}
+          >
             Deactivate
           </Button>
         ) : null}

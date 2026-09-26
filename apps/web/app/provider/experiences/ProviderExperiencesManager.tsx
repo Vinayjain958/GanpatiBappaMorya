@@ -19,6 +19,7 @@ export function ProviderExperiencesManager() {
 
   useEffect(() => {
     let cancelled = false;
+
     getMyExperiences({ limit: 100 })
       .then((response) => {
         if (!cancelled) {
@@ -29,6 +30,7 @@ export function ProviderExperiencesManager() {
       .catch(() => {
         if (!cancelled) setStatus("error");
       });
+
     return () => {
       cancelled = true;
     };
@@ -43,13 +45,16 @@ export function ProviderExperiencesManager() {
   return (
     <>
       {status === "loading" ? (
-        <div className="space-y-3" aria-busy="true" aria-live="polite">
+        <div className="space-y-4" aria-busy="true" aria-live="polite">
           {Array.from({ length: 3 }).map((_, index) => (
-            <Skeleton key={index} className="h-20 w-full rounded-xl" />
+            <Skeleton key={index} className="h-24 w-full rounded-2xl" />
           ))}
         </div>
       ) : status === "error" ? (
-        <ErrorState title="Couldn't load your experiences" onRetry={() => setReloadToken((t) => t + 1)} />
+        <ErrorState
+          title="Couldn't load your experiences"
+          onRetry={() => setReloadToken((t) => t + 1)}
+        />
       ) : experiences.length === 0 ? (
         <EmptyState
           icon={PackageOpen}
@@ -65,9 +70,13 @@ export function ProviderExperiencesManager() {
           }
         />
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {experiences.map((experience) => (
-            <ProviderExperienceRow key={experience.id} experience={experience} onDeactivate={handleDeactivate} />
+            <ProviderExperienceRow
+              key={experience.id}
+              experience={experience}
+              onDeactivate={handleDeactivate}
+            />
           ))}
         </div>
       )}

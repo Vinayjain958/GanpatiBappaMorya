@@ -5,7 +5,7 @@ export function EmergencyButton() {
   return (
     <Link
       href="/safety/emergency"
-      className="flex items-center justify-center gap-2 rounded-xl bg-danger px-5 py-4 text-base font-semibold text-white shadow-sm transition-colors hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger"
+      className="flex min-h-16 items-center justify-center gap-2 rounded-2xl bg-danger px-5 py-4 text-base font-semibold text-white shadow-soft transition hover:brightness-105 active:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger"
     >
       <ShieldAlert className="size-5" aria-hidden="true" />
       Emergency help

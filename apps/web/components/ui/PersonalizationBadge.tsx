@@ -7,14 +7,21 @@ export interface PersonalizationBadgeProps {
   className?: string;
 }
 
-export function PersonalizationBadge({ signals = [], className }: PersonalizationBadgeProps) {
+export function PersonalizationBadge({
+  signals = [],
+  className,
+}: PersonalizationBadgeProps) {
   if (!signals || signals.length === 0) return null;
 
   return (
-    <div className={cn("flex flex-wrap gap-1.5", className)}>
+    <div className={cn("flex flex-wrap gap-2", className)}>
       {signals.map((signal) => (
-        <Badge key={signal} tone="accent" className="gap-1 px-1.5 py-0.5 text-[10px] sm:text-xs">
-          <Sparkles className="size-3" />
+        <Badge
+          key={signal}
+          tone="accent"
+          className="gap-1.5 rounded-full border border-accent/15 px-2.5 py-1 text-[10px] font-medium sm:text-xs"
+        >
+          <Sparkles className="size-3" aria-hidden="true" />
           {signal}
         </Badge>
       ))}

@@ -35,6 +35,23 @@ export interface ApiOpeningHourWindow {
   is_closed: boolean;
 }
 
+/** Normalized image metadata (see apps/api/src/services/experience_images.py).
+ * `url` is null when no suitable image has been resolved — the frontend
+ * falls back to its own generic category art, never a fabricated photo. */
+export interface ApiExperienceImage {
+  url: string | null;
+  thumbnail_url: string | null;
+  source: string | null;
+  source_url: string | null;
+  license: string | null;
+  license_url: string | null;
+  author: string | null;
+  attribution_text: string | null;
+  is_place_specific: boolean | null;
+  is_synthetic: boolean | null;
+  match_method: string | null;
+}
+
 export interface ApiExperienceSummary {
   id: string;
   title: string;
@@ -56,6 +73,7 @@ export interface ApiExperienceSummary {
   verification_status: string;
   is_synthetic: boolean;
   is_enriched: boolean;
+  image: ApiExperienceImage | null;
   /** Straight-line distance from the query's lat/lng — null unless a
    * location-aware search was made. Never travel time. */
   distance_km: number | null;

@@ -21,13 +21,13 @@ const ACTIVE_STATES: VoiceState[] = [
   "RECONNECTING",
 ];
 
-/**
- * Replaces the Phase 1 permanently-disabled mic button with a real
- * control. Always shows a clear "unavailable" state rather than a fake
- * connection when voice can't actually work (no mic support, no
- * permission, or the last attempt failed) — docs/AI_CONTEXT.md INV-10.
- */
-export function VoiceControlButton({ state, isAvailable, onStart, onStop, className }: VoiceControlButtonProps) {
+export function VoiceControlButton({
+  state,
+  isAvailable,
+  onStart,
+  onStop,
+  className,
+}: VoiceControlButtonProps) {
   const isActive = ACTIVE_STATES.includes(state);
 
   if (!isAvailable) {
@@ -39,7 +39,7 @@ export function VoiceControlButton({ state, isAvailable, onStart, onStop, classN
         aria-label="Voice input unavailable in this browser"
         title="Voice input isn't supported in this browser"
         className={cn(
-          "inline-flex size-10 shrink-0 cursor-not-allowed items-center justify-center rounded-xl border border-line text-ink-subtle",
+          "inline-flex size-10 shrink-0 cursor-not-allowed items-center justify-center rounded-2xl border border-line bg-surface-raised text-ink-subtle",
           className,
         )}
       >
@@ -56,7 +56,7 @@ export function VoiceControlButton({ state, isAvailable, onStart, onStop, classN
         aria-label="End voice session"
         title="End voice session"
         className={cn(
-          "inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-danger/30 bg-danger-soft text-danger",
+          "inline-flex size-10 shrink-0 items-center justify-center rounded-2xl border border-danger/20 bg-danger-soft text-danger transition-colors hover:brightness-95",
           className,
         )}
       >
@@ -72,11 +72,15 @@ export function VoiceControlButton({ state, isAvailable, onStart, onStop, classN
       aria-label={state === "ERROR" ? "Voice unavailable — try again" : "Start voice conversation"}
       title={state === "ERROR" ? "Voice unavailable — try again" : "Start voice conversation"}
       className={cn(
-        "inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-line text-ink-subtle transition-colors hover:border-accent hover:text-accent",
+        "inline-flex size-10 shrink-0 items-center justify-center rounded-2xl border border-highlight/20 bg-highlight-soft text-highlight transition-colors hover:border-highlight/40",
         className,
       )}
     >
-      {state === "ERROR" ? <VoiceOrb state={state} className="size-6" /> : <Mic className="size-4.5" aria-hidden="true" />}
+      {state === "ERROR" ? (
+        <VoiceOrb state={state} className="size-6" />
+      ) : (
+        <Mic className="size-4.5" aria-hidden="true" />
+      )}
     </button>
   );
 }

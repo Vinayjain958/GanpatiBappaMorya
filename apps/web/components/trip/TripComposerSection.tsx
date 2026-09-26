@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import { ItineraryComposerForm } from "@/components/trip/ItineraryComposerForm";
 import { RealItineraryTimeline } from "@/components/trip/RealItineraryTimeline";
+import { Button } from "@/components/ui/Button";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ApiError } from "@/lib/api/client";
@@ -79,8 +81,8 @@ export function TripComposerSection() {
   if (state.status === "loading") {
     return (
       <div className="space-y-3" aria-live="polite" aria-busy="true">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-40 w-full rounded-xl" />
+        <Skeleton className="h-8 w-48 rounded-xl" />
+        <Skeleton className="h-40 w-full rounded-2xl" />
       </div>
     );
   }
@@ -97,15 +99,18 @@ export function TripComposerSection() {
 
   if (state.status === "loaded-with-itinerary") {
     return (
-      <div className="space-y-3">
+      <div className="space-y-4">
         <RealItineraryTimeline itinerary={state.itinerary} />
-        <button
+        <Button
           type="button"
-          className="text-sm font-medium text-accent"
+          variant="ghost"
+          size="sm"
+          className="rounded-full text-accent hover:bg-accent-soft"
           onClick={() => setState({ status: "loaded-without-itinerary" })}
         >
-          &larr; Compose another itinerary
-        </button>
+          <ArrowLeft className="size-4" aria-hidden="true" />
+          Compose another itinerary
+        </Button>
       </div>
     );
   }

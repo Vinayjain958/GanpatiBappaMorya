@@ -14,6 +14,20 @@ export interface AccessibilityInfo {
   notes?: string;
 }
 
+/** Resolved image + provenance for attribution/labeling. `isFallback` means
+ * imageUrl is LocaLens's own generic category art, not a real venue photo —
+ * see apps/api/src/services/experience_images.py for the resolution ladder. */
+export interface ExperienceImage {
+  imageUrl: string;
+  isFallback: boolean;
+  isPlaceSpecific: boolean;
+  source: string | null;
+  sourceUrl: string | null;
+  license: string | null;
+  author: string | null;
+  attributionText: string | null;
+}
+
 export interface Experience {
   id: string;
   title: string;
@@ -21,7 +35,10 @@ export interface Experience {
   categoryLabel: string;
   shortDescription: string;
   description: string;
+  /** Convenience flat URL for simple <img>/<Image> usage — always equals
+   * image.imageUrl. Prefer `image` when you need attribution/provenance. */
   imageUrl: string;
+  image: ExperienceImage;
   location: {
     area: string;
     city: string;

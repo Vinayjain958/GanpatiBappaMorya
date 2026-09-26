@@ -55,7 +55,7 @@ export default function LandingPage() {
           aria-hidden="true"
         />
         <PageContainer className="relative flex flex-col items-center gap-8 py-16 text-center sm:py-24">
-          <span className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-1.5 text-xs font-medium text-ink-muted">
+          <span className="inline-flex items-center gap-2 rounded-full border border-line bg-surface-raised px-3.5 py-1.5 text-xs font-medium text-ink-muted shadow-sm">
             <Brain className="size-3.5 text-accent" aria-hidden="true" />
             AI-native local experience companion
           </span>
@@ -63,7 +63,7 @@ export default function LandingPage() {
           <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
             Discover local experiences based on what you actually want
           </h1>
-          <p className="max-w-xl text-base text-ink-muted sm:text-lg">
+          <p className="max-w-xl text-base leading-7 text-ink-muted sm:text-lg">
             Not just where you are. Tell LocaLens your context — it understands, matches, and will
             eventually compose the right experience for you.
           </p>
@@ -78,15 +78,18 @@ export default function LandingPage() {
 
       <section className="border-b border-line py-14 sm:py-20">
         <PageContainer>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {loop.map((step, index) => (
-              <div key={step.title} className="relative rounded-xl border border-line bg-surface p-5">
+              <div
+                key={step.title}
+                className="relative rounded-2xl border border-line bg-surface p-5 shadow-soft transition-shadow hover:shadow-md"
+              >
                 <span className="text-xs font-semibold text-ink-subtle">0{index + 1}</span>
-                <span className="mt-3 flex size-10 items-center justify-center rounded-lg bg-primary text-primary-ink">
+                <span className="mt-3 flex size-11 items-center justify-center rounded-2xl bg-accent-soft text-accent">
                   <step.icon className="size-5" aria-hidden="true" />
                 </span>
-                <h3 className="mt-3 font-semibold text-ink">{step.title}</h3>
-                <p className="mt-1 text-sm text-ink-muted">{step.description}</p>
+                <h3 className="mt-3 font-semibold tracking-tight text-ink">{step.title}</h3>
+                <p className="mt-1 text-sm leading-6 text-ink-muted">{step.description}</p>
               </div>
             ))}
           </div>
@@ -97,15 +100,17 @@ export default function LandingPage() {
         <PageContainer>
           <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-accent">Personalized discovery</p>
-              <h2 className="mt-1 text-2xl font-semibold tracking-tight text-ink">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">
+                Personalized discovery
+              </p>
+              <h2 className="mt-1 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
                 Experiences that fit your moment
               </h2>
             </div>
             <div className="flex items-center gap-2">
               <DemoDataBadge />
               <Link href="/discover">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="rounded-full">
                   Browse all
                 </Button>
               </Link>
@@ -122,11 +127,13 @@ export default function LandingPage() {
       <section className="border-b border-line py-14 sm:py-20">
         <PageContainer className="grid gap-10 lg:grid-cols-2 lg:items-center">
           <div className="space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-wider text-accent">Dynamic planning</p>
-            <h2 className="text-2xl font-semibold tracking-tight text-ink">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">
+              Dynamic planning
+            </p>
+            <h2 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
               From a request to a coherent plan
             </h2>
-            <p className="text-sm text-ink-muted">
+            <p className="text-sm leading-6 text-ink-muted">
               LocaLens will eventually compose compatible experiences into a single itinerary —
               accounting for travel time, opening hours, and budget — and adapt it when your
               plans change.
@@ -137,22 +144,24 @@ export default function LandingPage() {
       </section>
 
       <section className="py-14 sm:py-20">
-        <PageContainer className="grid gap-6 rounded-2xl border border-line bg-surface p-8 sm:grid-cols-[1fr_auto] sm:items-center sm:p-10">
+        <PageContainer className="grid gap-6 rounded-3xl border border-line bg-pastel-lavender/40 p-8 shadow-soft sm:grid-cols-[1fr_auto] sm:items-center sm:p-10">
           <div className="space-y-2">
-            <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-accent">
+            <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-accent">
               <Store className="size-3.5" aria-hidden="true" />
               For local providers
             </p>
-            <h2 className="text-2xl font-semibold tracking-tight text-ink">
+            <h2 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
               Get discovered by travelers who are a genuine fit
             </h2>
-            <p className="max-w-xl text-sm text-ink-muted">
+            <p className="max-w-xl text-sm leading-6 text-ink-muted">
               List your experience, see who&apos;s interested, and get demand intelligence to
               improve your offering.
             </p>
           </div>
           <Link href="/provider">
-            <Button size="lg">List your experience</Button>
+            <Button size="lg" className="rounded-full">
+              List your experience
+            </Button>
           </Link>
         </PageContainer>
       </section>

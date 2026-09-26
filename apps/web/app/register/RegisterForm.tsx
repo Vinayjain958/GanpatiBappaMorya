@@ -77,8 +77,12 @@ export function RegisterForm() {
         </>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-        <div role="radiogroup" aria-label="Account type" className="grid grid-cols-2 gap-2">
+      <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+        <div
+          role="radiogroup"
+          aria-label="Account type"
+          className="grid grid-cols-2 gap-2 rounded-2xl bg-surface-raised p-1.5"
+        >
           {(["traveler", "provider"] as const).map((option) => (
             <button
               key={option}
@@ -87,10 +91,10 @@ export function RegisterForm() {
               aria-checked={role === option}
               onClick={() => setRole(option)}
               className={cn(
-                "rounded-lg border px-3 py-2 text-sm font-medium capitalize transition-colors",
+                "rounded-xl border px-3 py-2.5 text-sm font-medium capitalize transition-colors",
                 role === option
-                  ? "border-primary bg-primary text-primary-ink"
-                  : "border-line-strong text-ink-muted hover:text-ink",
+                  ? "border-accent/25 bg-accent-soft text-accent shadow-sm"
+                  : "border-transparent text-ink-muted hover:text-ink",
               )}
             >
               {option}
@@ -151,7 +155,7 @@ export function RegisterForm() {
           onChange={(event) => setPassword(event.target.value)}
           errorMessage={error ?? undefined}
         />
-        <Button type="submit" className="w-full" loading={isSubmitting}>
+        <Button type="submit" className="w-full rounded-full" loading={isSubmitting}>
           Create account
         </Button>
       </form>

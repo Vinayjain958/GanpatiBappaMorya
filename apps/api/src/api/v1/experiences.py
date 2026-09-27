@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.adapters.embedding import EmbeddingAdapter
 from src.adapters.errors import AdapterError
+from src.adapters.media_storage import MediaStorageAdapter
 from src.adapters.routing import OSRMRoutingAdapter, RoutingAdapter
 from src.core.config import Settings, get_settings
 from src.core.db import get_session
@@ -14,10 +16,12 @@ from src.core.deps import CurrentProvider, CurrentUser, require_traveler
 from src.core.embedding import get_embedding_adapter
 from src.core.errors import ApiError
 from src.core.location import get_routing_adapter
+from src.core.media import get_media_storage_adapter
 from src.models.experience import Experience
 from src.models.provider import Provider
 from src.models.user import User
 from src.repositories.experience_repository import ExperienceRepository
+from src.repositories.interaction_repository import InteractionRepository
 from src.repositories.review_repository import ReviewRepository
 from src.schemas.experience import (
     AvailabilitySlotSummary,
@@ -40,6 +44,7 @@ from src.schemas.semantic_search import (
 from src.services import experience as experience_service
 from src.services.discovery import DiscoveryQuery, ExperienceDiscoveryService
 from src.services.discovery_pipeline import DiscoveryPipelineService
+from src.services.media_validation import ImageValidationError, validate_and_process_image
 from src.services.reviews import submit_review
 
 router = APIRouter(prefix="/experiences", tags=["experiences"])
@@ -183,6 +188,29 @@ async def create_experience(
     return ExperienceDetail.model_validate(experience)
 
 
+@router.get("/saved", response_model=ExperienceListResponse)
+async def list_saved_experiences(
+    user: Annotated[User, Depends(require_traveler)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> ExperienceListResponse:
+    """Currently-saved experiences for the authenticated traveler — always
+    scoped to `user.traveler.id`, never accepted from the client, so one
+    traveler can never see or affect another's saved list (spec-equivalent
+    to the ownership rules elsewhere in this file). Registered before
+    GET /{experience_id} so "saved" is never matched as an experience id."""
+    interaction_repo = InteractionRepository(session)
+    saved_ids = await interaction_repo.get_saved_experience_ids(user.traveler.id)
+
+    experience_repo = ExperienceRepository(session)
+    items: list[ExperienceSummary] = []
+    for experience_id in saved_ids:
+        experience = await experience_repo.get_by_id(experience_id)
+        if experience is not None:
+            items.append(ExperienceSummary.model_validate(experience))
+
+    return ExperienceListResponse(items=items, total=len(items), limit=len(items), offset=0)
+
+
 @router.get("/{experience_id}", response_model=ExperienceDetail)
 async def get_experience(
     experience_id: str, session: Annotated[AsyncSession, Depends(get_session)]
@@ -296,3 +324,50 @@ async def deactivate_experience(
     experience = await _get_owned_or_404(session, experience_id, provider)
     deactivated = await experience_service.deactivate_experience(session, experience)
     return ExperienceDetail.model_validate(deactivated)
+
+
+@router.post("/{experience_id}/image", response_model=ExperienceDetail)
+async def upload_experience_image(
+    experience_id: str,
+    provider: CurrentProvider,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
+    media_storage: Annotated[MediaStorageAdapter, Depends(get_media_storage_adapter)],
+    image: UploadFile,
+) -> ExperienceDetail:
+    """Provider-owned shop/venue photo upload. Reuses the same content
+    validation/EXIF-stripping pipeline built for the traveler contribution
+    flow (services/media_validation.py) — the only difference is provenance:
+    `image_source="provider_upload"`, a value the model already reserved
+    for exactly this (see the comment on Experience.image_source), meaning
+    the synthetic enrichment / Wikimedia re-resolution scripts already
+    treat it as never-overwrite without any further change."""
+    experience = await _get_owned_or_404(session, experience_id, provider)
+
+    image_bytes = await image.read()
+    try:
+        processed = validate_and_process_image(
+            image_bytes,
+            max_bytes=settings.media_max_upload_bytes,
+            max_dimension_px=settings.media_max_image_dimension_px,
+        )
+    except ImageValidationError as exc:
+        raise ApiError(str(exc), status_code=422) from exc
+
+    image_url = media_storage.save(processed.data, processed.object_key, processed.content_type)
+
+    experience.image_url = image_url
+    experience.image_source = "provider_upload"
+    experience.image_is_place_specific = True
+    experience.image_is_synthetic = False
+    experience.image_source_url = None
+    experience.image_license = None
+    experience.image_attribution_text = None
+    experience.image_retrieved_at = datetime.now(UTC)
+
+    await session.commit()
+
+    repository = ExperienceRepository(session)
+    reloaded = await repository.get_by_id(experience_id)
+    assert reloaded is not None
+    return ExperienceDetail.model_validate(reloaded)

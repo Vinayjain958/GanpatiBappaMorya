@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { PersonalizationBadge } from "@/components/ui/PersonalizationBadge";
 import { ExperienceImageView } from "@/components/experience/ExperienceImageView";
 import { ScrollReveal } from "@/components/common/ScrollReveal";
+import { feedbackApi } from "@/lib/api/feedback";
 import { cn } from "@/lib/utils/cn";
 
 const availabilityTone = {
@@ -37,13 +38,38 @@ export function ExperienceCard({
   onToggleSave,
   className,
 }: ExperienceCardProps) {
-  const [isSaved, setIsSaved] = useState(saved);
+  // `saved` arrives from an async fetch (useSavedExperienceIds) that
+  // resolves after this card's first render, so the prop itself is the
+  // source of truth rather than something copied into local state via an
+  // effect. `optimisticSaved` only overrides it for the brief window
+  // between a click and that write actually confirming/failing — cleared
+  // whenever the prop's value already agrees with the pending optimistic
+  // one, so a later real `saved` prop update (e.g. this list refetching)
+  // is never masked by a stale override.
+  const [optimisticSaved, setOptimisticSaved] = useState<boolean | null>(null);
+  const isSaved = optimisticSaved ?? saved;
   const isCompact = variant === "compact";
   const isFeatured = variant === "featured";
 
-  function handleSaveToggle() {
-    setIsSaved((prev) => !prev);
+  async function handleSaveToggle() {
+    const nextSaved = !isSaved;
+    // Optimistic: the button responds instantly, and rolls back only if
+    // the write actually fails — matches FeedbackControls.tsx's pattern
+    // for the same SAVE/UNSAVE interaction used on the detail page, so
+    // saving from either the Discover grid or the detail page persists
+    // to the same per-traveler backend state (GET /experiences/saved).
+    setOptimisticSaved(nextSaved);
     onToggleSave?.(experience.id);
+    try {
+      await feedbackApi.recordInteraction({
+        experience_id: experience.id,
+        event_type: nextSaved ? "SAVE" : "UNSAVE",
+        client_event_id: `${experience.id}-${nextSaved ? "SAVE" : "UNSAVE"}-${Date.now()}`,
+      });
+    } catch (err) {
+      console.error("Failed to record save/unsave interaction:", err);
+      setOptimisticSaved(!nextSaved);
+    }
   }
 
   return (

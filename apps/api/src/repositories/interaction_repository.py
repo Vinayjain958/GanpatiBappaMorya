@@ -39,7 +39,7 @@ class InteractionRepository:
         existing = await self.get_by_client_event_id(traveler_id, client_event_id)
         if existing:
             return existing
-            
+
         interaction = TravelerInteraction(
             traveler_id=traveler_id,
             experience_id=experience_id,
@@ -50,3 +50,43 @@ class InteractionRepository:
         self.session.add(interaction)
         await self.session.flush()
         return interaction
+
+    async def get_saved_experience_ids(self, traveler_id: str) -> list[str]:
+        """Currently-saved experience ids for a traveler, derived from the
+        interaction log rather than a separate saved-state table: an
+        experience counts as saved when its most recent SAVE/UNSAVE event
+        for this traveler is a SAVE. Two travelers' save state is always
+        independent — everything here is scoped by traveler_id.
+
+        `created_at` has only second-level precision on SQLite (this
+        project's dev/test database — see TimestampMixin), so a rapid
+        SAVE-then-UNSAVE within the same second can share one timestamp.
+        This orders by `created_at` and folds rows into a dict in query
+        order, so equal-timestamp rows resolve via each backend's own
+        stable tie-break for an otherwise-unordered `ORDER BY` key
+        (SQLite: physical insertion order; PostgreSQL: unspecified by the
+        SQL standard, though empirically also insertion order in practice
+        for a simple heap scan). A genuinely guaranteed tie-break would
+        need a monotonic sequence column and a migration — not worth it
+        for an edge case (two clicks on the same experience within the
+        same second) whose worst case is a stale bookmark state that
+        self-corrects on the next real save/unsave."""
+        query = (
+            select(TravelerInteraction.id, TravelerInteraction.experience_id, TravelerInteraction.event_type)
+            .where(
+                TravelerInteraction.traveler_id == traveler_id,
+                TravelerInteraction.event_type.in_(("SAVE", "UNSAVE")),
+            )
+            .order_by(TravelerInteraction.created_at.asc())
+        )
+
+        result = await self.session.execute(query)
+        latest_by_experience: dict[str, str] = {}
+        for _interaction_id, experience_id, event_type in result.all():
+            latest_by_experience[experience_id] = event_type
+
+        return [
+            experience_id
+            for experience_id, event_type in latest_by_experience.items()
+            if event_type == "SAVE"
+        ]

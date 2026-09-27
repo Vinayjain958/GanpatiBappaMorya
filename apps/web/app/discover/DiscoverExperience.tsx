@@ -15,6 +15,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
 import { useExperienceDiscovery } from "@/hooks/useExperienceDiscovery";
+import { useSavedExperienceIds } from "@/hooks/useSavedExperienceIds";
 import {
   discoveryStateToParams,
   parseDiscoveryStateFromParams,
@@ -40,6 +41,7 @@ export function DiscoverExperience() {
     discoveryState,
     reloadToken,
   );
+  const savedIds = useSavedExperienceIds();
 
   // Keep the URL shareable/reproducible without triggering a full navigation.
   useEffect(() => {
@@ -262,7 +264,7 @@ export function DiscoverExperience() {
                       "ring-2 ring-accent/60 ring-offset-2 ring-offset-bg",
                   )}
                 >
-                  <ExperienceCard experience={experience} />
+                  <ExperienceCard experience={experience} saved={savedIds.has(experience.id)} />
                 </div>
               ))}
             </div>

@@ -2,7 +2,8 @@
 
 > Documents where every record in the LocaLens catalog came from, what
 > LocaLens added on top of it, and what is entirely synthetic.
-> Last updated: 2026-09-22 (Phase 4).
+> Last updated: 2026-09-27 (ADR-059 — synthetic demo layer removed,
+> traveler contributions added as a fourth lineage).
 
 ---
 
@@ -13,10 +14,14 @@ OVERTURE MAPS PLACES (open, real-world POIs)
         +
 LocaLens enrichment (derived, estimated — always labelled)
         +
-LocaLens synthetic demo layer (fictional, always labelled)
+Traveler direct-publish contributions (real, community-sourced — ADR-058)
         ↓
 LocaLens experience catalog (database)
 ```
+
+The catalog's earlier fictional synthetic demo layer (65 placeholder
+businesses) was removed entirely in ADR-059 §3 rather than kept — see
+§5 below.
 
 No record's source is misrepresented: every `Location`, `Provider`, and
 `Experience` row carries provenance columns (`source_type`, `source_name`,
@@ -109,8 +114,14 @@ Overture's `categories.primary` values are mapped to LocaLens's ~20-slug
 taxonomy in **one place**: `apps/api/src/core/category_map.py`
 (`OVERTURE_CATEGORY_MAP`). No category-translation logic exists anywhere
 else in the app. Categories with no Overture equivalent in this bounding
-box (`street-food`, `hidden-gems`) are populated only by the synthetic
-layer — this is stated explicitly rather than forced.
+box (`street-food`, `hidden-gems`) were previously populated only by the
+now-removed synthetic layer (§5) — this was stated explicitly rather than
+forced. **As of the 2026-09-27 synthetic-layer removal, `hidden-gems` has
+zero experiences and `street-food` has only whatever travelers have
+contributed via the direct-publish flow (ADR-058)** — these two category
+filters in Discover will show few or no results until either a traveler
+contributes into them or a future ingestion pass finds a genuine Overture
+(or other real-source) mapping for them.
 
 Overture categories intentionally **excluded** from ingestion: real
 estate, banking/finance, healthcare, legal/professional services,
@@ -140,28 +151,43 @@ or a review count) are invented for source-derived records.
 
 ---
 
-## 5. Synthetic demo layer (`apps/api/scripts/synthetic_data.py`)
+## 5. Synthetic demo layer (`apps/api/scripts/synthetic_data.py`) — REMOVED 2026-09-27
 
 Open POI data describes places, not bookable *experiences* — it has no
 concept of guided tours, workshop capacity, or hosted activities. A
-smaller, clearly labelled (`is_synthetic = true`) layer fills this gap
-using controlled templates (neighborhood + category-appropriate phrase,
-e.g. "Kala Ghoda Artisan Sketch Walk"), not free-form generation.
+smaller, clearly labelled (`is_synthetic = true`) layer originally filled
+this gap using controlled templates (neighborhood + category-appropriate
+phrase, e.g. "Kala Ghoda Artisan Sketch Walk"), not free-form generation.
 
-- All business/provider names are **fictional**. Any resemblance to a
-  real business is coincidental.
-- Deterministic (fixed random seed) — re-running the seed script produces
+- All business/provider names were **fictional**. Any resemblance to a
+  real business was coincidental.
+- Deterministic (fixed random seed) — re-running the seed script produced
   the same synthetic dataset every time.
-- Synthetic experiences DO get structured `ExperienceOpeningHour` rows
-  (from a small set of realistic day/time presets) and DO get estimated
-  price/duration — same estimation approach as the enrichment layer, also
-  marked `is_price_estimated=true` / `duration_is_estimated=true`.
-- No fake reviews, ratings, or "verified" claims are attached to
+- Synthetic experiences got structured `ExperienceOpeningHour` rows (from a
+  small set of realistic day/time presets) and estimated price/duration —
+  same estimation approach as the enrichment layer, also marked
+  `is_price_estimated=true` / `duration_is_estimated=true`.
+- No fake reviews, ratings, or "verified" claims were attached to
   synthetic records — `verification_status="curated"`, never `"verified"`.
+
+**These 65 `source_type="synthetic"` rows were removed entirely from the
+catalog** (see `docs/DECISIONS.md` ADR-059 §3) rather than reworded, because
+their own generated descriptions explicitly said "synthetic demo experience"
+and rewriting that to sound like a real business would have meant presenting
+a fictional place as genuine — the opposite of this document's honesty
+principle. `scripts/synthetic_data.py` still exists in the repo but its
+output is no longer part of the active catalog; `_RESEEDABLE_SOURCE_TYPES`
+in `scripts/seed.py` still includes `"synthetic"`, so running a fresh reseed
+would regenerate this layer — do not run a full reseed unless you intend to
+bring it back.
 
 ---
 
-## 6. Current dataset snapshot (last seed run)
+## 6. Historical dataset snapshot (early Phase 4 seed run — superseded by §10)
+
+*Point-in-time record from the original 353-row catalog, before both the
+~15,000-row real-Mumbai expansion (§10) and the later removal of the
+synthetic layer (§5). Kept here for history; see §10 for current counts.*
 
 | Metric | Count |
 |---|---|
@@ -311,11 +337,13 @@ from the Overture-derived catalog above:
 ## 10. Real Mumbai Experience Catalog Expansion (~15,000 Real Experiences)
 
 - **Release queried**: `2026-09-23.1` (Overture Places v2 schema — `basic_category` / `taxonomy`).
-- **Target Achieved**: 15,000 active, unique, geolocated, real-world experiences.
-- **Lineage Breakdown**:
+- **Target Achieved**: 15,000 active, unique, geolocated, real-world experiences at the time of
+  this expansion (2026-09-26). The 65 `synthetic` rows below were subsequently removed entirely
+  on 2026-09-27 (ADR-059 §3) — current lineage breakdown:
   - `overture_places`: 14,875 (288 baseline + 14,587 new real-world places)
-  - `synthetic`: 65 (original fictional demo records preserved untouched)
   - `manual_catalog_2026`: 60 (original curated records preserved untouched)
+  - `traveler_submission`: grows over time via the direct-publish contribution flow (ADR-058)
+  - ~~`synthetic`: 65 (original fictional demo records)~~ — **removed 2026-09-27, see §5**
 - **Pipeline Tools**:
   - `scripts/ingest_real_mumbai_places.py`: Ingestion CLI (`--dry-run` and `--apply`).
   - `scripts/conflate_real_places.py`: Deterministic normalizer & `PlaceConflationService`.

@@ -2425,3 +2425,124 @@ a contributing traveler; no full Playwright/Cypress E2E suite (none exists in
 this repository); no production object-storage vendor wired in yet (the
 adapter interface is ready for one).
 
+---
+
+## ADR-059: Visual Refresh (Reference-Design Port), Real Traveler-Scoped Saved Experiences, and Removal of the 65 Fictional Synthetic Experiences
+
+**Context**: three follow-on passes after ADR-058, all functionality-preserving
+except where explicitly noted.
+
+### 1. Visual/motion refresh, ported from a reference design — functionality untouched
+
+A separate reference copy of this frontend (`web/`, provided outside `apps/`)
+turned out to be an **older snapshot of this same codebase** with a distinct
+color theme and hand-built motion/decoration work, not a different app. Before
+porting anything, every candidate file was diff'd against the current
+`apps/web` and checked for which direction the diff actually ran:
+
+- **Ported** (pure visual/animation, no logic changed): `globals.css` gained
+  `porcelain-card` shadows, an ambient cursor-follow glow (`AppShell.tsx`,
+  `.ambient-surface`), floating themed "doodle" icons
+  (`components/common/TravelDoodles.tsx`), organic-blob/compass-rose ambient
+  backgrounds (`components/common/TravelShapesBackground.tsx`, re-themed onto
+  this app's own CSS variables rather than the reference's hardcoded hex),
+  scroll-triggered fade-ins (`components/common/ScrollReveal.tsx`), staggered
+  entrance animations, and skeleton shimmer. Restyled without logic changes:
+  `Card`, `Button`, `Badge`, `IconButton`, `Input`, `Skeleton`,
+  `MobileTabBar`, `SiteHeader` (traveler "Add Local Experience" CTA
+  preserved), `AuthCard`, `ItineraryTimeline`, `VoiceControlButton`,
+  `FilterBar`, `ItineraryItemCard`, `CategoryChips`,
+  `ConversationalDiscoveryInput`, `ExperienceCard`, and the landing page hero.
+- **Deliberately NOT ported** — the reference version was *older* than this
+  app's current code and copying it would have deleted working features:
+  `ExperienceDetail.tsx`, `MapSurface.tsx`, `TripComposerSection.tsx`,
+  `RealItineraryTimeline.tsx`, `ItineraryComposerForm.tsx` (all predate
+  reviews, the route map, personalized planning, or participants), and
+  `FeedbackControls.tsx` (adds a thumbs-up/down feature, not a restyle).
+  Several files under the reference's `app/provider/`, `app/trip/`,
+  `app/safety/`, and its root `app/page.tsx` also turned out to be corrupted/
+  duplicated content from unrelated routes in that snapshot (verified file by
+  file, e.g. its `app/page.tsx` — the landing page slot — actually contained
+  `ExperienceDetailPage` code) and were skipped entirely.
+- **Site-wide fluid scroll**: added `lenis` (~6KB, not present in the
+  reference project at all — this was new work, not a port) via a
+  `SmoothScroll.tsx` client component mounted once in `AppShell.tsx`. Fully
+  disabled under `prefers-reduced-motion: reduce` (native scroll, not merely
+  shortened), matching how every other motion treatment in this app already
+  handles that preference.
+- **Bug found in the port, fixed**: `Card` initially copied the reference's
+  `h-full` default, which stretches every card to match the tallest sibling
+  in whatever flex/grid ancestor it's rendered in — harmless in a grid of
+  equal-purpose cards, but it stretched short, unrelated cards (e.g. the
+  Accessibility card on the experience detail page) to match a tall sibling
+  in a two-column layout. Fixed by making `h-full` opt-in via `className`,
+  which the few call sites that actually need grid-stretch behavior
+  (`InsightPlaceholderChart`, `InsightStatCard`, `SafetyResourceCard`) were
+  already doing explicitly.
+
+### 2. Real per-traveler saved experiences (the bookmark button was previously decorative)
+
+The bookmark button on `ExperienceCard` only toggled local component state
+with no backend call at all, and `/saved` was a hard-coded page that always
+rendered the empty state — nothing was ever persisted.
+
+- The backend already had everything needed except the read side:
+  `TravelerInteraction.event_type` already supported `SAVE`/`UNSAVE`, and
+  `POST /api/v1/feedback/interactions` already recorded them (used for the
+  affinity/ranking system) — but nothing computed "currently saved."
+- Added `InteractionRepository.get_saved_experience_ids()`: an experience is
+  saved when its most recent SAVE/UNSAVE event for that traveler is a SAVE,
+  derived from the existing interaction log rather than a new saved-state
+  table. New `GET /api/v1/experiences/saved` (registered ahead of
+  `GET /{experience_id}` so the literal path segment "saved" is never
+  swallowed as an id), scoped strictly to `user.traveler.id` — verified with
+  a cross-traveler isolation test.
+- `created_at` has only second-level precision on SQLite (this project's
+  dev/test DB), so a rapid SAVE-then-UNSAVE within the same second can tie;
+  resolved by ordering the query and folding rows in query order rather than
+  guessing a winner. A genuinely guaranteed tie-break would need a monotonic
+  sequence column and a migration — not worth it for an edge case whose
+  worst case self-corrects on the next real save/unsave.
+- Frontend: `ExperienceCard`'s save button now calls the same
+  `feedbackApi.recordInteraction` SAVE/UNSAVE path `FeedbackControls.tsx`
+  already used on the detail page, with optimistic UI and rollback on
+  failure. New `useSavedExperienceIds()` hook feeds real state into the
+  Discover grid; `/saved` now fetches and renders real data with
+  loading/error/empty states. Local "is this saved" state is tracked as an
+  optimistic override on top of the prop rather than copied into state via
+  `useEffect`, to satisfy this project's `react-hooks/set-state-in-effect`
+  lint rule without introducing a stale-state bug.
+
+### 3. Removed the 65 fictional `source_type="synthetic"` experiences
+
+These were entirely invented placeholder businesses from
+`scripts/synthetic_data.py` (e.g. "Bandra Chaat & Bites Crawl" was never a
+real place), and their descriptions literally said so ("A synthetic demo ...
+experience... is a LocaLens demo experience created for prototype
+purposes."). Per this project's own standing principle (ADR-015: be honest
+about what's fabricated, never launder it into looking real), the fix was to
+remove the fictional rows rather than reword them to sound genuine.
+
+- Confirmed first that none of the real ~14,935 Overture/manual-catalog
+  experiences contained any "synthetic"/"demo" wording — the issue was
+  isolated to exactly these 65 rows.
+- Deletion required care: all 15 itineraries that existed in the dev
+  database referenced at least one synthetic experience via
+  `itinerary_items.experience_id`, which has `ondelete="RESTRICT"` (by
+  design, so a real itinerary can never silently lose a stop) — the
+  database refused the delete until those itineraries (dev/test data, not
+  production trips) were removed first. Cleanup order: booking requests →
+  itinerary revisions/planning-profiles/participants/items → itineraries →
+  the synthetic experiences' own reviews/opening-hours/availability/
+  embeddings/interactions → the experiences themselves → their now-orphaned
+  Location/Provider rows (confirmed exclusive to these 65 experiences, never
+  shared with a real catalog row, before deleting).
+- Real per-place description quality (Overture data has no marketing copy,
+  so descriptions are currently generic boilerplate — "X is an active local
+  [category] venue located in Y.") is a separate, larger piece of follow-on
+  work using the project's existing Gemini adapter, intentionally *not*
+  done in this pass — grounding ~14,935 individual generated descriptions in
+  only real fields (name/category/locality/address, never inventing hours,
+  prices, or specifics not in the data) needs its own scoped, resumable
+  script and a small-batch quality review before running at full scale.
+

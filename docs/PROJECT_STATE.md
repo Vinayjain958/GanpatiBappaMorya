@@ -583,6 +583,44 @@ and duplicate detection, no admin approval step. Full detail in `docs/DECISIONS.
 
 ---
 
+### Visual Refresh, Real Saved Experiences, Fictional-Data Cleanup (ADR-059) — 2026-09-27
+
+Three follow-on passes, all functionality-preserving except where noted. Full detail in
+`docs/DECISIONS.md` ADR-059 and `docs/CHANGELOG.md`'s matching entry.
+
+- **Visual/motion refresh**: ported design tokens, `porcelain-card` shadows, ambient cursor-follow
+  glow, floating "doodle" icons, ambient blob/compass backgrounds, scroll-reveal fade-ins, and
+  staggered entrance animations from a reference frontend (an older snapshot of this same
+  codebase, not a separate app — confirmed file by file) into `globals.css` and a bounded set of
+  presentation-only components. Deliberately skipped porting `ExperienceDetail.tsx`,
+  `MapSurface.tsx`, `TripComposerSection.tsx`, `RealItineraryTimeline.tsx`,
+  `ItineraryComposerForm.tsx` (reference versions were older, predating reviews/route-map/
+  personalized-planning) and `FeedbackControls.tsx` (adds a new feature, not a restyle). New
+  site-wide fluid scroll via `lenis` + `SmoothScroll.tsx`, disabled under
+  `prefers-reduced-motion: reduce`.
+- **Bug found and fixed during the port**: `Card`'s `h-full` default stretched unrelated short
+  cards to match a tall grid sibling (e.g. the experience detail page's Accessibility card) —
+  fixed by making `h-full` opt-in via `className`.
+- **Real saved experiences**: the bookmark button was previously decorative-only (no persistence,
+  `/saved` always empty). New `GET /api/v1/experiences/saved` derives current saved state from the
+  existing `TravelerInteraction` SAVE/UNSAVE log (no new table); `ExperienceCard`'s save button now
+  calls the existing `POST /api/v1/feedback/interactions` path with optimistic UI; `/saved` and the
+  Discover grid both render real per-traveler state. 7 new backend tests.
+- **Removed 65 fictional experiences**: `source_type="synthetic"` rows (invented placeholder
+  businesses whose own descriptions said "synthetic demo") were deleted rather than reworded, per
+  ADR-015's honesty-about-fabrication principle. Required first removing 15 dev-database
+  itineraries that referenced them (`ondelete="RESTRICT"` correctly blocked the delete) and their
+  now-orphaned Location/Provider rows. All ~14,935 real Overture/manual-catalog experiences
+  confirmed clean of synthetic/demo wording and left untouched.
+- **Explicitly scoped out of this pass**: genuinely improving the ~14,935 real experiences'
+  still-generic boilerplate descriptions (e.g. "X is an active local [category] venue located in
+  Y.") — this needs a resumable, small-batch-reviewed generation script grounded only in real
+  fields, not a quick pass; tracked as follow-on work, not started.
+- Backend: 579/579 tests pass. Frontend: 116/116 vitest tests pass, `tsc --noEmit`/ESLint/
+  `next build` all clean.
+
+---
+
 ## Planned
 
 ### Phase 10 — Provider Intelligence & Two-Sided Marketplace
@@ -631,6 +669,7 @@ and duplicate detection, no admin approval step. Full detail in `docs/DECISIONS.
 | Gemini Live API rate limits or quota | High | Ephemeral token architecture; mock fallback for dev |
 | SQLite → PostgreSQL migration breaks | Medium | Use only portable SQLAlchemy constructs from Day 1; Phase 6 migration verified fresh + seeded SQLite |
 | LLM hallucinating feasibility | Critical | `FeasibilityService` is 100% deterministic (zero LLM calls) |
+| `hidden-gems` category has zero experiences, `street-food` has ~1 (both previously synthetic-only, removed in ADR-059) | Low | Discover filters for these two categories will show few/no results until a real-source mapping or traveler contributions fill them; see `data/README.md` §3 |
 
 ---
 

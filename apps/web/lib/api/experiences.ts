@@ -43,6 +43,15 @@ export function getExperience(id: string, signal?: AbortSignal) {
   return apiClient.get<ApiExperienceDetail>(`/api/v1/experiences/${id}`, { signal });
 }
 
+/** Currently-saved experiences for the authenticated traveler — scoped
+ * server-side to the caller's own traveler id (see
+ * apps/api/src/api/v1/experiences.py::list_saved_experiences). Registered
+ * ahead of /{experience_id} on the backend, so this path is never
+ * ambiguous with an experience id. */
+export function listSavedExperiences(signal?: AbortSignal) {
+  return apiClient.get<ApiExperienceListResponse>("/api/v1/experiences/saved", { signal });
+}
+
 export function createExperienceReview(
   experienceId: string,
   payload: ApiReviewCreateRequest,

@@ -586,6 +586,47 @@ Trip Planner form (pure state: lib/trip/planningForm.ts)
 
 ---
 
+## 8d. Saved Experiences (ADR-059)
+
+```
+ExperienceCard "Save" button
+  -> feedbackApi.recordInteraction({event_type: "SAVE" | "UNSAVE", ...})
+  -> POST /api/v1/feedback/interactions   (existing endpoint, unchanged)
+       -> TravelerInteraction row (existing model, unchanged)
+
+Discover grid / /saved page
+  -> GET /api/v1/experiences/saved   (registered before /{experience_id})
+       -> InteractionRepository.get_saved_experience_ids(traveler_id)
+            "saved" = most recent SAVE/UNSAVE for that (traveler, experience)
+            pair is a SAVE — no separate saved-state table
+       -> ExperienceRepository.get_by_id() per id -> ExperienceListResponse
+```
+
+No new table: saved state is derived entirely from the interaction log that
+already existed for the affinity/ranking system. Always scoped to
+`user.traveler.id` server-side — never accepted from the client. See
+docs/DECISIONS.md ADR-059 §2 for the tie-break behavior on same-second
+SAVE/UNSAVE pairs.
+
+## 8e. Visual/Motion Layer (ADR-059)
+
+Design tokens, `porcelain-card` shadows, ambient cursor-follow glow
+(`AppShell.tsx`'s `.ambient-surface`), floating "doodle" icons
+(`components/common/TravelDoodles.tsx`), ambient blob/compass backgrounds
+(`components/common/TravelShapesBackground.tsx`), scroll-reveal fade-ins
+(`components/common/ScrollReveal.tsx`), and site-wide fluid/inertial
+scrolling (`lenis`, mounted once via `components/common/SmoothScroll.tsx` in
+`AppShell.tsx`) all live in `apps/web/app/globals.css` plus the small set of
+components named above. Every motion treatment here is fully disabled under
+`prefers-reduced-motion: reduce` — never merely shortened. This layer is
+purely presentational; no component's data-fetching or business logic
+changed as part of it. See docs/DECISIONS.md ADR-059 §1 for what was
+deliberately *not* ported (older reference-file versions that would have
+regressed working features) and the `Card` `h-full` regression that was
+introduced and then fixed during the port.
+
+---
+
 ## 8a. Authentication Architecture (Phase 3)
 
 FastAPI is the single authentication authority end to end — no second auth

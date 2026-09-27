@@ -6,6 +6,54 @@
 
 ---
 
+## [Unreleased] 2026-09-27 — Visual Refresh, Real Saved Experiences, Fictional-Data Cleanup (ADR-059)
+
+- **Visual/motion refresh**: ported design tokens, `porcelain-card` shadows,
+  ambient cursor-follow glow, floating themed "doodle" icons, ambient blob/
+  compass backgrounds, scroll-reveal fade-ins, and staggered entrance
+  animations from a reference design (which turned out to be an older
+  snapshot of this same codebase, not a separate app) into `globals.css` and
+  a handful of components (`Card`, `Button`, `Badge`, `IconButton`, `Input`,
+  `Skeleton`, `MobileTabBar`, `SiteHeader`, `AuthCard`, `ItineraryTimeline`,
+  `VoiceControlButton`, `FilterBar`, `ItineraryItemCard`, `CategoryChips`,
+  `ConversationalDiscoveryInput`, `ExperienceCard`, landing page hero) —
+  purely presentational, no functional/logic changes. Deliberately did NOT
+  port `ExperienceDetail.tsx`, `MapSurface.tsx`, `TripComposerSection.tsx`,
+  `RealItineraryTimeline.tsx`, `ItineraryComposerForm.tsx`, or
+  `FeedbackControls.tsx` — the reference versions were older than this app's
+  current code (predating reviews/route-map/personalized-planning) or added
+  an unrelated feature; copying them would have been a regression.
+- **New**: `lenis` dependency + `components/common/SmoothScroll.tsx` for
+  site-wide fluid/inertial scrolling, mounted once in `AppShell.tsx`, fully
+  disabled under `prefers-reduced-motion: reduce`.
+- **Bug fix**: `Card`'s ported `h-full` default was stretching unrelated
+  short cards (e.g. the experience detail page's Accessibility card) to
+  match a tall sibling in a two-column grid layout. Fixed by making
+  `h-full` opt-in via `className`, matching the few call sites that
+  actually need it.
+- **Real saved experiences**: the bookmark button previously only toggled
+  local component state — nothing was ever persisted, and `/saved` always
+  rendered empty. New `GET /api/v1/experiences/saved` (traveler-scoped,
+  derived from the existing `TravelerInteraction` SAVE/UNSAVE log via a new
+  `InteractionRepository.get_saved_experience_ids()` — no new table).
+  `ExperienceCard`'s save button now calls the existing
+  `POST /api/v1/feedback/interactions` path with optimistic UI; `/saved`
+  fetches and renders real data; the Discover grid shows each card's real
+  saved state via a new `useSavedExperienceIds()` hook. 7 new backend tests
+  (including cross-traveler isolation).
+- **Removed 65 fictional experiences**: `source_type="synthetic"` rows from
+  `scripts/synthetic_data.py` were entirely invented placeholder businesses
+  whose descriptions literally said "synthetic demo" — removed rather than
+  reworded, consistent with this project's honesty-about-fabrication
+  principle (ADR-015). Required first removing 15 dev-database itineraries
+  that referenced them (`ondelete="RESTRICT"` correctly blocked the delete
+  otherwise) and their now-orphaned Location/Provider rows. All ~14,935 real
+  Overture/manual-catalog experiences were confirmed to contain no
+  synthetic/demo wording and were untouched. See docs/DECISIONS.md ADR-059
+  for why genuinely improving those ~14,935 real places' still-generic
+  boilerplate descriptions is scoped as separate follow-on work, not done
+  in this pass.
+
 ## [Unreleased] 2026-09-26 — Traveler Direct-Publish "Add a Local Experience" Contribution (ADR-058)
 
 - **Backend**: New `POST /api/v1/contributions/experiences` (multipart/form-data,
